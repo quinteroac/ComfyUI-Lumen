@@ -815,8 +815,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
 
   // The grid (and each video) is one ComfyUI run after another, seeds counting up from the job's seed;
   // each result shows as soon as it is ready.
-  // Zoom out and Pan: the enhancer writes the caption in the first run; the others reuse it, so the grid differs only by seed.
-  const enhanced = (job.action === 'zoom_out' || job.action === 'pan') && !custom;
+  // Zoom out, Pan and the Editor: the enhancer writes the caption in the first run; the others reuse it, so the grid differs only by seed.
+  const enhanced = FILL_ACTIONS.includes(job.action) && !custom;
   const runs = job.action === 'describe' ? 1 : inputs.batch;
   const images: JobImage[] = [];
   const texts: string[] = [];

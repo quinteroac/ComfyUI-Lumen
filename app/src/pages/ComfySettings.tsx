@@ -174,13 +174,13 @@ export function ComfySettings() {
       <div className="card">
         <h2>MiniMax H3 Image</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
-          Hace todas las acciones: Imaginar, Prompt de imagen, Variar, Remezclar, Ampliar, Alejar, Desplazar y el Editor. Variar, Remezclar y Ampliar redibujan la imagen desde un paso más tarde de estos sigmas. Alejar y Desplazar ponen la imagen en un lienzo blanco más grande y el mejorador de prompt oficial de MiniMax escribe qué aparece en el borde; el Editor le pide rellenar las zonas en blanco.
+          Hace todas las acciones: Imaginar, Prompt de imagen, Variar, Remezclar, Ampliar, Alejar, Desplazar y el Editor. Variar, Remezclar y Ampliar redibujan la imagen desde un paso más tarde de estos sigmas. Alejar y Desplazar ponen la imagen en un lienzo blanco más grande, y el Editor deja en blanco lo borrado; el mejorador de prompt oficial de MiniMax escribe qué debe aparecer ahí.
         </p>
         <div className="form-grid">
           <ModelField label="Modelo" list="unet-list" value={cfg.h3.unet} onChange={(v) => h3({ unet: v })} />
           <ModelField label="Codificador de texto" list="clip-list" value={cfg.h3.clip} onChange={(v) => h3({ clip: v })} />
           <ModelField label="VAE" list="vae-list" value={cfg.h3.vae} onChange={(v) => h3({ vae: v })} />
-          <ModelField label="Mejorador de prompt (Alejar, Desplazar)" list="clip-list" value={cfg.h3.peClip} onChange={(v) => h3({ peClip: v })} />
+          <ModelField label="Mejorador de prompt (Alejar, Desplazar, Editor)" list="clip-list" value={cfg.h3.peClip} onChange={(v) => h3({ peClip: v })} />
           <NumberField label="Megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.h3.sd} onChange={(v) => h3({ sd: v })} />
           <NumberField label="Megapíxeles HD (--hd)" min={0.25} max={16} step={0.25} value={cfg.h3.hd} onChange={(v) => h3({ hd: v })} />
           <NumberField label="LCM s_noise inicio" min={0} max={2} step={0.05} value={cfg.h3.sNoise} onChange={(v) => h3({ sNoise: v })} />

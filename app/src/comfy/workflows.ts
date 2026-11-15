@@ -28,13 +28,6 @@ const pictureLabels = (from: number, count: number) => Array.from({ length: coun
 
 /** What H3 Image is asked, by action. The pictures follow in the order image prompts, style references. */
 function h3Prompt(i: JobInputs): string {
-  if (i.action === 'edit') {
-    // The canvas was flattened on white: H3 Image reads transparency as black.
-    return [
-      'Extend <Picture 1> into its plain white areas, continuing the scene, its perspective, lighting and art style seamlessly. Keep the rest of <Picture 1> exactly the same and leave no white areas or borders.',
-      i.prompt && `The whole image shows: ${i.prompt}`,
-    ].filter(Boolean).join('\n\n');
-  }
   const images = i.images?.length ?? 0;
   const styles = i.style_images?.length ?? 0;
   return [
@@ -44,7 +37,7 @@ function h3Prompt(i: JobInputs): string {
   ].filter(Boolean).join('\n\n');
 }
 
-/* Zoom out and Pan go through MiniMax's edit prompt enhancer (the task prompt of MiniMax-H3-Image-PE, as in ComfyUI's
+/* Zoom out, Pan and the Editor go through MiniMax's edit prompt enhancer (the task prompt of MiniMax-H3-Image-PE, as in ComfyUI's
    H3 Image edit template): H3 Image only redraws the framing when the caption says how small the picture now is and
    what newly appears around it, which a plain "fill the white border" instruction does not. */
 const PE_SYSTEM =
@@ -53,6 +46,13 @@ const NEWLY_VISIBLE = 'Describe concretely what newly becomes visible around it 
 const SIDE: Record<PanDir, string> = { left: 'left', right: 'right', up: 'top', down: 'bottom' };
 
 function fillInstruction(i: JobInputs): string {
+  if (i.action === 'edit') {
+    // The Editor's canvas was flattened on white: H3 Image reads transparency as black.
+    return [
+      'The plain white areas of <Picture 1> were erased or are new empty canvas. Fill them so the picture continues seamlessly in its perspective, lighting and art style, keeping everything else exactly as it is, with no white areas or borders left. Describe concretely what fills the white areas.',
+      i.prompt && `The finished image shows: ${i.prompt}`,
+    ].filter(Boolean).join(' ');
+  }
   if (i.action === 'pan') {
     const side = SIDE[i.pan ?? 'right'];
     return `The ${side} third of <Picture 1> is a blank white area. Fill it by continuing the scene past the ${side} edge of the picture, keeping everything else exactly as it is. Describe concretely what newly becomes visible there.`;
@@ -96,7 +96,7 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3']): ApiWorkflow {
   const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
   let prompt: string | Link = i.caption ?? h3Prompt(i);
-  if ((i.action === 'zoom_out' || i.action === 'pan') && !i.caption) {
+  if (FILL.includes(i.action) && !i.caption) {
     const caption = add('TextGenerateV2', {
       clip: add('CLIPLoader', { clip_name: c.peClip, type: 'minimax', device: 'default' }),
       'images.image1': pictures['images.image_1'],
