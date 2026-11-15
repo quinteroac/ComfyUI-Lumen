@@ -1,6 +1,7 @@
 // Built-in ComfyUI workflows (API format) for each action, and the code that
 // fills a workflow — built-in or the person's own — with the job's inputs.
-import type { ActionKind, JobInputs } from './types';
+import type { ActionKind, JobInputs, PanDir } from './types';
+import PE_TASK from './h3_edit_task_prompt.txt?raw';
 import { getConfig, type ComfyConfig } from './config';
 import { comboOptions } from './client';
 
@@ -27,8 +28,7 @@ const pictureLabels = (from: number, count: number) => Array.from({ length: coun
 
 /** What H3 Image is asked, by action. The pictures follow in the order image prompts, style references. */
 function h3Prompt(i: JobInputs): string {
-  const fill = i.action === 'edit' || i.action === 'zoom_out' || i.action === 'pan';
-  if (fill) {
+  if (i.action === 'edit') {
     // The canvas was flattened on white: H3 Image reads transparency as black.
     return [
       'Extend <Picture 1> into its plain white areas, continuing the scene, its perspective, lighting and art style seamlessly. Keep the rest of <Picture 1> exactly the same and leave no white areas or borders.',
@@ -42,6 +42,40 @@ function h3Prompt(i: JobInputs): string {
     images && !i.prompt.includes('<Picture') && `Use ${pictureLabels(1, images)} as the reference for the subject, composition and colors.`,
     styles && `Draw the whole image in the art style of ${pictureLabels(images + 1, styles)}: take only its rendering, line work, shading and colors, not its subject, pose or content.`,
   ].filter(Boolean).join('\n\n');
+}
+
+/* Zoom out and Pan go through MiniMax's edit prompt enhancer (the task prompt of MiniMax-H3-Image-PE, as in ComfyUI's
+   H3 Image edit template): H3 Image only redraws the framing when the caption says how small the picture now is and
+   what newly appears around it, which a plain "fill the white border" instruction does not. */
+const PE_SYSTEM =
+  'Reason in the thinking section first. The visible final content must be exactly one JSON object with exactly two keys: expanded_caption and aspect_ratio. Every ASCII double quotation mark used as caption content inside expanded_caption must be serialized as the JSON escape sequence \\". Do not output text outside that object.';
+const NEWLY_VISIBLE = 'Describe concretely what newly becomes visible around it on every side (for a person: the rest of the head, the neck, shoulders, body and clothing; for a place: more of the ground, sky, walls and surroundings), and state how small the main subject now is in the frame.';
+const SIDE: Record<PanDir, string> = { left: 'left', right: 'right', up: 'top', down: 'bottom' };
+
+function fillInstruction(i: JobInputs): string {
+  if (i.action === 'pan') {
+    const side = SIDE[i.pan ?? 'right'];
+    return `The ${side} third of <Picture 1> is a blank white area. Fill it by continuing the scene past the ${side} edge of the picture, keeping everything else exactly as it is. Describe concretely what newly becomes visible there.`;
+  }
+  const f = i.zoom ?? 2;
+  const size = f === 2 ? 'half size' : f === 1.5 ? 'two thirds of its size' : `${Math.round(100 / f)}% of its size`;
+  const far = f === 2 ? 'twice' : `${f} times`;
+  return `<Picture 1> is a picture shrunk to ${size} in the middle of a white canvas. Fill the white border by continuing the scene outward, so the result is the same scene seen from ${far} as far away. ${NEWLY_VISIBLE}`;
+}
+
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+const ratio = (w: number, h: number) => `${w / gcd(w, h)}:${h / gcd(w, h)}`;
+
+/** The enhancer's user message: the picture with its ratio, the instruction and the canvas ratio, as its task prompt describes. */
+function peRequest(i: JobInputs): string {
+  const r = ratio(i.width, i.height);
+  return [
+    'Reference Image Count: 1 input image(s), labeled <Picture 1> through <Picture 1>.',
+    `Reference Media:\n- <Picture 1> [aspect_ratio ${r}]`,
+    `User Editing Instruction (JSON string): ${JSON.stringify(fillInstruction(i))}`,
+    `User Aspect Ratio Selection: ${r}`,
+    'Apply the instructions above to the supplied inputs and reference images. Output only the required two-field JSON object.',
+  ].join('\n');
 }
 
 /** First step of the sigma schedule at or below the denoise strength, so img2img starts there. */
@@ -61,7 +95,32 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3']): ApiWorkflow {
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
-  const conditioning = add('MiniMaxH3ImageConditioning', { clip, vae, prompt: h3Prompt(i), width: i.width, height: i.height, ...pictures });
+  let prompt: string | Link = h3Prompt(i);
+  if (i.action === 'zoom_out' || i.action === 'pan') {
+    const caption = add('TextGenerateV2', {
+      clip: add('CLIPLoader', { clip_name: c.peClip, type: 'minimax', device: 'default' }),
+      'images.image1': pictures['images.image_1'],
+      system_prompt: `${PE_TASK}\n${PE_SYSTEM}`,
+      prompt: peRequest(i),
+      max_length: 8196,
+      sampling_mode: 'on',
+      'sampling_mode.temperature': 1,
+      'sampling_mode.top_k': 20,
+      'sampling_mode.top_p': 0.95,
+      'sampling_mode.min_p': 0,
+      'sampling_mode.repetition_penalty': 1,
+      // 0 (the template's value) lets the w4a8 9B loop in its thinking until max_length and answer nothing.
+      'sampling_mode.presence_penalty': 1.5,
+      'sampling_mode.seed': i.seed,
+      thinking: true,
+      use_default_template: true,
+      mtp: 'auto',
+    });
+    prompt = add('JsonExtractString', { json_string: caption, key: 'expanded_caption' });
+    // The caption comes back as the run's text, so an empty one can be reported instead of shown as a copy of the canvas.
+    add('PreviewAny', { source: prompt });
+  }
+  const conditioning = add('MiniMaxH3ImageConditioning', { clip, vae, prompt, width: i.width, height: i.height, ...pictures });
   let sigmas = add('ManualSigmas', { sigmas: c.sigmas });
   let latent = out(conditioning, 1);
   if (IMG2IMG.includes(i.action)) {

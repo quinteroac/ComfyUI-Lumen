@@ -11,8 +11,8 @@ export interface EngineSizes {
 }
 
 export interface ComfyConfig {
-  /** MiniMax H3 Image: every action; the distilled model samples 6 steps of LCM. */
-  h3: EngineSizes & { unet: string; clip: string; vae: string; sigmas: string; sNoise: number; sNoiseEnd: number };
+  /** MiniMax H3 Image: every action; the distilled model samples 6 steps of LCM. peClip runs the official edit prompt enhancer for Zoom out and Pan. */
+  h3: EngineSizes & { unet: string; clip: string; vae: string; peClip: string; sigmas: string; sNoise: number; sNoiseEnd: number };
   /** Anima (--anima) and MOSS Image (--moss), each with its turbo LoRA: Imagine only, every edit runs on H3 Image. */
   anima: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   moss: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
@@ -28,6 +28,7 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     unet: 'minimax/minimax_h3_image_pruned_int8_convrot.safetensors',
     clip: 'minimax/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors',
     vae: 'minimax/minimax_h3_image_vae_fp16.safetensors',
+    peClip: 'moss/qwen3.5_9b_w4a8_gptq.safetensors',
     sigmas: '1.0, 0.9675236940383911, 0.8875485062599182, 0.75, 0.5327739119529724, 0.23200887441635132, 0.0',
     sNoise: 0.95,
     sNoiseEnd: 0.9,

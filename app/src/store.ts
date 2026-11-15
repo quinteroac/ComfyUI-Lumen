@@ -660,7 +660,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       const f = opts.zoom ?? 2;
       const px = (v: number) => Math.round(((f - 1) / 2) * v);
       const out = fitArea(w + 2 * px(w), h + 2 * px(h), megapixelsOf(w, h));
-      Object.assign(inputs, { pad_left: px(w), pad_right: px(w), pad_top: px(h), pad_bottom: px(h), width: out.w, height: out.h });
+      Object.assign(inputs, { zoom: f, pad_left: px(w), pad_right: px(w), pad_top: px(h), pad_bottom: px(h), width: out.w, height: out.h });
       break;
     }
     case 'pan': {
@@ -669,6 +669,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       const across = d === 'left' || d === 'right';
       const out = fitArea(w + (across ? amtW : 0), h + (across ? 0 : amtH), megapixelsOf(w, h));
       Object.assign(inputs, {
+        pan: d,
         pad_left: d === 'left' ? amtW : 0,
         pad_right: d === 'right' ? amtW : 0,
         pad_top: d === 'up' ? amtH : 0,
@@ -832,6 +833,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
     );
     texts.push(...out.texts);
     if (job.action === 'describe') continue;
+    if ((job.action === 'zoom_out' || job.action === 'pan') && !custom && !out.texts.length)
+      throw new Error('El mejorador de prompt no escribió la descripción (H3 solo habría copiado el lienzo). Vuelve a intentarlo.');
     if (!out.files.length) throw new Error(`El workflow terminó sin ${video ? 'vídeo' : 'imágenes'}. ¿Tiene un nodo que guarde el resultado (SaveImage, SaveAnimatedWEBP, SaveVideo…)?`);
     images.push(...(await toJobImages(out.files, runInputs, video, job.action === 'extend' ? (srcImg?.extended ?? 0) + 1 : undefined)));
     updateJob(job.id, { images: [...images] }, false);

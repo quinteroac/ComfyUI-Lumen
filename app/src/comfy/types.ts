@@ -116,6 +116,9 @@ export interface JobInputs {
   /** Conversational mode: your message and the prompt so far. */
   message?: string;
   current_prompt?: string;
+  /** Zoom out factor and pan direction. */
+  zoom?: number;
+  pan?: PanDir;
   pad_left?: number;
   pad_right?: number;
   pad_top?: number;
