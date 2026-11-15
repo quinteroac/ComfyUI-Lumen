@@ -293,6 +293,27 @@ h3 {
 .imagine textarea::placeholder {
   color: var(--text-faint);
 }
+.lora-suggest {
+  list-style: none;
+  margin: 0 6px 6px;
+  padding: 4px;
+  border-top: 1px solid var(--line);
+  max-height: 260px;
+  overflow-y: auto;
+}
+.lora-suggest li {
+  padding: 7px 10px;
+  border-radius: var(--radius-s);
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-soft);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.lora-suggest li.on {
+  background: var(--bg);
+  color: var(--text);
+}
 .icon-btn {
   display: inline-grid;
   place-items: center;

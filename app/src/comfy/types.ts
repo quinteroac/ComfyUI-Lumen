@@ -79,6 +79,12 @@ export interface Concept {
   weight: number;
 }
 
+/** --lora name::weight: a LoRA file as ComfyUI lists it, .safetensors optional. */
+export interface LoraRef {
+  name: string;
+  weight: number;
+}
+
 /** Everything a workflow can receive. Each key is also a {{placeholder}} name. */
 export interface JobInputs {
   action: ActionKind;
@@ -114,6 +120,8 @@ export interface JobInputs {
   /** First style reference. */
   style_image?: string;
   style_weight?: number;
+  /** --lora: the user's LoRAs on the image model, in the order written. */
+  loras?: LoraRef[];
   /** --w: the prompt again as a concept slider; each model has its own scale. */
   weird?: number;
   sref?: string;

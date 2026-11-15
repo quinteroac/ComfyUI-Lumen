@@ -20,7 +20,7 @@ export interface Category {
 const LAYOUT: { id: string; title: string; description: string; slugs: string[] }[] = [
   { id: 'getting-started', title: 'Getting Started', description: 'Your first images and a tour of Lumen.', slugs: ['quick-start', 'installation', 'interface', 'imagine-bar', 'create-page', 'draft-mode', 'conversational-mode'] },
   { id: 'prompts', title: 'Prompts', description: 'Write prompts, weight their parts and start from pictures.', slugs: ['prompt-basics', 'multi-prompts', 'permutations', 'image-prompts', 'describe'] },
-  { id: 'parameters', title: 'Parameters', description: 'Everything you can add after the prompt with --.', slugs: ['parameter-list', 'aspect-ratio', 'variety', 'weird', 'seeds', 'repeat', 'resolution', 'models', 'tile'] },
+  { id: 'parameters', title: 'Parameters', description: 'Everything you can add after the prompt with --.', slugs: ['parameter-list', 'aspect-ratio', 'variety', 'weird', 'lora', 'seeds', 'repeat', 'resolution', 'models', 'tile'] },
   { id: 'styles', title: 'Styles & References', description: 'Style codes, character references, profiles and moodboards.', slugs: ['style-codes', 'style-explorer', 'style-creator', 'style-reference', 'character-reference', 'personalization', 'moodboards'] },
   { id: 'editing', title: 'Image Editing', description: 'Change, extend and redraw the images you made.', slugs: ['vary', 'upscale', 'remix', 'zoom-out', 'pan', 'editor', 'retexture'] },
   { id: 'video', title: 'Video', description: 'Videos with sound from text, images and references.', slugs: ['video-basics', 'animate', 'video-references', 'extend-video', 'upscale-video'] },

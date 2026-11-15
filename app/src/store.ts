@@ -499,6 +499,7 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     image_weight: p.imageWeight,
     style_weight: p.styleWeight ?? 100,
     weird: p.weird,
+    loras: p.loras,
     sref: p.sref,
   };
 }

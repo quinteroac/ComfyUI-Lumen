@@ -1,6 +1,6 @@
 // Midjourney-style prompt syntax: parameters (--ar, --seed…), permutations
 // ({a, b}), repeat (--r) and multi-prompt weights (a::2 b).
-import type { Concept, CreateSettings, Motion } from './comfy/types';
+import type { Concept, CreateSettings, LoraRef, Motion } from './comfy/types';
 import type { Engine } from './comfy/config';
 
 export interface ParsedPrompt {
@@ -21,6 +21,8 @@ export interface ParsedPrompt {
   styleWeight?: number;
   /** --w: how weird the image gets, 0 or more. */
   weird?: number;
+  /** --lora name::weight, once per LoRA. */
+  loras: LoraRef[];
   /** --cw 0–100: how much of the character reference to keep (100 face, hair and outfit; 0 the face). */
   characterWeight?: number;
   sref?: string;
@@ -109,6 +111,7 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
     prompt: '',
     plain: '',
     concepts: [],
+    loras: [],
     settings: s,
     repeat: 1,
     draft: false,
@@ -188,6 +191,13 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
       case 'weird':
         r.weird = Math.max(0, Number(val) || 0);
         break;
+      case 'lora': {
+        // The name runs to the next parameter, so it may have spaces; ::weight is optional and 0 drops it.
+        const lora = val.match(/^(.*?)(?:::(-?\d*\.?\d+))?$/);
+        const weight = lora?.[2] === undefined ? 1 : Number(lora[2]);
+        if (lora?.[1].trim() && weight !== 0) r.loras.push({ name: lora[1].trim(), weight });
+        break;
+      }
       case 'sref':
         r.sref = val;
         break;

@@ -602,5 +602,6 @@
  "Instalado": "已安装",
  "Falta": "缺少",
  "Abrir vídeo {n}": "打开视频 {n}",
- "Abrir imagen {n}": "打开图像 {n}"
+ "Abrir imagen {n}": "打开图像 {n}",
+ "Sugerencias de LoRA": "LoRA 建议"
 }

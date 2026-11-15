@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { IconClose, IconImage, IconLock, IconSend, IconSliders, IconTrash, IconVideo, IconBolt, IconFolder, IconSparkle, IconChat, IconMic, IconUser } from '../icons';
 import {
   addRef,
@@ -28,6 +28,27 @@ import {
 import { DEFAULT_SETTINGS, type CreateSettings, type RefImage } from '../comfy/types';
 import { navigate, useRoute } from '../router';
 import { locale, t } from '../i18n';
+import { comboOptions, nodeDefs } from '../comfy/client';
+
+/** The --lora name being typed at the caret: where it starts and what is written so far. */
+function loraQuery(text: string, caret: number): { from: number; q: string } | null {
+  const before = text.slice(0, caret);
+  const m = before.match(/(?:^|\s)--lora\s+([^]*)$/);
+  if (!m || /(^|\s)--|::/.test(m[1])) return null;
+  return { from: caret - m[1].length, q: m[1] };
+}
+
+/** LoRA files matching every word typed, the current model's folder first; none once a whole name is written. */
+function loraMatches(loras: string[], q: string, text: string): string[] {
+  const typed = q.trim().toLowerCase();
+  if (loras.some((name) => name.toLowerCase().replace(/\.safetensors$/, '') === typed)) return [];
+  const words = typed.split(/\s+/).filter(Boolean);
+  const folder = /(^|\s)--anima\b/.test(text) ? 'anima/' : /(^|\s)--moss\b/.test(text) ? 'moss/' : 'minimax/';
+  return loras
+    .filter((name) => words.every((w) => name.toLowerCase().includes(w)))
+    .sort((a, b) => Number(b.startsWith(folder)) - Number(a.startsWith(folder)) || a.localeCompare(b))
+    .slice(0, 8);
+}
 
 const ASPECTS = ['1:2', '9:16', '2:3', '3:4', '4:5', '1:1', '5:4', '4:3', '3:2', '16:9', '2:1'];
 
@@ -418,6 +439,36 @@ export function ImagineBar() {
   const recRef = useRef<SpeechRec | null>(null);
   const ta = useRef<HTMLTextAreaElement>(null);
   const route = useRoute();
+  const [caret, setCaret] = useState(0);
+  const [loras, setLoras] = useState<string[]>([]);
+  const [pick, setPick] = useState(0);
+  const [hidden, setHidden] = useState('');
+  const caretAfter = useRef<number | null>(null);
+  const lora = loraQuery(draft, caret);
+  const suggestions = lora && hidden !== draft ? loraMatches(loras, lora.q, draft) : [];
+
+  useEffect(() => {
+    if (lora && !loras.length) nodeDefs().then((defs) => setLoras(comboOptions(defs, 'LoraLoaderModelOnly', 'lora_name')), () => {});
+  }, [!!lora, loras.length]);
+
+  useEffect(() => setPick(0), [lora?.q]);
+
+  // After a picked LoRA the caret goes right after it, before the next key lands.
+  useLayoutEffect(() => {
+    if (caretAfter.current === null) return;
+    ta.current?.setSelectionRange(caretAfter.current, caretAfter.current);
+    caretAfter.current = null;
+  }, [draft]);
+
+  const acceptLora = (name: string) => {
+    if (!lora) return;
+    const end = caret + (draft.slice(caret).match(/^[^\s:]*/)?.[0].length ?? 0);
+    const insert = name.replace(/\.safetensors$/i, '');
+    setDraft(draft.slice(0, lora.from) + insert + draft.slice(end));
+    const at = lora.from + insert.length;
+    setCaret(at);
+    caretAfter.current = at;
+  };
   const video = settings.output === 'video' || !!refs.start || pending?.kind === 'extend';
   const hasRefs = refs.images.length + refs.style.length > 0 || !!refs.start || !!refs.end;
   const folder = folders.find((f) => f.id === folderId);
@@ -576,8 +627,31 @@ export function ImagineBar() {
             rows={1}
             value={draft}
             placeholder={placeholder}
-            onChange={(e) => setDraft(e.target.value)}
+            aria-autocomplete="list"
+            aria-controls={suggestions.length ? 'lora-suggest' : undefined}
+            aria-activedescendant={suggestions.length ? `lora-${pick}` : undefined}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setCaret(e.target.selectionStart);
+            }}
+            onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
             onKeyDown={(e) => {
+              if (suggestions.length) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setPick((n) => (n + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length);
+                  return;
+                }
+                if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+                  e.preventDefault();
+                  acceptLora(suggestions[pick] ?? suggestions[0]);
+                  return;
+                }
+                if (e.key === 'Escape') {
+                  setHidden(draft);
+                  return;
+                }
+              }
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 submit(e.ctrlKey || e.metaKey);
@@ -634,6 +708,26 @@ export function ImagineBar() {
             <IconSend />
           </button>
         </div>
+        {suggestions.length > 0 && (
+          <ul id="lora-suggest" className="lora-suggest" role="listbox" aria-label={t('Sugerencias de LoRA')}>
+            {suggestions.map((name, n) => (
+              <li
+                key={name}
+                id={`lora-${n}`}
+                role="option"
+                aria-selected={n === pick}
+                className={n === pick ? 'on' : ''}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  acceptLora(name);
+                }}
+                onMouseEnter={() => setPick(n)}
+              >
+                {name.replace(/\.safetensors$/i, '')}
+              </li>
+            ))}
+          </ul>
+        )}
         {!imagesOpen && <RefStrip />}
         {imagesOpen && (
           <div className="refs-panel">

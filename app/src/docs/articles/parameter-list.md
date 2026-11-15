@@ -17,6 +17,7 @@ a lighthouse under the aurora --ar 16:9 --c 20 --seed 42
 | [--w](#weird) | 0 or more (default 0) | Makes new images less conventional. |
 | [--seed](#seeds) | 0–4294967295 | Repeats the same starting point. |
 | [--r](#repeat) | 1–40 | Runs the prompt several times. |
+| [--lora](#lora) | file name, `name::weight` | Adds one of your LoRAs. |
 | [--anima / --moss](#models) | | Imagine with Anima or MOSS Image instead of H3 Image. |
 | [--tile](#tile) | | Marks the job as a repeating pattern (custom workflows). |
 

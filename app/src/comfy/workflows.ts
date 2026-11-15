@@ -161,6 +161,14 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
   return styled;
 }
 
+/** --lora on the image model, before style codes and sliders; a name without an extension is a .safetensors file. */
+function userLoras(add: Graph['add'], i: JobInputs, model: Link): Link {
+  for (const { name, weight } of i.loras ?? []) {
+    model = add('LoraLoaderModelOnly', { model, lora_name: /\.(safetensors|ckpt|pt|pth|bin)$/i.test(name) ? name : `${name}.safetensors`, strength_model: weight });
+  }
+  return model;
+}
+
 const SLIDER_NODE = { h3: 'LumenH3ConceptSlider', moss: 'LumenMOSSConceptSlider', anima: 'LumenAnimaTagSlider' } as const;
 /** --w per model: --w 1000 is where each one starts to multiply and rearrange the subject; Anima only stays clean in weight_norm. */
 const WEIRD = { h3: { mode: 'attention', scale: 0.02 }, moss: { mode: 'attention', scale: 0.01 }, anima: { mode: 'weight_norm', scale: 0.004 } } as const;
@@ -181,7 +189,7 @@ function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link
 function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['styleCodes'], mode: ComfyConfig['conceptMode']): ApiWorkflow {
   const { wf, add } = graph();
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
-  const model = conceptSliders(add, i, styleCode(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' }), clip, styles), clip, mode);
+  const model = conceptSliders(add, i, styleCode(add, i, userLoras(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' })), clip, styles), clip, mode);
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = ON_SOURCE.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.character_images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
@@ -443,6 +451,7 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   const e = c[engine];
   let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
   if (e.lora) model = add('LoraLoaderModelOnly', { model, lora_name: e.lora, strength_model: 1 });
+  model = userLoras(add, i, model);
   const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });
   const vae = add('VAELoader', { vae_name: e.vae });
   if (engine === 'anima' && i.character_images?.length) {
