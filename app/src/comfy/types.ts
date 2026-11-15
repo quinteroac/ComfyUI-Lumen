@@ -76,13 +76,20 @@ export const DEFAULT_SETTINGS: CreateSettings = {
   grid: 4,
 };
 
+/** A multi-prompt segment and its weight (a::2). */
+export interface Concept {
+  text: string;
+  weight: number;
+}
+
 /** Everything a workflow can receive. Each key is also a {{placeholder}} name. */
 export interface JobInputs {
   action: ActionKind;
   /** Model of the built-in workflows: --anima and --moss pick Anima or MOSS Image for Imagine. */
   engine: Engine;
   prompt: string;
-  negative: string;
+  /** Weighted segments of the prompt, applied as concept sliders by the built-in workflows. */
+  concepts: Concept[];
   seed: number;
   width: number;
   height: number;

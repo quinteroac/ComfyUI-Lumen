@@ -2,7 +2,6 @@
 
 const PARAMS: [string, string, string][] = [
   ['--ar 16:9', 'Proporción', 'Ancho y alto del resultado.'],
-  ['--no texto', 'Excluir', 'Va al prompt negativo.'],
   ['--seed 42', 'Semilla', 'Repite el mismo punto de partida (0–4294967295).'],
   ['--s 250', 'Estilización', '0–1000; con H3 Image por ahora solo se pasa a tus workflows como {{stylize}}.'],
   ['--c 20', 'Variedad (chaos)', '0–100; Variar empieza a redibujar antes.'],
@@ -11,7 +10,7 @@ const PARAMS: [string, string, string][] = [
   ['--q 2', 'Calidad', 'Se pasa a tus workflows como {{quality}}.'],
   ['--r 3', 'Repetir', 'Ejecuta el prompt varias veces (hasta 40).'],
   ['{rojo, verde}', 'Permutaciones', 'Un prompt por cada opción (anidables, también en parámetros).'],
-  ['espacio::2 barco', 'Multi-prompt y pesos', 'Se convierte a la sintaxis (texto:peso) de ComfyUI; pesos negativos van al negativo.'],
+  ['espacio::2 barco', 'Multi-prompt y pesos', 'Cada segmento con peso distinto de 1 se aplica con un slider de concepto (modo attention o weight_norm en la página ComfyUI); 1 = tal cual, los pesos ≤ 0 se ignoran. MOSS y Anima llegan hasta 1.5.'],
   ['--hd / --sd', 'Resolución', 'HD genera directamente a más megapíxeles: H3 1/4/16 MP (borrador/SD/HD), MOSS 1/2/5, Anima siempre 1.'],
   ['--draft', 'Borrador', 'Imágenes pequeñas y rápidas (o el botón del rayo).'],
   ['--anima / --moss', 'Modelo', 'Imagina con Anima o MOSS Image en vez de H3 Image; todo lo que parte de una imagen sigue en H3 Image.'],

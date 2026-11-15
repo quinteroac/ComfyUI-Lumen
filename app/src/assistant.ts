@@ -34,13 +34,6 @@ function setParam(params: string, key: string, value: string) {
   return re.test(params) ? params.replace(re, `${tok} `).trim() : `${params} ${tok}`.trim();
 }
 
-function addNo(params: string, what: string) {
-  const m = params.match(/--no\s+([^-]*)/i);
-  if (!m) return `${params} --no ${what}`.trim();
-  const list = [...new Set([...m[1].split(',').map((x) => x.trim()).filter(Boolean), what])];
-  return params.replace(m[0], `--no ${list.join(', ')} `).trim();
-}
-
 const ENRICH = [
   'rich detail, soft natural light',
   'cinematic composition, atmospheric lighting',
@@ -124,7 +117,6 @@ export function assist(message: string, current: string | undefined, hasImages: 
   const neg = rest.match(/^(?:pero |but )?(?:sin|without|quita(?:le)?|elimina|remove|no quiero|ningun[oa]?|no)\s+(?:el |la |los |las |the |any )?(.+)/i);
   if (neg) {
     const what = neg[1].replace(/[.!]+$/, '').trim();
-    params = addNo(params, what);
     body = body.replace(new RegExp(`,?\\s*${what.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i'), '');
     changes.push(`sin ${what}`);
     rest = '';

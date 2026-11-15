@@ -52,7 +52,7 @@ function fillInstruction(i: JobInputs): string {
     // The Editor's canvas was flattened on white: H3 Image reads transparency as black.
     return [
       'The plain white areas of <Picture 1> were erased or are new empty canvas. Fill them so the picture continues seamlessly in its perspective, lighting and art style, keeping everything else exactly as it is, with no white areas or borders left. Describe concretely what fills the white areas.',
-      i.prompt && `The finished image shows: ${i.prompt}`,
+      (i.prompt || i.concepts.length) && `The finished image shows: ${[i.prompt, ...i.concepts.map((c) => c.text)].filter(Boolean).join(' ')}`,
     ].filter(Boolean).join(' ');
   }
   if (i.action === 'pan') {
@@ -115,10 +115,24 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
   return styled;
 }
 
-function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['styleCodes']): ApiWorkflow {
+const SLIDER_NODE = { h3: 'MiniMaxH3ConceptSlider', moss: 'MOSSConceptSlider', anima: 'AnimaTagSlider' } as const;
+/** MOSS's and Anima's sliders stop at 1.5; H3's range follows max_strength. */
+const SLIDER_MAX = { h3: Infinity, moss: 1.5, anima: 1.5 } as const;
+
+/** Weighted prompt segments (a::2) as one concept slider each, chained like LoRAs: 1 is the segment as written. */
+function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link, mode: ComfyConfig['conceptMode']): Link {
+  for (const { text, weight } of i.concepts) {
+    const strength = Math.min(weight, SLIDER_MAX[i.engine]);
+    const words = i.engine === 'anima' ? { tag_low: '', tag_high: text } : { concept_low: '', concept_high: text };
+    model = add(SLIDER_NODE[i.engine], { model, clip, ...words, mode, strength, bypass: false, ...(i.engine === 'h3' ? { max_strength: Math.max(1.5, strength) } : {}) });
+  }
+  return model;
+}
+
+function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['styleCodes'], mode: ComfyConfig['conceptMode']): ApiWorkflow {
   const { wf, add } = graph();
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
-  const model = styleCode(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' }), clip, styles);
+  const model = conceptSliders(add, i, styleCode(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' }), clip, styles), clip, mode);
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
@@ -174,13 +188,13 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
   if (e.lora) model = add('LoraLoaderModelOnly', { model, lora_name: e.lora, strength_model: 1 });
   const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });
-  model = styleCode(add, i, model, clip, c.styleCodes);
+  model = conceptSliders(add, i, styleCode(add, i, model, clip, c.styleCodes), clip, c.conceptMode);
   const vae = add('VAELoader', { vae_name: e.vae });
   const latent = add(engine === 'anima' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: i.width, height: i.height, batch_size: 1 });
   const sampled = add('KSampler', {
     model,
     positive: add('CLIPTextEncode', { clip, text: i.prompt }),
-    negative: add('CLIPTextEncode', { clip, text: [i.negative, e.negative].filter(Boolean).join(', ') }),
+    negative: add('CLIPTextEncode', { clip, text: e.negative }),
     latent_image: latent,
     seed: i.seed,
     steps: e.steps,
@@ -205,7 +219,7 @@ export function builtInWorkflow(i: JobInputs): ApiWorkflow {
       throw new Error('«Describir» necesita un workflow propio que devuelva texto (por ejemplo con Florence2 o JoyCaption). Añádelo en la página ComfyUI.');
   }
   const c = getConfig();
-  return i.engine === 'h3' ? h3Workflow(i, c.h3, c.styleCodes) : textToImage(i, i.engine, c);
+  return i.engine === 'h3' ? h3Workflow(i, c.h3, c.styleCodes, c.conceptMode) : textToImage(i, i.engine, c);
 }
 
 /** Loader inputs whose files must be on the server; ComfyUI's own error lists every file it has. */
@@ -295,8 +309,6 @@ function autoFill(wf: ApiWorkflow, i: JobInputs) {
       if (node.class_type === 'KSampler' && i.action !== 'imagine') inp.denoise = i.denoise;
       setText(findTextNode(wf, inp.positive), i.motion_prompt ?? i.prompt);
       setText(findTextNode(wf, inp.conditioning), i.motion_prompt ?? i.prompt);
-      const neg = findTextNode(wf, inp.negative);
-      if (neg) setText(neg, i.negative);
     }
     if (node.class_type === 'RandomNoise' && !Array.isArray(inp.noise_seed)) inp.noise_seed = i.seed;
     if (LATENTS.includes(node.class_type) || VIDEO_LATENTS.includes(node.class_type)) {
@@ -343,7 +355,7 @@ export function buildWorkflow(i: JobInputs, custom?: string): { workflow: ApiWor
 /** Placeholders a custom workflow may use. */
 export const PLACEHOLDERS: { key: keyof JobInputs; desc: string }[] = [
   { key: 'prompt', desc: 'texto del prompt' },
-  { key: 'negative', desc: 'prompt negativo (--no …)' },
+  { key: 'concepts', desc: 'segmentos con peso (a::2), lista de {text, weight}' },
   { key: 'seed', desc: 'semilla' },
   { key: 'width', desc: 'ancho en px' },
   { key: 'height', desc: 'alto en px' },

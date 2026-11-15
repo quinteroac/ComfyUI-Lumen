@@ -484,7 +484,7 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     action,
     engine,
     prompt: p.prompt,
-    negative: p.negative,
+    concepts: p.concepts,
     seed: p.seed ?? Math.floor(Math.random() * 2 ** 32),
     width: w,
     height: h,

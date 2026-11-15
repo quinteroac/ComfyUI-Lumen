@@ -92,7 +92,7 @@ function WorkflowSlot({ action }: { action: ActionKind }) {
           <textarea aria-label={`Workflow para ${ACTION_LABELS[action]}`} value={value} placeholder="Pega aquí el JSON de «Export (API)». Vacío = se usa el workflow integrado." onChange={(e) => save(e.target.value)} />
           <div className="row">
             {error && <span className="err">{error}</span>}
-            <button className="btn small" onClick={() => downloadJson(`lumen_${action}_integrado.json`, buildWorkflow({ ...sampleInputs(action), prompt: '{{prompt}}', negative: '{{negative}}' }).workflow)}>
+            <button className="btn small" onClick={() => downloadJson(`lumen_${action}_integrado.json`, buildWorkflow({ ...sampleInputs(action), prompt: '{{prompt}}' }).workflow)}>
               Descargar workflow integrado
             </button>
             {value && (
@@ -270,6 +270,22 @@ export function ComfySettings() {
           <label className="field wide">
             Prompt de las vistas previas (Explorar › Estilos)
             <input value={cfg.styleCodes.previewPrompt} onChange={(e) => setConfig({ styleCodes: { ...cfg.styleCodes, previewPrompt: e.target.value } })} />
+          </label>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Pesos del prompt (a::2)</h2>
+        <p className="hint" style={{ marginBottom: 12 }}>
+          Cada segmento con peso se aplica con el slider de concepto de cada modelo (MiniMaxH3ConceptSlider, MOSSConceptSlider, AnimaTagSlider), encadenados tras --sref.
+        </p>
+        <div className="form-grid">
+          <label className="field">
+            Modo
+            <select value={cfg.conceptMode} onChange={(e) => setConfig({ conceptMode: e.target.value as ComfyConfig['conceptMode'] })}>
+              <option value="attention">attention: cuánto atiende la imagen al concepto</option>
+              <option value="weight_norm">weight_norm: escala el concepto manteniendo su magnitud</option>
+            </select>
           </label>
         </div>
       </div>

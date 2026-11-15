@@ -19,6 +19,9 @@ export interface ComfyConfig {
   moss: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   /** Styles each --sref code mixes (Style Code nodes); Anima mixes styles and artist tags. previewPrompt: what Explore's style previews show. */
   styleCodes: { styles: number; animaStyles: number; animaArtists: number; previewPrompt: string };
+  /** How the concept sliders apply a::2 weights: attention biases how much the image attends to the concept,
+      weight_norm scales its attention values keeping each output at the magnitude of the concept as written. */
+  conceptMode: 'attention' | 'weight_norm';
   /** Megapixels of Upscale. */
   upscaleMegapixels: number;
   /** Custom workflows (ComfyUI "Export (API)" JSON) per action; empty = built-in. */
@@ -72,6 +75,7 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     animaArtists: 2,
     previewPrompt: 'A young woman with a bicycle on a city street beside a small flower shop, trees, a cat on a bench, daylight',
   },
+  conceptMode: 'attention',
   upscaleMegapixels: 16,
   workflows: {},
 };

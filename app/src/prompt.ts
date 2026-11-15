@@ -1,14 +1,15 @@
-// Midjourney-style prompt syntax: parameters (--ar, --no, --seed…), permutations
+// Midjourney-style prompt syntax: parameters (--ar, --seed…), permutations
 // ({a, b}), repeat (--r) and multi-prompt weights (a::2 b).
-import type { CreateSettings, Motion } from './comfy/types';
+import type { Concept, CreateSettings, Motion } from './comfy/types';
 import type { Engine } from './comfy/config';
 
 export interface ParsedPrompt {
-  /** Text without parameters, with multi-prompt weights turned into ComfyUI (text:weight) syntax. */
+  /** Text without parameters and without the weighted segments. */
   prompt: string;
+  /** Multi-prompt segments with a weight (a::2), applied as concept sliders. */
+  concepts: Concept[];
   /** Text without parameters, as typed. */
   plain: string;
-  negative: string;
   seed?: number;
   settings: CreateSettings;
   quality: number;
@@ -77,25 +78,24 @@ function findGroup(text: string): { from: number; to: number; options: string[] 
   return null; // unbalanced: leave as is
 }
 
-/** "space::2 ship::-0.5" → positive "(space:2) ship"… negative weights go to the negative prompt. */
-function applyWeights(text: string): { positive: string; negative: string } {
-  if (!text.includes('::')) return { positive: text, negative: '' };
+/** "space::2 ship" → the prompt "ship" and the concept "space" at 2 (the concept sliders' strength, 1 = as written).
+    Segments without a weight, or weighted 1, stay in the prompt; weights of 0 or less are dropped. */
+function applyWeights(text: string): { prompt: string; concepts: Concept[] } {
+  if (!text.includes('::')) return { prompt: text, concepts: [] };
   const parts = text.split(/::/);
-  const pos: string[] = [];
-  const neg: string[] = [];
+  const plain: string[] = [];
+  const concepts: Concept[] = [];
   let pending = parts[0];
   for (let i = 1; i < parts.length; i++) {
     const m = parts[i].match(/^\s*(-?\d*\.?\d+)?\s*(.*)$/s)!;
-    const w = m[1] !== undefined ? Number(m[1]) : 1;
+    const weight = m[1] !== undefined ? Number(m[1]) : 1;
     const seg = pending.trim();
-    if (seg) {
-      if (w < 0) neg.push(seg);
-      else pos.push(w === 1 ? seg : `(${seg}:${w})`);
-    }
+    if (seg && weight === 1) plain.push(seg);
+    else if (seg && weight > 0) concepts.push({ text: seg, weight });
     pending = m[2] ?? '';
   }
-  if (pending.trim()) pos.push(pending.trim());
-  return { positive: pos.join(' '), negative: neg.join(', ') };
+  if (pending.trim()) plain.push(pending.trim());
+  return { prompt: plain.join(' '), concepts };
 }
 
 const ASPECT = /^\d+:\d+$/;
@@ -105,7 +105,7 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
   const r: ParsedPrompt = {
     prompt: '',
     plain: '',
-    negative: '',
+    concepts: [],
     settings: s,
     quality: 1,
     repeat: 1,
@@ -121,7 +121,6 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
   const body = idx >= 0 ? text.slice(0, idx) : text;
   const tail = idx >= 0 ? text.slice(idx) : '';
   const tokens = tail.split(/\s+(?=--)/).map((t) => t.trim()).filter(Boolean);
-  const negatives: string[] = [];
   for (const tok of tokens) {
     const m = tok.match(/^--([a-z]+)\s*(.*)$/i);
     if (!m) continue;
@@ -132,9 +131,6 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
       case 'ar':
       case 'aspect':
         if (ASPECT.test(val)) s.aspect = val;
-        break;
-      case 'no':
-        if (val) negatives.push(val);
         break;
       case 'seed': {
         const n = Number.parseInt(val, 10);
@@ -224,7 +220,7 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
   const plain = body.replace(/\s+/g, ' ').trim();
   const w = applyWeights(plain);
   r.plain = plain;
-  r.prompt = w.positive;
-  r.negative = [...negatives, w.negative].filter(Boolean).join(', ');
+  r.prompt = w.prompt;
+  r.concepts = w.concepts;
   return r;
 }

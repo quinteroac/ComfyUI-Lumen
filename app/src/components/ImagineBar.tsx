@@ -135,7 +135,7 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
       </div>
       <div className="params-foot">
         <span>
-          Parámetros en el prompt: --ar 16:9 · --no texto · --seed 42 · --s 250 · --c 20 · --w 100 · --raw · --q 2 · --r 3 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
+          Parámetros en el prompt: --ar 16:9 · --seed 42 · --s 250 · --c 20 · --w 100 · --raw · --q 2 · --r 3 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
         </span>
         <button className="link-btn" type="button" onClick={() => setSettings({ ...DEFAULT_SETTINGS })}>
           Restablecer
