@@ -1,0 +1,135 @@
+/* Conversational mode, personalization profiles, draft grid. */
+
+/* ------------------------------ conversational chat ------------------------------ */
+.chat {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 10px 12px 4px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat .hint {
+  margin: 0;
+}
+.chat > .link-btn {
+  align-self: flex-start;
+  font-size: 12px;
+}
+.chat-turn {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 8px;
+  font-size: 14px;
+}
+.chat-turn p {
+  margin: 2px 0 0;
+}
+.chat-who {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-soft);
+}
+.chat-turn.assistant .chat-who {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.chat-prompt {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.chat-prompt code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  word-break: break-word;
+}
+.chat-prompt .link-btn {
+  font-size: 12px;
+}
+.icon-btn.rec {
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(198, 40, 40, 0.25);
+  }
+}
+
+/* ------------------------------ personalization profiles ------------------------------ */
+.profile {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: var(--s2);
+  align-items: start;
+}
+.profile-thumbs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  height: 96px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  background: var(--surface);
+  cursor: pointer;
+}
+.profile-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-thumbs .lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+.profile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.profile-body .progress {
+  height: 6px;
+}
+.progress.big {
+  height: 10px;
+  border-radius: 5px;
+  margin: var(--s1) 0 4px;
+}
+
+/* ------------------------------ draft grid ------------------------------ */
+.job-grid.draft {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .profile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .job-grid.draft {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .chat {
+    max-height: 200px;
+  }
+}

@@ -1,0 +1,309 @@
+// Built-in ComfyUI workflows (API format) for each action, and the code that
+// fills a workflow — built-in or the person's own — with the job's inputs.
+import type { ActionKind, JobInputs } from './types';
+import { getConfig, type ComfyConfig } from './config';
+import { comboOptions } from './client';
+
+export type ApiWorkflow = Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }>;
+
+/* ------------------------------------------------------------------ */
+/* Built-in workflows                                                  */
+/* ------------------------------------------------------------------ */
+
+type Link = [string, number];
+
+function graph() {
+  const wf: ApiWorkflow = {};
+  const add = (class_type: string, inputs: Record<string, unknown>): Link => {
+    const id = String(Object.keys(wf).length + 1);
+    wf[id] = { class_type, inputs };
+    return [id, 0];
+  };
+  return { wf, add };
+}
+
+const out = (link: Link, n: number): Link => [link[0], n];
+const pictureLabels = (from: number, count: number) => Array.from({ length: count }, (_, n) => `<Picture ${from + n}>`).join(' and ');
+
+/** What H3 Image is asked, by action. The pictures follow in the order image prompts, style references. */
+function h3Prompt(i: JobInputs): string {
+  const fill = i.action === 'edit' || i.action === 'zoom_out' || i.action === 'pan';
+  if (fill) {
+    // The canvas was flattened on white: H3 Image reads transparency as black.
+    return [
+      'Extend <Picture 1> into its plain white areas, continuing the scene, its perspective, lighting and art style seamlessly. Keep the rest of <Picture 1> exactly the same and leave no white areas or borders.',
+      i.prompt && `The whole image shows: ${i.prompt}`,
+    ].filter(Boolean).join('\n\n');
+  }
+  const images = i.images?.length ?? 0;
+  const styles = i.style_images?.length ?? 0;
+  return [
+    i.prompt,
+    images && !i.prompt.includes('<Picture') && `Use ${pictureLabels(1, images)} as the reference for the subject, composition and colors.`,
+    styles && `Draw the whole image in the art style of ${pictureLabels(images + 1, styles)}: take only its rendering, line work, shading and colors, not its subject, pose or content.`,
+  ].filter(Boolean).join('\n\n');
+}
+
+/** First step of the sigma schedule at or below the denoise strength, so img2img starts there. */
+function startStep(sigmas: string, denoise: number) {
+  const list = sigmas.split(',').map(Number);
+  const step = list.findIndex((s) => s <= denoise + 0.005);
+  return Math.min(Math.max(step, 1), list.length - 2);
+}
+
+const IMG2IMG: ActionKind[] = ['vary_subtle', 'vary_strong', 'remix', 'upscale_subtle', 'upscale_creative'];
+const FILL: ActionKind[] = ['edit', 'zoom_out', 'pan'];
+
+function h3Workflow(i: JobInputs, c: ComfyConfig['h3']): ApiWorkflow {
+  const { wf, add } = graph();
+  const model = add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' });
+  const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
+  const vae = add('VAELoader', { vae_name: c.vae });
+  const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
+  const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
+  const conditioning = add('MiniMaxH3ImageConditioning', { clip, vae, prompt: h3Prompt(i), width: i.width, height: i.height, ...pictures });
+  let sigmas = add('ManualSigmas', { sigmas: c.sigmas });
+  let latent = out(conditioning, 1);
+  if (IMG2IMG.includes(i.action)) {
+    // Vary, Remix and Upscale redraw the image from a later step, at the size asked for.
+    const pixels = add('ImageScale', { image: add('LoadImage', { image: i.image ?? '' }), upscale_method: 'lanczos', width: i.width, height: i.height, crop: 'center' });
+    latent = add('VAEEncode', { pixels, vae });
+    sigmas = out(add('SplitSigmas', { sigmas, step: startStep(c.sigmas, i.denoise) }), 1);
+  }
+  const sampled = add('SamplerCustomAdvanced', {
+    noise: add('RandomNoise', { noise_seed: i.seed }),
+    guider: add('BasicGuider', { model, conditioning }),
+    sampler: add('SamplerLCM', { s_noise: c.sNoise, s_noise_end: c.sNoiseEnd, noise_clip_std: 0 }),
+    sigmas,
+    latent_image: latent,
+  });
+  add('SaveImage', { images: add('VAEDecode', { samples: sampled, vae }), filename_prefix: `lumen/${i.action}` });
+  return wf;
+}
+
+/** Anima and MOSS Image: text to image only. */
+function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): ApiWorkflow {
+  const { wf, add } = graph();
+  const e = c[engine];
+  let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
+  if (engine === 'moss' && c.moss.lora) model = add('LoraLoaderModelOnly', { model, lora_name: c.moss.lora, strength_model: 1 });
+  const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });
+  const vae = add('VAELoader', { vae_name: e.vae });
+  const latent = add(engine === 'anima' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: i.width, height: i.height, batch_size: 1 });
+  const sampled = add('KSampler', {
+    model,
+    positive: add('CLIPTextEncode', { clip, text: i.prompt }),
+    negative: add('CLIPTextEncode', { clip, text: [i.negative, e.negative].filter(Boolean).join(', ') }),
+    latent_image: latent,
+    seed: i.seed,
+    steps: e.steps,
+    cfg: e.cfg,
+    sampler_name: e.sampler,
+    scheduler: e.scheduler,
+    denoise: 1,
+  });
+  add('SaveImage', { images: add('VAEDecode', { samples: sampled, vae }), filename_prefix: `lumen/${engine}` });
+  return wf;
+}
+
+export function builtInWorkflow(i: JobInputs): ApiWorkflow {
+  switch (i.action) {
+    case 'video':
+    case 'animate':
+    case 'extend':
+      throw new Error('Aún no hay workflow de vídeo integrado: añade uno propio en la página ComfyUI.');
+    case 'converse':
+      throw new Error('El modo conversacional con ComfyUI necesita un workflow propio con un LLM que devuelva texto.');
+    case 'describe':
+      throw new Error('«Describir» necesita un workflow propio que devuelva texto (por ejemplo con Florence2 o JoyCaption). Añádelo en la página ComfyUI.');
+  }
+  const c = getConfig();
+  return i.engine === 'h3' ? h3Workflow(i, c.h3) : textToImage(i, i.engine, c);
+}
+
+/** Loader inputs whose files must be on the server; ComfyUI's own error lists every file it has. */
+const MODEL_INPUTS = ['unet_name', 'clip_name', 'vae_name', 'lora_name', 'ckpt_name'];
+
+/** Clear errors for a missing node or model before the workflow is sent. */
+export function checkWorkflow(wf: ApiWorkflow, defs: Record<string, unknown>) {
+  for (const node of Object.values(wf)) {
+    if (!defs[node.class_type]) throw new Error(`Falta el nodo ${node.class_type} en ComfyUI. Instala o activa el pack que lo trae.`);
+    for (const key of MODEL_INPUTS) {
+      const value = node.inputs[key];
+      if (typeof value !== 'string') continue;
+      const options = comboOptions(defs as Parameters<typeof comboOptions>[0], node.class_type, key);
+      if (!options.includes(value)) throw new Error(`No encuentro el modelo «${value}» (${node.class_type}). Elígelo en la página ComfyUI.`);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Filling a custom workflow                                           */
+/* ------------------------------------------------------------------ */
+
+const PLACEHOLDER = /\{\{\s*([a-z_]+)\s*\}\}/g;
+
+/** Replace {{prompt}}, {{seed}}, {{width}}… anywhere in the workflow. Returns how many were found. */
+function replacePlaceholders(wf: ApiWorkflow, i: JobInputs): number {
+  const values = i as unknown as Record<string, unknown>;
+  let count = 0;
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') {
+      const whole = v.match(/^\{\{\s*([a-z_]+)\s*\}\}$/);
+      if (whole && whole[1] in values) {
+        count++;
+        return values[whole[1]];
+      }
+      return v.replace(PLACEHOLDER, (m, k: string) => {
+        if (!(k in values)) return m;
+        count++;
+        return String(values[k] ?? '');
+      });
+    }
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === 'object') {
+      const o = v as Record<string, unknown>;
+      for (const k of Object.keys(o)) o[k] = walk(o[k]);
+      return o;
+    }
+    return v;
+  };
+  walk(wf);
+  return count;
+}
+
+const SAMPLERS = ['KSampler', 'KSamplerAdvanced', 'SamplerCustom', 'SamplerCustomAdvanced'];
+const LATENTS = ['EmptyLatentImage', 'EmptySD3LatentImage', 'EmptyHunyuanLatentVideo', 'EmptyMochiLatentVideo'];
+const VIDEO_LATENTS = ['WanImageToVideo', 'WanFunInpaintToVideo', 'Wan22ImageToVideoLatent', 'EmptyLTXVLatentVideo', 'LTXVImgToVideo', 'EmptyCosmosLatentVideo', 'HunyuanImageToVideo'];
+const TEXT_NODES = ['CLIPTextEncode', 'CLIPTextEncodeSDXL', 'CLIPTextEncodeFlux'];
+
+function linked(wf: ApiWorkflow, v: unknown) {
+  return Array.isArray(v) && typeof v[0] === 'string' ? wf[v[0]] : undefined;
+}
+
+/** Follow a link backwards (through conditioning helpers) until a text encoder is found. */
+function findTextNode(wf: ApiWorkflow, v: unknown, depth = 0): ApiWorkflow[string] | undefined {
+  const n = linked(wf, v);
+  if (!n || depth > 6) return undefined;
+  if (TEXT_NODES.includes(n.class_type)) return n;
+  for (const key of ['conditioning', 'conditioning_to', 'conditioning_1', 'positive', 'guider']) {
+    const found = findTextNode(wf, n.inputs[key], depth + 1);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function setText(node: ApiWorkflow[string] | undefined, text: string) {
+  if (!node) return;
+  for (const k of ['text', 'clip_l', 't5xxl', 'text_g', 'text_l']) if (k in node.inputs && typeof node.inputs[k] === 'string') node.inputs[k] = text;
+}
+
+/** For workflows without placeholders: find the usual nodes and set their fields. */
+function autoFill(wf: ApiWorkflow, i: JobInputs) {
+  for (const node of Object.values(wf)) {
+    const inp = node.inputs;
+    if (SAMPLERS.includes(node.class_type) || node.class_type === 'CFGGuider' || node.class_type === 'BasicGuider') {
+      if ('seed' in inp && !Array.isArray(inp.seed)) inp.seed = i.seed;
+      if ('noise_seed' in inp && !Array.isArray(inp.noise_seed)) inp.noise_seed = i.seed;
+      if (node.class_type === 'KSampler' && i.action !== 'imagine') inp.denoise = i.denoise;
+      setText(findTextNode(wf, inp.positive), i.motion_prompt ?? i.prompt);
+      setText(findTextNode(wf, inp.conditioning), i.motion_prompt ?? i.prompt);
+      const neg = findTextNode(wf, inp.negative);
+      if (neg) setText(neg, i.negative);
+    }
+    if (node.class_type === 'RandomNoise' && !Array.isArray(inp.noise_seed)) inp.noise_seed = i.seed;
+    if (LATENTS.includes(node.class_type) || VIDEO_LATENTS.includes(node.class_type)) {
+      if (!Array.isArray(inp.width)) inp.width = i.width;
+      if (!Array.isArray(inp.height)) inp.height = i.height;
+      if ('batch_size' in inp && !Array.isArray(inp.batch_size)) inp.batch_size = i.batch;
+      if ('length' in inp && i.frames && !Array.isArray(inp.length)) inp.length = i.frames;
+    }
+    if (/^Save(Animated|Video|WEBM)/.test(node.class_type) && 'fps' in inp && i.fps && !Array.isArray(inp.fps)) inp.fps = i.fps;
+    if (node.class_type === 'VHS_VideoCombine' && i.fps && !Array.isArray(inp.frame_rate)) inp.frame_rate = i.fps;
+    if (node.class_type === 'LoadImage') {
+      // Nodes titled "style/estilo" or "end/final" get those images; the rest get the main image.
+      const title = (node._meta?.title ?? '').toLowerCase();
+      if (/style|estilo/.test(title)) {
+        if (i.style_image) inp.image = i.style_image;
+      } else if (/end|final|last|último/.test(title)) {
+        const end = i.loop ? i.image : i.end_image;
+        if (end) inp.image = end;
+      } else if (i.image) inp.image = i.image;
+    }
+  }
+}
+
+export function parseWorkflow(json: string): ApiWorkflow {
+  const data = JSON.parse(json);
+  if (data && Array.isArray(data.nodes)) {
+    throw new Error('Este JSON es el formato de la interfaz. En ComfyUI usa «Workflow → Export (API)» y pega ese archivo.');
+  }
+  if (!data || typeof data !== 'object') throw new Error('El workflow no es un objeto JSON.');
+  return data as ApiWorkflow;
+}
+
+/** Build the final API payload for a job. */
+export function buildWorkflow(i: JobInputs, custom?: string): { workflow: ApiWorkflow; source: 'custom' | 'built-in' } {
+  if (custom && custom.trim()) {
+    const wf = parseWorkflow(custom);
+    const n = replacePlaceholders(wf, i);
+    if (n === 0) autoFill(wf, i);
+    return { workflow: wf, source: 'custom' };
+  }
+  return { workflow: builtInWorkflow(i), source: 'built-in' };
+}
+
+/** Placeholders a custom workflow may use. */
+export const PLACEHOLDERS: { key: keyof JobInputs; desc: string }[] = [
+  { key: 'prompt', desc: 'texto del prompt' },
+  { key: 'negative', desc: 'prompt negativo (--no …)' },
+  { key: 'seed', desc: 'semilla' },
+  { key: 'width', desc: 'ancho en px' },
+  { key: 'height', desc: 'alto en px' },
+  { key: 'batch', desc: 'imágenes por ejecución (1: el grid se hace en ejecuciones seguidas)' },
+  { key: 'engine', desc: 'modelo pedido: h3, anima (--anima) o moss (--moss)' },
+  { key: 'denoise', desc: 'fuerza de cambio (0–1)' },
+  { key: 'image', desc: 'imagen de entrada (vary, upscale, zoom, pan)' },
+  { key: 'stylize', desc: 'estilización 0–1000' },
+  { key: 'weird', desc: 'rareza 0–3000' },
+  { key: 'chaos', desc: 'variedad 0–100' },
+  { key: 'aspect', desc: 'relación de aspecto' },
+  { key: 'pad_left', desc: 'relleno izq. (pan/zoom)' },
+  { key: 'motion_prompt', desc: 'prompt + descripción del movimiento (vídeo)' },
+  { key: 'motion', desc: 'movimiento: low / high (vídeo)' },
+  { key: 'frames', desc: 'fotogramas del vídeo' },
+  { key: 'fps', desc: 'fotogramas por segundo' },
+  { key: 'end_image', desc: 'fotograma final (vídeo)' },
+  { key: 'loop', desc: 'vídeo en bucle (true/false)' },
+  { key: 'image_2', desc: '2.º prompt de imagen' },
+  { key: 'images', desc: 'todos los prompts de imagen (lista)' },
+  { key: 'style_images', desc: 'todas las referencias de estilo (lista)' },
+  { key: 'image_weight', desc: 'peso de la imagen (--iw)' },
+  { key: 'style_image', desc: 'primera referencia de estilo' },
+  { key: 'style_weight', desc: 'peso del estilo (--sw)' },
+  { key: 'sref', desc: 'código de estilo (--sref)' },
+  { key: 'moodboard', desc: 'códigos de moodboard / perfil (--p)' },
+  { key: 'message', desc: 'tu mensaje (modo conversacional)' },
+  { key: 'current_prompt', desc: 'el prompt actual (modo conversacional)' },
+  { key: 'quality', desc: 'calidad (--q)' },
+  { key: 'hd', desc: 'alta resolución (true/false)' },
+  { key: 'tile', desc: 'patrón repetible (--tile)' },
+];
+
+export const ACTION_ORDER: ActionKind[] = [
+  'imagine',
+  'image_prompt',
+  'vary_subtle',
+  'vary_strong',
+  'upscale_subtle',
+  'upscale_creative',
+  'remix',
+  'zoom_out',
+  'pan',
+  'edit',
+  'video',
+  'animate',
+  'extend',
+  'describe',
+  'converse',
+];
