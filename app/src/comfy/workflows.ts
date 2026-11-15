@@ -95,8 +95,8 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3']): ApiWorkflow {
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
-  let prompt: string | Link = h3Prompt(i);
-  if (i.action === 'zoom_out' || i.action === 'pan') {
+  let prompt: string | Link = i.caption ?? h3Prompt(i);
+  if ((i.action === 'zoom_out' || i.action === 'pan') && !i.caption) {
     const caption = add('TextGenerateV2', {
       clip: add('CLIPLoader', { clip_name: c.peClip, type: 'minimax', device: 'default' }),
       'images.image1': pictures['images.image_1'],

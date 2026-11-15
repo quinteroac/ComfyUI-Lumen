@@ -116,6 +116,8 @@ export interface JobInputs {
   /** Conversational mode: your message and the prompt so far. */
   message?: string;
   current_prompt?: string;
+  /** Caption the edit prompt enhancer wrote for Zoom out / Pan, reused by every image of the job. */
+  caption?: string;
   /** Zoom out factor and pan direction. */
   zoom?: number;
   pan?: PanDir;

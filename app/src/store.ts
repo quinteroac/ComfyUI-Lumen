@@ -815,6 +815,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
 
   // The grid (and each video) is one ComfyUI run after another, seeds counting up from the job's seed;
   // each result shows as soon as it is ready.
+  // Zoom out and Pan: the enhancer writes the caption in the first run; the others reuse it, so the grid differs only by seed.
+  const enhanced = (job.action === 'zoom_out' || job.action === 'pan') && !custom;
   const runs = job.action === 'describe' ? 1 : inputs.batch;
   const images: JobImage[] = [];
   const texts: string[] = [];
@@ -833,8 +835,11 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
     );
     texts.push(...out.texts);
     if (job.action === 'describe') continue;
-    if ((job.action === 'zoom_out' || job.action === 'pan') && !custom && !out.texts.length)
-      throw new Error('El mejorador de prompt no escribió la descripción (H3 solo habría copiado el lienzo). Vuelve a intentarlo.');
+    if (enhanced && !inputs.caption) {
+      if (!out.texts.length) throw new Error('El mejorador de prompt no escribió la descripción (H3 solo habría copiado el lienzo). Vuelve a intentarlo.');
+      inputs.caption = out.texts[0];
+      updateJob(job.id, { inputs: { ...inputs } }, false);
+    }
     if (!out.files.length) throw new Error(`El workflow terminó sin ${video ? 'vídeo' : 'imágenes'}. ¿Tiene un nodo que guarde el resultado (SaveImage, SaveAnimatedWEBP, SaveVideo…)?`);
     images.push(...(await toJobImages(out.files, runInputs, video, job.action === 'extend' ? (srcImg?.extended ?? 0) + 1 : undefined)));
     updateJob(job.id, { images: [...images] }, false);
