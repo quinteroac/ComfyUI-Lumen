@@ -7,7 +7,6 @@ import { getConfig } from './comfy/config';
 import { buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
 import { isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
 import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
-import { ATOM_GROUPS, atomsFromText, learnedWords, type Sample } from './styles';
 import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
 import { hash, toPngBlob } from './demo';
 import { expandPermutations, parsePrompt, type ParsedPrompt } from './prompt';
@@ -63,7 +62,7 @@ interface State {
 }
 
 /** Picks needed to unlock a profile. */
-export const UNLOCK_PICKS = 25;
+export const UNLOCK_PICKS = 12;
 const GLOBAL_PROFILE = (): Profile => ({ id: 'global', name: 'Perfil global', scores: {}, picks: 0, isDefault: true, createdAt: Date.now() });
 const listeners = new Set<() => void>();
 const EMPTY_REFS: State['refs'] = { images: [], style: [], character: [], loop: false };
@@ -174,22 +173,16 @@ const uid = (p: string) => `${p}${Date.now().toString(36)}${Math.random().toStri
 export const setDraft = (draft: string) => set({ draft }, false);
 export const setSettings = (p: Partial<CreateSettings>) => set({ settings: { ...state.settings, ...p } });
 export const toggleDraftMode = () => set({ draftMode: !state.draftMode });
-/** Likes in Explore also teach your Global Profile (as on the original). */
-export const toggleExploreLike = (id: string, prompt?: string) => {
-  const liking = !state.likedExplore.includes(id);
-  const atoms = prompt ? atomsFromText(prompt) : [];
-  const profiles = atoms.length
-    ? state.profiles.map((p) => {
-        if (p.id !== 'global') return p;
-        const scores = { ...p.scores };
-        for (const a of atoms) scores[a] = (scores[a] ?? 0) + (liking ? 0.5 : -0.5);
-        return { ...p, scores };
-      })
-    : state.profiles;
-  set({ likedExplore: liking ? [...state.likedExplore, id] : state.likedExplore.filter((x) => x !== id), profiles });
+export const toggleExploreLike = (id: string) =>
+  set({ likedExplore: state.likedExplore.includes(id) ? state.likedExplore.filter((x) => x !== id) : [...state.likedExplore, id] });
+/** Liking a style code also teaches your Global Profile (as on the original). */
+export const toggleStyleLike = (code: string) => {
+  const liking = !state.likedStyles.includes(code);
+  const profiles = state.profiles.map((p) =>
+    p.id === 'global' ? { ...p, scores: { ...p.scores, [code]: (p.scores[code] ?? 0) + (liking ? 1 : -1) }, picks: Math.max(0, p.picks + (liking ? 1 : -1)) } : p,
+  );
+  set({ likedStyles: liking ? [...state.likedStyles, code] : state.likedStyles.filter((x) => x !== code), profiles });
 };
-export const toggleStyleLike = (code: string) =>
-  set({ likedStyles: state.likedStyles.includes(code) ? state.likedStyles.filter((x) => x !== code) : [...state.likedStyles, code] });
 export const toggleLike = (jobId: string, index: number) => {
   const im = state.jobs.find((j) => j.id === jobId)?.images[index];
   if (im) updateImage(jobId, index, { liked: !im.liked });
@@ -349,24 +342,34 @@ export const renameProfile = (id: string, name: string) => updateProfile(id, (p)
 export const toggleProfileDefault = (id: string) => updateProfile(id, (p) => ({ ...p, isDefault: !p.isDefault }));
 /** The Global Profile can't be deleted; codes from deleted profiles keep working. */
 export const deleteProfile = (id: string) => id !== 'global' && set({ profiles: state.profiles.filter((p) => p.id !== id) });
-/** Picking an image raises its looks; the ones shown next to it and skipped go down a little. */
-export function recordProfilePicks(id: string, picked: Sample[], skipped: Sample[]) {
+/** Picking a style sample raises its code; the ones shown next to it and skipped go down a little. */
+export function recordProfilePicks(id: string, picked: string[], skipped: string[]) {
   updateProfile(id, (p) => {
     const scores = { ...p.scores };
-    for (const s of picked) for (const g of ATOM_GROUPS) scores[s.atoms[g]] = (scores[s.atoms[g]] ?? 0) + 1;
-    for (const s of skipped) for (const g of ATOM_GROUPS) scores[s.atoms[g]] = (scores[s.atoms[g]] ?? 0) - 0.2;
+    for (const c of picked) scores[c] = (scores[c] ?? 0) + 1;
+    for (const c of skipped) scores[c] = (scores[c] ?? 0) - 0.2;
     return { ...p, scores, picks: p.picks + picked.length };
   });
 }
-export function profileWords(p: Profile): string {
-  return learnedWords(p.scores);
+
+/** Codes a profile mixes: its best-scoring ones. */
+const PROFILE_CODES = 4;
+export const profileTopCodes = (p: Profile) =>
+  Object.entries(p.scores)
+    .filter(([, s]) => s > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, PROFILE_CODES);
+/** The profile as a --sref mix: the best code at 1, the others relative to it. */
+export function profileSref(p: Profile): string {
+  const top = profileTopCodes(p);
+  return top.map(([code, s], k) => (k === 0 ? code : `${code}::${Math.round((s / top[0][1]) * 100) / 100}`)).join(' ');
 }
 export function profileCode(p: Profile): string {
-  return `p${(hash(p.id + '|' + profileWords(p) + '|' + p.picks) % 2176782336).toString(36).padStart(6, '0')}`;
+  return `p${(hash(p.id + '|' + profileSref(p)) % 2176782336).toString(36).padStart(6, '0')}`;
 }
 
 function profileSnapshot(p: Profile): MoodSnapshot {
-  return { code: profileCode(p), boardId: p.id, name: p.name, words: profileWords(p), images: [], kind: 'profile' };
+  return { code: profileCode(p), boardId: p.id, name: p.name, words: '', sref: profileSref(p), images: [], kind: 'profile' };
 }
 
 /** Snapshots for "--p" with no ID: default moodboards (with images) and unlocked default profiles. */
@@ -610,7 +613,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   const cfg = getConfig();
   const srcImg = opts.image ?? (opts.source ? src?.images[opts.source.index] : undefined);
   let refs = opts.refs ?? {};
-  // Moodboards (--p codes): their images act as style references and their words join the prompt.
+  // --p codes: moodboard images act as style references and their words join the prompt; profiles add their --sref mix.
   const moods = (parsed.profiles ?? []).map((c) => state.moodCodes[c]).filter(Boolean);
   if (moods.length && !refs.style?.length) {
     const imgs = moods.flatMap((m) => m.images).slice(0, 4);
@@ -622,6 +625,8 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   const inputs = baseInputs(action, parsed, state.draftMode, pictures);
   inputs.character_weight = parsed.characterWeight ?? 100;
   if (moods.length) {
+    // Profiles add their --sref mix to the job's codes.
+    inputs.sref = [inputs.sref, ...moods.map((m) => m.sref)].filter(Boolean).join(' ') || undefined;
     const words = moods.map((m) => m.words.trim()).filter(Boolean).join(', ');
     if (words && !isVideoAction(action)) inputs.prompt = [inputs.prompt, words].filter(Boolean).join(', ');
     inputs.moodboard = moods.map((m) => m.code).join(' ');

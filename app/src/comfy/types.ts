@@ -246,14 +246,16 @@ export interface MoodSnapshot {
   words: string;
   images: BoardImage[];
   kind?: 'moodboard' | 'profile';
+  /** A profile's --sref mix: its best codes, weighted by score. */
+  sref?: string;
 }
 
-/** Personalization profile: learns your taste from the images you pick. */
+/** Personalization profile: learns your taste from the style samples you pick. */
 export interface Profile {
   /** "global" for the Global Profile, "u…" for the others. */
   id: string;
   name: string;
-  /** Score per style atom (see styles.ts). */
+  /** Score per --sref code: +1 picked, -0.2 shown and skipped. */
   scores: Record<string, number>;
   picks: number;
   isDefault: boolean;

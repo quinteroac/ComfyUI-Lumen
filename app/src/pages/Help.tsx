@@ -31,7 +31,7 @@ const DONE = [
   'Ajustes: proporción, variedad, SD/HD, imágenes por creación (1–4, una tras otra), vídeo SD/HD, lote y movimiento',
   'Modo borrador: imágenes pequeñas y rápidas; «Mejorar», Variar y Remezclar las regeneran a tamaño completo. Ctrl+Enter mantiene el prompt',
   'Modo conversacional: describes tu idea (escrita o por voz) y se escribe y ejecuta el prompt; luego pides cambios o «variación de la imagen 2»',
-  'Personalizar: perfil global que se desbloquea eligiendo imágenes, perfiles adicionales, códigos --p, predeterminados; los «me gusta» de Explorar lo afinan',
+  'Personalizar: perfiles que aprenden de muestras de estilos reales (códigos --sref); un perfil es la mezcla de sus mejores códigos; global y adicionales, --p, predeterminados; los «me gusta» de Explorar › Estilos lo afinan',
   'Crear: progreso en directo, atajos (me gusta, variar, animar, papelera), repetir, usar, ejecutar en HD',
   'Acciones: variar, ampliar, remezclar sutil/fuerte, desplazar, alejar, editor, animar (auto, bucle, manual), usar, describir',
   'Vídeo: texto→vídeo, imagen→vídeo, fotograma final, bucle, alargar (auto/manual, hasta 4 veces)',

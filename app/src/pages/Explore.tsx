@@ -149,7 +149,7 @@ function Tile({ it, items, i }: { it: ExploreItem; items: ExploreItem[]; i: numb
         <button className="icon-btn" aria-label="Buscar parecidas" title="Buscar parecidas" onClick={() => navigate('explore', { q: words(it.prompt).slice(0, 2).join(' ') })}>
           <IconSearch size={16} />
         </button>
-        <button className={`icon-btn${liked ? ' on' : ''}`} aria-label={liked ? 'Quitar me gusta' : 'Me gusta'} onClick={() => toggleExploreLike(it.exploreId, it.prompt)}>
+        <button className={`icon-btn${liked ? ' on' : ''}`} aria-label={liked ? 'Quitar me gusta' : 'Me gusta'} onClick={() => toggleExploreLike(it.exploreId)}>
           <IconHeart size={16} filled={liked} />
         </button>
       </div>

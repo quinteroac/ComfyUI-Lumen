@@ -216,7 +216,7 @@ function Panel({ item, job }: { item: LbItem; job?: Job }) {
         <div className="lb-top">
           <p className="lb-prompt">{rawPrompt}</p>
           <div className="lb-tools">
-            <button className={`icon-btn${liked ? ' on' : ''}`} aria-label="Me gusta" aria-pressed={liked} onClick={() => (item.exploreId ? toggleExploreLike(item.exploreId, item.prompt) : item.jobId && toggleLike(item.jobId, item.index ?? 0))}>
+            <button className={`icon-btn${liked ? ' on' : ''}`} aria-label="Me gusta" aria-pressed={liked} onClick={() => (item.exploreId ? toggleExploreLike(item.exploreId) : item.jobId && toggleLike(item.jobId, item.index ?? 0))}>
               <IconHeart size={18} filled={liked} />
             </button>
             <button className="icon-btn" aria-label="Descargar" onClick={download}>
