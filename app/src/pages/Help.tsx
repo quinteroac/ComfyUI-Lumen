@@ -10,7 +10,6 @@ const PARAMS: [string, string, string][] = [
   ['--hd / --sd', 'Resolución', 'HD genera directamente a más megapíxeles: H3 1/4/16 MP (borrador/SD/HD), MOSS 1/2/5, Anima siempre 1.'],
   ['--draft', 'Borrador', 'Imágenes pequeñas y rápidas (o el botón del rayo).'],
   ['--anima / --moss', 'Modelo', 'Imagina con Anima o MOSS Image en vez de H3 Image; todo lo que parte de una imagen sigue en H3 Image.'],
-  ['--fast / --relax / --turbo', 'Velocidad', 'Se pasa a tus workflows como {{speed}}.'],
   ['--sref código', 'Código de estilo', 'Un número que mezcla siempre los mismos estilos (nodos Style Code de H3, MOSS y Anima); varios con pesos: --sref 123 456::0.5; --sref random elige uno nuevo. Solo al crear imágenes, no al editar.'],
   ['--sw 100', 'Peso del estilo', 'Fuerza de --sref: 100 es la normal (1.5 en el nodo), 0 lo apaga, máximo ~266.'],
   ['--iw 1.5', 'Peso de imagen', 'Cuánto sigue el prompt de imagen (0–3): <0.5 solo inspiración, 1 referencia de tema, composición y color, >1.5 muy fiel.'],
@@ -50,7 +49,7 @@ const MISSING = [
   'Selección inteligente y capas del editor',
   'Tareas, perfiles públicos, suscripciones, pagos y Discord',
   'Descargar vídeos como GIF o «para redes»: se descarga el archivo que genere ComfyUI',
-  'Describir y vídeo con los workflows integrados: por ahora necesitan un workflow propio',
+  'Vídeo con los workflows integrados: por ahora necesita un workflow propio',
   '--tile con el workflow integrado: ComfyUI básico no tiene mosaico; usa un workflow propio con {{tile}}',
 ];
 

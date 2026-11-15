@@ -46,7 +46,6 @@ export type PanDir = 'left' | 'right' | 'up' | 'down';
 export interface CreateSettings {
   aspect: string; // "1:1", "16:9", ...
   chaos: number; // 0..100
-  speed: 'relax' | 'fast' | 'turbo';
   /** SD (base size) or HD (twice the size, second pass). */
   resolution: 'sd' | 'hd';
   /** What the imagine bar creates. */
@@ -61,7 +60,6 @@ export interface CreateSettings {
 export const DEFAULT_SETTINGS: CreateSettings = {
   aspect: '1:1',
   chaos: 0,
-  speed: 'fast',
   resolution: 'sd',
   output: 'image',
   motion: 'low',
@@ -92,7 +90,6 @@ export interface JobInputs {
   denoise: number;
   aspect: string;
   chaos: number;
-  speed: string;
   hd: boolean;
   draft: boolean;
   tile: boolean;

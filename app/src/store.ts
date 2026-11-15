@@ -499,7 +499,6 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     denoise: 1,
     aspect: s.aspect,
     chaos: s.chaos,
-    speed: s.speed,
     hd,
     draft,
     tile: p.tile,
@@ -855,8 +854,10 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
     updateJob(job.id, { images: [...images] }, false);
   }
   if (job.action === 'describe') {
-    if (!texts.length) throw new Error('El workflow de «Describir» no devolvió texto. Usa un nodo que muestre texto (ShowText, PreviewAny…).');
-    return { images: [], texts: splitPrompts(texts) };
+    if (!texts.length) throw new Error('«Describir» no devolvió texto. Si es un workflow propio, usa un nodo que muestre el texto (ShowText, PreviewAny…).');
+    // The prompts keep the picture's shape, as on the original.
+    const ar = srcImg ? reducedRatio(srcImg.w, srcImg.h) : '';
+    return { images: [], texts: splitPrompts(texts).map((t) => (ar && !/--ar\s/.test(t) ? `${t} --ar ${ar}` : t)) };
   }
   return { images };
 }

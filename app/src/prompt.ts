@@ -145,11 +145,6 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
       case 'repeat':
         r.repeat = clamp(Math.round(Number(val)) || 1, 1, 40);
         break;
-      case 'fast':
-      case 'relax':
-      case 'turbo':
-        s.speed = key;
-        break;
       case 'hd':
         s.resolution = 'hd';
         s.videoResolution = 'hd';

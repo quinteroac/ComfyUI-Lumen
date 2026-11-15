@@ -205,6 +205,37 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
   return wf;
 }
 
+const DESCRIBE_SYSTEM = `You write prompts for MiniMax H3 Image, a text-to-image model. Look at the picture and write four different prompts that would make a picture like it.
+Each prompt is one paragraph of plain, natural English of 40 to 80 words. Start with the kind of image (a photograph, an anime illustration, an oil painting, a 3D render…), then the subject and how it looks, what it is doing, the setting, the framing and camera angle, the light and its direction, and the style and colors.
+Make the four different: the first describes the picture closely, the second leads with its style and mood, the third with its composition and camera, the fourth is short and simple.
+No lists of tags, no quality or hype words (masterpiece, best quality, 8k, stunning), no names of real people.
+Output only the four prompts, numbered 1. to 4., one per line.`;
+
+/** Describe: four prompts for the picture, written by the enhancer's encoder. */
+function describeWorkflow(i: JobInputs, clipName: string): ApiWorkflow {
+  const { wf, add } = graph();
+  const text = add('TextGenerateV2', {
+    clip: add('CLIPLoader', { clip_name: clipName, type: 'minimax', device: 'default' }),
+    'images.image1': add('LoadImage', { image: i.image ?? '' }),
+    system_prompt: DESCRIBE_SYSTEM,
+    prompt: 'Write the four prompts for this picture.',
+    max_length: 2048,
+    sampling_mode: 'on',
+    'sampling_mode.temperature': 0.8,
+    'sampling_mode.top_k': 20,
+    'sampling_mode.top_p': 0.95,
+    'sampling_mode.min_p': 0,
+    'sampling_mode.repetition_penalty': 1,
+    'sampling_mode.presence_penalty': 1.5,
+    'sampling_mode.seed': i.seed,
+    thinking: false,
+    use_default_template: true,
+    mtp: 'auto',
+  });
+  add('PreviewAny', { source: text }, 'describe');
+  return wf;
+}
+
 /** Anima and MOSS Image with their turbo LoRAs: text to image only. */
 function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): ApiWorkflow {
   const { wf, add } = graph();
@@ -266,10 +297,9 @@ export function builtInWorkflow(i: JobInputs): ApiWorkflow {
       throw new Error('Aún no hay workflow de vídeo integrado: añade uno propio en la página ComfyUI.');
     case 'converse':
       throw new Error('El modo conversacional con ComfyUI necesita un workflow propio con un LLM que devuelva texto.');
-    case 'describe':
-      throw new Error('«Describir» necesita un workflow propio que devuelva texto (por ejemplo con Florence2 o JoyCaption). Añádelo en la página ComfyUI.');
   }
   const c = getConfig();
+  if (i.action === 'describe') return describeWorkflow(i, c.h3.peClip);
   return i.engine === 'h3' ? h3Workflow(i, c.h3, c.styleCodes, c.conceptMode) : textToImage(i, i.engine, c);
 }
 
