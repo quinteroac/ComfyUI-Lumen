@@ -600,5 +600,7 @@
  "Descargar los que faltan ({size})": "不足分をダウンロード（{size}）",
  "Todos instalados": "すべてインストール済み",
  "Instalado": "インストール済み",
- "Falta": "未インストール"
+ "Falta": "未インストール",
+ "Abrir vídeo {n}": "動画 {n} を開く",
+ "Abrir imagen {n}": "画像 {n} を開く"
 }

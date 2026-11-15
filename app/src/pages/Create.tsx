@@ -34,7 +34,7 @@ export function jobMeta(job: Job) {
   return m;
 }
 
-const REF_LABEL = { image: 'imagen', style: 'estilo', character: 'personaje', start: 'inicio', end: 'final' };
+const REF_LABEL = { image: t('Imagen'), style: t('Estilo'), character: t('Personaje'), start: t('Inicio'), end: t('Final') };
 
 function Tile({ job, i }: { job: Job; i: number }) {
   const img = job.images[i];
@@ -44,7 +44,7 @@ function Tile({ job, i }: { job: Job; i: number }) {
   const video = img.kind === 'video';
   return (
     <div className="job-img" style={{ aspectRatio: `${img.w} / ${img.h}` }} {...imageHandlers(() => [source])}>
-      <button className="tile-open" onClick={open} aria-label={`Abrir ${video ? t('vídeo') : 'imagen'} ${i + 1}`}>
+      <button className="tile-open" onClick={open} aria-label={video ? t('Abrir vídeo {n}', { n: i + 1 }) : t('Abrir imagen {n}', { n: i + 1 })}>
         <Media img={img} alt={`${job.prompt} (${i + 1})`} />
       </button>
       {video && <VideoBadge />}

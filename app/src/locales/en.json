@@ -600,5 +600,7 @@
  "Descargar los que faltan ({size})": "Download the missing ones ({size})",
  "Todos instalados": "All installed",
  "Instalado": "Installed",
- "Falta": "Missing"
+ "Falta": "Missing",
+ "Abrir vídeo {n}": "Open video {n}",
+ "Abrir imagen {n}": "Open image {n}"
 }

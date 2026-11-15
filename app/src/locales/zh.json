@@ -600,5 +600,7 @@
  "Descargar los que faltan ({size})": "下载缺少的模型（{size}）",
  "Todos instalados": "已全部安装",
  "Instalado": "已安装",
- "Falta": "缺少"
+ "Falta": "缺少",
+ "Abrir vídeo {n}": "打开视频 {n}",
+ "Abrir imagen {n}": "打开图像 {n}"
 }

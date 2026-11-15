@@ -224,7 +224,7 @@ export function StyleCreator() {
               ?.images.slice(0, 3)
               .map((im, k) => (
                 <div key={k} className="pinned-img">
-                  <Media img={im} alt={`Ronda ${pinned.n}`} />
+                  <Media img={im} alt={t('Ronda {n}', { n: pinned.n })} />
                 </div>
               ))}
           </div>
@@ -236,7 +236,7 @@ export function StyleCreator() {
           return (
             <div key={r.n} className="round">
               <button className="round-thumb" onClick={() => setPinned(r)} title={t('Fijar las imágenes de esta ronda')} disabled={!first}>
-                {first ? <Media img={first} alt={`Ronda ${r.n}`} /> : <span className="placeholder" style={{ display: 'block', width: '100%', height: '100%' }} />}
+                {first ? <Media img={first} alt={t('Ronda {n}', { n: r.n })} /> : <span className="placeholder" style={{ display: 'block', width: '100%', height: '100%' }} />}
               </button>
               <div className="round-info">
                 <strong>{t('Ronda {n}', { n: r.n })}</strong>
