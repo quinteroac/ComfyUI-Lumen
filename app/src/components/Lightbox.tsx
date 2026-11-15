@@ -342,7 +342,7 @@ function Panel({ item, job }: { item: LbItem; job?: Job }) {
           <div className="action-group">
             <h3>Editar</h3>
             <div className="action-row">
-              <button className="btn" data-action="edit" onClick={() => toBar(() => openEditor({ image: item.img, prompt: rawPrompt, source }), undefined)}>
+              <button className="btn" data-action="edit" onClick={() => (openEditor({ image: item.img, prompt: rawPrompt, source }), closeLightbox(), navigate('edit'))}>
                 <IconEdit size={15} /> Abrir editor
               </button>
               {(['left', 'up', 'down', 'right'] as const).map((d) => (
