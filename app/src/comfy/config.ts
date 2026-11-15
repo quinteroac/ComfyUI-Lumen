@@ -15,7 +15,8 @@ export interface ComfyConfig {
   /** MiniMax H3 Image: every action; the distilled model samples 6 steps of LCM. peClip runs the official edit prompt enhancer for Zoom out and Pan. */
   h3: EngineSizes & { unet: string; clip: string; vae: string; peClip: string; sigmas: string; sNoise: number; sNoiseEnd: number };
   /** Anima (--anima) and MOSS Image (--moss), each with its turbo LoRA: Imagine only, every edit runs on H3 Image. */
-  anima: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
+  /** snapref / snaprefMode: the SnapRef adapter and its mode (cs: character and style, char: character only) for --cref. */
+  anima: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string; snapref: string; snaprefMode: 'cs' | 'char' };
   moss: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   /** Styles each --sref code mixes (Style Code nodes); Anima mixes styles and artist tags. previewPrompt: what Explore's style previews show. */
   styleCodes: { styles: number; animaStyles: number; animaArtists: number; previewPrompt: string };
@@ -51,6 +52,8 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     sampler: 'euler',
     scheduler: 'simple',
     negative: 'worst quality, low quality, blurry, jpeg artifacts',
+    snapref: 'snapref_v2a_pre2.safetensors',
+    snaprefMode: 'cs',
     draft: 1,
     sd: 1,
     hd: 1,

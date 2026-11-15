@@ -130,7 +130,7 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
       </div>
       <div className="params-foot">
         <span>
-          Parámetros en el prompt: --ar 16:9 · --seed 42 · --c 20 · --r 3 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
+          Parámetros en el prompt: --ar 16:9 · --seed 42 · --c 20 · --r 3 · --iw 1.5 · --cw 50 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
         </span>
         <button className="link-btn" type="button" onClick={() => setSettings({ ...DEFAULT_SETTINGS })}>
           Restablecer
@@ -143,6 +143,7 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
 const SLOT_LABEL: Record<RefSlot | 'describe', string> = {
   images: 'Prompt de imagen',
   style: 'Referencia de estilo',
+  character: 'Personaje (--cref)',
   start: 'Fotograma inicial (animar)',
   end: 'Fotograma final',
   describe: 'Describir',
@@ -183,7 +184,7 @@ function Zone({ slot, onDescribe }: { slot: RefSlot | 'describe'; onDescribe: (i
   const refs = useStore((s) => s.refs);
   const file = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
-  const items: RefImage[] = slot === 'describe' ? [] : slot === 'images' || slot === 'style' ? refs[slot] : refs[slot] ? [refs[slot]!] : [];
+  const items: RefImage[] = slot === 'describe' ? [] : slot === 'images' || slot === 'style' || slot === 'character' ? refs[slot] : refs[slot] ? [refs[slot]!] : [];
   const take = (imgs: Omit<RefImage, 'id'>[]) => {
     for (const im of imgs) {
       if (slot === 'describe') onDescribe(im);
@@ -237,7 +238,7 @@ function Zone({ slot, onDescribe }: { slot: RefSlot | 'describe'; onDescribe: (i
         ref={file}
         type="file"
         accept="image/*"
-        multiple={slot === 'images' || slot === 'style'}
+        multiple={slot === 'images' || slot === 'style' || slot === 'character'}
         hidden
         onChange={async (e) => {
           const fs = [...(e.target.files ?? [])];
@@ -321,11 +322,12 @@ function RefStrip() {
   const all: { slot: RefSlot; r: RefImage }[] = [
     ...refs.images.map((r) => ({ slot: 'images' as const, r })),
     ...refs.style.map((r) => ({ slot: 'style' as const, r })),
+    ...refs.character.map((r) => ({ slot: 'character' as const, r })),
     ...(refs.start ? [{ slot: 'start' as const, r: refs.start }] : []),
     ...(refs.end ? [{ slot: 'end' as const, r: refs.end }] : []),
   ];
   if (!all.length) return null;
-  const tag = { images: 'Imagen', style: 'Estilo', start: 'Inicio', end: 'Final' };
+  const tag = { images: 'Imagen', style: 'Estilo', character: 'Personaje', start: 'Inicio', end: 'Final' };
   return (
     <div className="ref-strip">
       {all.map(({ slot, r }) => (
@@ -637,6 +639,7 @@ export function ImagineBar() {
             <div className="zones">
               <Zone slot="images" onDescribe={describe} />
               <Zone slot="style" onDescribe={describe} />
+              <Zone slot="character" onDescribe={describe} />
               <Zone slot="start" onDescribe={describe} />
               <Zone slot="end" onDescribe={describe} />
               <Zone slot="describe" onDescribe={describe} />

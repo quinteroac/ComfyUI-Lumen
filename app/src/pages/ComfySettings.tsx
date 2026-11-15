@@ -222,6 +222,21 @@ export function ComfySettings() {
           <NumberField label="Anima · megapíxeles borrador" min={0.25} max={20} step={0.25} value={cfg.anima.draft} onChange={(v) => anima({ draft: v })} />
           <NumberField label="Anima · megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.anima.sd} onChange={(v) => anima({ sd: v })} />
           <NumberField label="Anima · megapíxeles HD" min={0.25} max={16} step={0.25} value={cfg.anima.hd} onChange={(v) => anima({ hd: v })} />
+          <label className="field">
+            Anima · SnapRef (--cref)
+            <select value={cfg.anima.snapref} onChange={(e) => anima({ snapref: e.target.value })}>
+              {(comboOptions(defs, 'SnapRef', 'adapter').length ? comboOptions(defs, 'SnapRef', 'adapter') : [cfg.anima.snapref]).map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            Anima · modo SnapRef
+            <select value={cfg.anima.snaprefMode} onChange={(e) => anima({ snaprefMode: e.target.value as 'cs' | 'char' })}>
+              <option value="cs">cs: personaje y estilo de la imagen</option>
+              <option value="char">char: solo el personaje</option>
+            </select>
+          </label>
           <label className="field wide">
             Anima · prompt negativo
             <input value={cfg.anima.negative} onChange={(e) => anima({ negative: e.target.value })} />

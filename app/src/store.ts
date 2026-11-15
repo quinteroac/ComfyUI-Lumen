@@ -18,7 +18,7 @@ export { parsePrompt };
 
 /* ------------------------------ state ------------------------------ */
 
-export type RefSlot = 'images' | 'style' | 'start' | 'end';
+export type RefSlot = 'images' | 'style' | 'character' | 'start' | 'end';
 
 /** Something the next submit of the imagine bar will continue from. */
 export interface Pending {
@@ -40,7 +40,7 @@ interface State {
   jobs: Job[];
   settings: CreateSettings;
   draft: string;
-  refs: { images: RefImage[]; style: RefImage[]; start?: RefImage; end?: RefImage; loop: boolean };
+  refs: { images: RefImage[]; style: RefImage[]; character: RefImage[]; start?: RefImage; end?: RefImage; loop: boolean };
   refsLocked: boolean;
   draftMode: boolean;
   pending?: Pending;
@@ -66,7 +66,7 @@ interface State {
 export const UNLOCK_PICKS = 25;
 const GLOBAL_PROFILE = (): Profile => ({ id: 'global', name: 'Perfil global', scores: {}, picks: 0, isDefault: true, createdAt: Date.now() });
 const listeners = new Set<() => void>();
-const EMPTY_REFS: State['refs'] = { images: [], style: [], loop: false };
+const EMPTY_REFS: State['refs'] = { images: [], style: [], character: [], loop: false };
 let state: State = load();
 
 function load(): State {
@@ -424,6 +424,8 @@ export function addRef(slot: RefSlot, img: Omit<RefImage, 'id'>) {
   const refs = { ...state.refs };
   if (slot === 'images') refs.images = [...refs.images, r].slice(-4);
   else if (slot === 'style') refs.style = [...refs.style, r].slice(-4);
+  // SnapRef takes up to three pictures of the character.
+  else if (slot === 'character') refs.character = [...refs.character, r].slice(-3);
   else refs[slot] = r;
   // A start frame means a video; an image prompt or style means a still image.
   const output = slot === 'start' || slot === 'end' ? 'video' : state.settings.output === 'video' && !refs.start ? 'image' : state.settings.output;
@@ -431,7 +433,7 @@ export function addRef(slot: RefSlot, img: Omit<RefImage, 'id'>) {
 }
 export function removeRef(slot: RefSlot, id?: string) {
   const refs = { ...state.refs };
-  if (slot === 'images' || slot === 'style') refs[slot] = refs[slot].filter((r) => r.id !== id);
+  if (slot === 'images' || slot === 'style' || slot === 'character') refs[slot] = refs[slot].filter((r) => r.id !== id);
   else refs[slot] = undefined;
   set({ refs }, false);
 }
@@ -479,7 +481,8 @@ const MOTION_WORDS: Record<Motion, string> = {
 export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boolean, pictures = false): JobInputs {
   const c = getConfig();
   const s = p.settings;
-  const draft = action === 'imagine' && (p.draft || draftMode);
+  // Drafts are new images: Imagine and Image prompt.
+  const draft = (action === 'imagine' || action === 'image_prompt') && (p.draft || draftMode);
   const hd = s.resolution === 'hd' && !draft;
   // Anima and MOSS Image only make new images; everything made from an image runs on H3 Image.
   const engine = action === 'imagine' && !pictures ? p.engine : 'h3';
@@ -562,7 +565,7 @@ export function submitBar(keepPrompt = false): Job[] {
       toast(action === 'video' ? 'Describe el vídeo o añade un fotograma inicial.' : 'Escribe qué quieres imaginar.', 'error');
       return [];
     }
-    const jobRefs: JobRefs = { images: refs.images, style: refs.style, start: refs.start, end: refs.end, loop: refs.loop || first.loop };
+    const jobRefs: JobRefs = { images: refs.images, style: refs.style, character: refs.character, start: refs.start, end: refs.end, loop: refs.loop || first.loop };
     jobs = runAction(action, { prompt: text, refs: jobRefs, image: refs.start ? refToImage(refs.start) : undefined });
   }
   if (jobs.length) {
@@ -614,9 +617,11 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
     const imgs = moods.flatMap((m) => m.images).slice(0, 4);
     refs = { ...refs, style: imgs.map((b) => ({ id: b.id, url: b.url, w: b.w, h: b.h, name: `${b.id}.png`, ref: b.ref, demo: b.demo })) };
   }
-  const pictures = !!(refs.images?.length || refs.style?.length);
-  if (pictures && parsed.engine !== 'h3') toast('Las imágenes de referencia solo funcionan con H3 Image: se usa H3 Image.', 'info');
+  // Pictures need H3 Image, except a character on Anima, which SnapRef takes.
+  const pictures = !!(refs.images?.length || refs.style?.length || (refs.character?.length && parsed.engine !== 'anima'));
+  if (pictures && parsed.engine !== 'h3') toast('Las imágenes de referencia solo funcionan con H3 Image (el personaje también con Anima): se usa H3 Image.', 'info');
   const inputs = baseInputs(action, parsed, state.draftMode, pictures);
+  inputs.character_weight = parsed.characterWeight ?? 100;
   if (moods.length) {
     const words = moods.map((m) => m.words.trim()).filter(Boolean).join(', ');
     if (words && !isVideoAction(action)) inputs.prompt = [inputs.prompt, words].filter(Boolean).join(', ');
@@ -708,7 +713,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       break;
   }
 
-  const display = (r?: RefImage, kind?: 'image' | 'style' | 'start' | 'end') => (r && kind && !r.url.startsWith('blob:') && r.url.length < 20000 ? [{ kind, url: r.url }] : []);
+  const display = (r?: RefImage, kind?: 'image' | 'style' | 'character' | 'start' | 'end') => (r && kind && !r.url.startsWith('blob:') && r.url.length < 20000 ? [{ kind, url: r.url }] : []);
   const job: Job = {
     id: uid('j'),
     createdAt: Date.now(),
@@ -725,6 +730,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
     refs: [
       ...(refs.images ?? []).flatMap((r) => display(r, 'image')),
       ...(refs.style ?? []).flatMap((r) => display(r, 'style')),
+      ...(refs.character ?? []).flatMap((r) => display(r, 'character')),
       ...display(refs.start, 'start'),
       ...display(refs.end, 'end'),
     ],
@@ -735,7 +741,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       motion: isVideoAction(action) ? motion : undefined,
       motionPrompt: opts.motionPrompt,
       strength: opts.strength,
-      refs: opts.refs ? { ...opts.refs, images: opts.refs.images?.map(({ blob: _b, ...r }) => r), style: opts.refs.style?.map(({ blob: _b, ...r }) => r) } : undefined,
+      refs: opts.refs ? { ...opts.refs, images: opts.refs.images?.map(({ blob: _b, ...r }) => r), style: opts.refs.style?.map(({ blob: _b, ...r }) => r), character: opts.refs.character?.map(({ blob: _b, ...r }) => r) } : undefined,
     },
   };
   set({ jobs: [job, ...state.jobs] });
@@ -806,7 +812,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   } else if (srcImg) inputs.image = await toComfyInput(srcImg, `lumen_${job.id}.png`);
   inputs.images = await Promise.all((refs.images ?? []).map((r, n) => toComfyInput(r, `lumen_ip${n + 1}_${job.id}.png`)));
   inputs.style_images = await Promise.all((refs.style ?? []).map((r, n) => toComfyInput(r, `lumen_sref${n + 1}_${job.id}.png`)));
-  inputs.picture_ratios = [...(refs.images ?? []), ...(refs.style ?? [])].map((r) => reducedRatio(r.w, r.h));
+  inputs.character_images = await Promise.all((refs.character ?? []).map((r, n) => toComfyInput(r, `lumen_cref${n + 1}_${job.id}.png`)));
+  inputs.picture_ratios = [...(refs.images ?? []), ...(refs.character ?? []), ...(refs.style ?? [])].map((r) => reducedRatio(r.w, r.h));
   if (!inputs.image) [inputs.image, inputs.image_2] = inputs.images;
   inputs.style_image = inputs.style_images[0];
   if (refs.end && !refs.loop) inputs.end_image = await toComfyInput(refs.end, `lumen_end_${job.id}.png`);

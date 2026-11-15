@@ -103,7 +103,10 @@ export interface JobInputs {
   /** Every image prompt and every style reference, in the order they were added. */
   images?: string[];
   style_images?: string[];
-  /** W:H of each of those pictures, in the same order (image prompts, then style references). */
+  /** Pictures of the character (--cref) and --cw (0–100). */
+  character_images?: string[];
+  character_weight?: number;
+  /** W:H of each picture, in the order image prompts, characters, style references. */
   picture_ratios?: string[];
   image_weight?: number;
   /** First style reference. */
@@ -169,6 +172,8 @@ export interface RefImage {
 export interface JobRefs {
   images?: RefImage[];
   style?: RefImage[];
+  /** Pictures of one character (--cref). */
+  character?: RefImage[];
   start?: RefImage;
   end?: RefImage;
   loop?: boolean;
@@ -197,7 +202,7 @@ export interface Job {
   /** Job + image index this one came from (vary/upscale/...). */
   parent?: { jobId: string; index: number };
   /** References used (shown next to the prompt; small copies only). */
-  refs?: { kind: 'image' | 'style' | 'start' | 'end'; url: string }[];
+  refs?: { kind: 'image' | 'style' | 'character' | 'start' | 'end'; url: string }[];
   /** What "Repeat" needs to run this action again. */
   rerun?: { image?: JobImage; zoom?: number; pan?: PanDir; motion?: Motion; motionPrompt?: string; refs?: JobRefs; strength?: 'subtle' | 'strong'; mask?: string };
 }

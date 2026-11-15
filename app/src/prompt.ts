@@ -19,6 +19,8 @@ export interface ParsedPrompt {
   loop: boolean;
   imageWeight?: number;
   styleWeight?: number;
+  /** --cw 0–100: how much of the character reference to keep (100 face, hair and outfit; 0 the face). */
+  characterWeight?: number;
   sref?: string;
   /** --p: moodboard IDs / codes ("default" for a bare --p). */
   profiles?: string[];
@@ -178,6 +180,9 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
       }
       case 'iw':
         r.imageWeight = clamp(Number(val), 0, 3);
+        break;
+      case 'cw':
+        r.characterWeight = clamp(Number(val), 0, 100);
         break;
       case 'sw':
         r.styleWeight = clamp(Number(val), 0, 1000);

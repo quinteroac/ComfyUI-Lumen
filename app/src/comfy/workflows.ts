@@ -31,11 +31,27 @@ const pictureLabels = (from: number, count: number) => Array.from({ length: coun
 /** What H3 Image is asked, by action. The pictures follow in the order image prompts, style references. */
 function h3Prompt(i: JobInputs): string {
   const images = i.images?.length ?? 0;
+  const characters = i.character_images?.length ?? 0;
   const styles = i.style_images?.length ?? 0;
+  const imageLabels = pictureLabels(1, images);
+  const characterLabels = pictureLabels(images + 1, characters);
+  // --iw: how closely the image prompts are followed.
+  const iw = i.image_weight ?? 1;
+  const imageRole =
+    iw < 0.5
+      ? `Take only loose inspiration from ${imageLabels}: its general mood, colors and subject matter; the composition and details follow the prompt.`
+      : iw > 1.5
+        ? `Follow ${imageLabels} closely: keep its subject, composition, colors and details as much as the prompt allows.`
+        : `Use ${imageLabels} as the reference for the subject, composition and colors.`;
+  // --cw: how much of the character is kept, from the face only to face, hair, body and outfit.
+  const cw = i.character_weight ?? 100;
+  const kept = cw <= 30 ? 'only their face' : cw <= 70 ? 'their face, hair and build' : 'their face, hair, body and outfit exactly';
+  const characterRole = `The character in ${characterLabels}${characters > 1 ? ' (the same person in every picture)' : ''} is the main character: keep ${kept}, in the pose, action and scene the prompt describes; do not copy the pose, framing or background of the picture${characters > 1 ? 's' : ''}.`;
   return [
     i.prompt,
-    images && !i.prompt.includes('<Picture') && `Use ${pictureLabels(1, images)} as the reference for the subject, composition and colors.`,
-    styles && `Draw the whole image in the art style of ${pictureLabels(images + 1, styles)}: take only its rendering, line work, shading and colors, not its subject, pose or content.`,
+    images && !i.prompt.includes('<Picture') && imageRole,
+    characters && characterRole,
+    styles && `Draw the whole image in the art style of ${pictureLabels(images + characters + 1, styles)}: take only its rendering, line work, shading and colors, not its subject, pose or content.`,
   ].filter(Boolean).join('\n\n');
 }
 
@@ -99,7 +115,7 @@ const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
 
 /** Built-in H3 jobs whose caption the edit prompt enhancer writes: the fill edits, and new images with reference pictures. */
 export const enhanced = (i: JobInputs) =>
-  i.engine === 'h3' && (FILL.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.style_images?.length ?? 0) > 0));
+  i.engine === 'h3' && (FILL.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0));
 
 /** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
     --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
@@ -142,7 +158,7 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
   const model = conceptSliders(add, i, styleCode(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' }), clip, styles), clip, mode);
   const vae = add('VAELoader', { vae_name: c.vae });
-  const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
+  const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.character_images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
   let prompt: string | Link = i.caption ?? h3Prompt(i);
   if (enhanced(i) && !i.caption) {
@@ -196,8 +212,35 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
   if (e.lora) model = add('LoraLoaderModelOnly', { model, lora_name: e.lora, strength_model: 1 });
   const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });
-  model = conceptSliders(add, i, styleCode(add, i, model, clip, c.styleCodes), clip, c.conceptMode);
   const vae = add('VAELoader', { vae_name: e.vae });
+  if (engine === 'anima' && i.character_images?.length) {
+    // --cref on Anima: SnapRef with up to three pictures of the character; --cw is its fidelity.
+    const [first, ...more] = i.character_images.slice(0, 3).map((image) => add('LoadImage', { image }));
+    model = add('SnapRef', {
+      model,
+      clip,
+      vae,
+      image: first,
+      ...Object.fromEntries(more.map((link, n) => [`image_${n + 2}`, link])),
+      adapter: c.anima.snapref,
+      mode: c.anima.snaprefMode,
+      ref_in_uncond: false,
+      ref_megapixels: 1,
+      strength: 0,
+      ref_caption: '',
+      ref_guidance_on: false,
+      ref_guidance: 4.5,
+      correction: 'apg',
+      ref_end: 1,
+      use_batch: false,
+      multi_layout: 'separate',
+      weight_1: 1,
+      weight_2: 1,
+      weight_3: 1,
+      fidelity: (i.character_weight ?? 100) / 100,
+    });
+  }
+  model = conceptSliders(add, i, styleCode(add, i, model, clip, c.styleCodes), clip, c.conceptMode);
   const latent = add(engine === 'anima' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: i.width, height: i.height, batch_size: 1 });
   const sampled = add('KSampler', {
     model,

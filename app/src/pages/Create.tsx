@@ -32,7 +32,7 @@ export function jobMeta(job: Job) {
   return m;
 }
 
-const REF_LABEL = { image: 'imagen', style: 'estilo', start: 'inicio', end: 'final' };
+const REF_LABEL = { image: 'imagen', style: 'estilo', character: 'personaje', start: 'inicio', end: 'final' };
 
 function Tile({ job, i }: { job: Job; i: number }) {
   const img = job.images[i];
@@ -178,6 +178,7 @@ function JobRow({ job }: { job: Job }) {
                   const r = job.rerun?.refs;
                   r?.images?.forEach((x) => addRef('images', x));
                   r?.style?.forEach((x) => addRef('style', x));
+                  r?.character?.forEach((x) => addRef('character', x));
                   if (r?.start) addRef('start', r.start);
                   if (job.action === 'animate' && !r?.start && job.rerun?.image) addRef('start', imageToRef(job.rerun.image));
                 }}
