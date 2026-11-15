@@ -93,6 +93,26 @@ export async function reuseOutputAsInput(ref: ImageRef): Promise<string> {
   return uploadImage(await res.blob(), `lumen_src_${ref.filename}`);
 }
 
+export interface AssistantAnswer {
+  reply: string;
+  prompt: string;
+  image_action: { kind: 'none' | 'vary_subtle' | 'vary_strong' | 'upscale_subtle' | 'animate'; image: number };
+}
+
+/** One conversational turn: the pack's route loads the GGUF in its own process, answers and releases it. */
+export async function askAssistant(body: { model: string; settings: Record<string, number>; message: string; current_prompt: string; images: number }): Promise<AssistantAnswer> {
+  const res = await fetch('/lumen/assistant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({ error: `El asistente respondió ${res.status}.` }));
+  if (!res.ok) throw new Error(data.error ?? `El asistente respondió ${res.status}.`);
+  return data as AssistantAnswer;
+}
+
+/** GGUF files the conversational mode can use. */
+export async function llmModels(): Promise<string[]> {
+  const res = await fetch('/lumen/llm/models');
+  return res.ok ? res.json() : [];
+}
+
 /** Stops this prompt if it is the one running (other jobs keep going). */
 export async function interrupt(promptId: string) {
   await http('/interrupt', {

@@ -4,6 +4,8 @@ from aiohttp import web
 
 from server import PromptServer
 
+from . import assistant  # noqa: F401  (registers the conversational routes)
+
 DIST = Path(__file__).parent / "dist"
 routes = PromptServer.instance.routes
 

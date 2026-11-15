@@ -303,7 +303,7 @@ export function builtInWorkflow(i: JobInputs): ApiWorkflow {
     case 'extend':
       throw new Error('Aún no hay workflow de vídeo integrado: añade uno propio en la página ComfyUI.');
     case 'converse':
-      throw new Error('El modo conversacional con ComfyUI necesita un workflow propio con un LLM que devuelva texto.');
+      throw new Error('El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.');
   }
   const c = getConfig();
   if (i.action === 'describe') return describeWorkflow(i, c.h3.peClip);

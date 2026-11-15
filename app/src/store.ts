@@ -5,13 +5,12 @@ import { useSyncExternalStore } from 'react';
 import { save, saved as loadFile } from './saved';
 import { getConfig } from './comfy/config';
 import { buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
-import { isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
+import { askAssistant, isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
 import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
 import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
 import { hash, toPngBlob } from './images';
 import { expandPermutations, parsePrompt, type ParsedPrompt } from './prompt';
 import { navigate } from './router';
-import { assist, type AssistantResult } from './assistant';
 
 export { parsePrompt };
 
@@ -898,7 +897,7 @@ export const toggleConversational = () => set({ conversational: !state.conversat
 export const clearChat = () => set({ chat: [] }, false);
 let chatBusy = false;
 
-/** Your message → the assistant writes (or edits) the prompt and runs it. */
+/** Your message → a local LLM writes (or edits) the prompt and runs it, or acts on an image of the last result. */
 export async function sendToAssistant(message: string) {
   const text = message.trim();
   if (!text || chatBusy) return;
@@ -906,31 +905,43 @@ export async function sendToAssistant(message: string) {
   const lastPromptTurn = [...state.chat].reverse().find((t) => t.role === 'assistant' && t.prompt);
   const lastJobsTurn = [...state.chat].reverse().find((t) => t.role === 'assistant' && t.jobIds?.length);
   const lastJob = lastJobsTurn ? state.jobs.find((j) => j.id === lastJobsTurn.jobIds![0]) : undefined;
-  set({ chat: [...state.chat, { role: 'user', text }], draft: '' }, false);
+  const history = [...state.chat, { role: 'user' as const, text }];
+  set({ chat: [...history, { role: 'assistant', text: 'Pensando… (carga el modelo para este mensaje y lo descarga al terminar)' }], draft: '' }, false);
+  const answer = (turn: ChatTurn) => set({ chat: [...history, turn] }, false);
   try {
     const cfg = getConfig();
-    let result: AssistantResult;
+    let reply: string;
+    let prompt = '';
+    let jobIds: string[] = [];
     if (cfg.workflows.converse?.trim()) {
       // Your own LLM workflow: gets {{message}} and {{current_prompt}}, returns the prompt as text.
       const inputs = { ...baseInputs('converse', parsePrompt(text, state.settings), false), message: text, current_prompt: lastPromptTurn?.prompt ?? '' };
       const out = await runWorkflow(buildWorkflow(inputs, cfg.workflows.converse).workflow);
-      const prompt = out.texts[0]?.trim();
-      result = prompt ? { reply: 'Así lo he escrito y ya lo estoy creando:', prompt } : { reply: 'El workflow no devolvió texto.' };
+      prompt = out.texts[0]?.trim() ?? '';
+      reply = prompt ? 'Así lo he escrito y ya lo estoy creando:' : 'El workflow no devolvió texto.';
     } else {
-      result = assist(text, lastPromptTurn?.prompt, !!lastJob?.images.length);
+      const { model, nGpuLayers, nCtx, maxTokens, temperature } = cfg.llm;
+      const a = await askAssistant({
+        model,
+        settings: { n_gpu_layers: nGpuLayers, n_ctx: nCtx, max_tokens: maxTokens, temperature },
+        message: text,
+        current_prompt: lastPromptTurn?.prompt ?? '',
+        images: lastJob?.images.length ?? 0,
+      });
+      reply = a.reply;
+      const index = a.image_action.image - 1;
+      if (a.image_action.kind !== 'none' && lastJob?.images[index]) {
+        const kind = a.image_action.kind;
+        jobIds = runAction(kind, { source: { jobId: lastJob.id, index }, ...(kind === 'animate' ? { prompt: lastJob.prompt } : {}) }).map((j) => j.id);
+      } else prompt = a.prompt.trim();
     }
-    let jobIds: string[] = [];
-    if (result.imageAction && lastJob) {
-      const { kind, index } = result.imageAction;
-      if (!lastJob.images[index]) result = { reply: `La última creación solo tiene ${lastJob.images.length} imágenes.` };
-      else jobIds = runAction(kind, { source: { jobId: lastJob.id, index }, ...(kind === 'animate' ? { prompt: lastJob.prompt } : {}) }).map((j) => j.id);
-    } else if (result.prompt) {
-      set({ draft: result.prompt }, false);
+    if (prompt) {
+      set({ draft: prompt }, false);
       jobIds = submitBar().map((j) => j.id);
     }
-    set({ chat: [...state.chat, { role: 'assistant', text: result.reply, prompt: result.prompt, jobIds }] }, false);
+    answer({ role: 'assistant', text: reply, prompt: prompt || undefined, jobIds });
   } catch (e) {
-    set({ chat: [...state.chat, { role: 'assistant', text: e instanceof Error ? e.message : String(e) }] }, false);
+    answer({ role: 'assistant', text: e instanceof Error ? e.message : String(e) });
   } finally {
     chatBusy = false;
   }

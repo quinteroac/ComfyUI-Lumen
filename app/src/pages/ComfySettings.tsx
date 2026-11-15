@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { setConfig, type ComfyConfig } from '../comfy/config';
-import { comboOptions, nodeDefs, testConnection } from '../comfy/client';
+import { comboOptions, llmModels, nodeDefs, testConnection } from '../comfy/client';
 import { ACTION_LABELS, type ActionKind, type JobInputs } from '../comfy/types';
 import { ACTION_ORDER, PLACEHOLDERS, buildWorkflow, parseWorkflow } from '../comfy/workflows';
 import { useConfig } from '../useConfig';
@@ -140,12 +140,14 @@ export function ComfySettings() {
   const cfg = useConfig();
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [defs, setDefs] = useState<Defs>({});
+  const [ggufs, setGgufs] = useState<string[]>([]);
 
   useEffect(() => {
     testConnection()
       .then((r) => setStatus({ ok: true, text: `Conectado · ComfyUI ${r.version} · ${r.device}` }))
       .catch((e: Error) => setStatus({ ok: false, text: e.message }));
     nodeDefs().then(setDefs, () => undefined);
+    llmModels().then(setGgufs, () => undefined);
   }, []);
 
   const h3 = (p: Partial<ComfyConfig['h3']>) => setConfig({ h3: { ...cfg.h3, ...p } });
@@ -286,6 +288,27 @@ export function ComfySettings() {
             Prompt de las vistas previas (Explorar › Estilos)
             <input value={cfg.styleCodes.previewPrompt} onChange={(e) => setConfig({ styleCodes: { ...cfg.styleCodes, previewPrompt: e.target.value } })} />
           </label>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Modo conversacional (GGUF)</h2>
+        <p className="hint" style={{ marginBottom: 12 }}>
+          Un LLM local escribe y edita el prompt. Para cada mensaje se descargan los modelos de ComfyUI, el GGUF se carga en un proceso aparte y ese proceso termina al responder, así que no queda memoria ocupada. Mientras responde no se lanzan generaciones, y no responde si la cola de ComfyUI está trabajando.
+        </p>
+        <div className="form-grid">
+          <label className="field">
+            Modelo (models/LLM)
+            <select value={cfg.llm.model} onChange={(e) => setConfig({ llm: { ...cfg.llm, model: e.target.value } })}>
+              {(ggufs.includes(cfg.llm.model) ? ggufs : [cfg.llm.model, ...ggufs]).map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+          <NumberField label="Capas en GPU (-1 = todas, 0 = CPU)" min={-1} max={999} value={cfg.llm.nGpuLayers} onChange={(v) => setConfig({ llm: { ...cfg.llm, nGpuLayers: v } })} />
+          <NumberField label="Contexto (tokens)" min={1024} max={131072} step={1024} value={cfg.llm.nCtx} onChange={(v) => setConfig({ llm: { ...cfg.llm, nCtx: v } })} />
+          <NumberField label="Máximo de tokens de respuesta" min={64} max={8192} step={64} value={cfg.llm.maxTokens} onChange={(v) => setConfig({ llm: { ...cfg.llm, maxTokens: v } })} />
+          <NumberField label="Temperatura" min={0} max={2} step={0.05} value={cfg.llm.temperature} onChange={(v) => setConfig({ llm: { ...cfg.llm, temperature: v } })} />
         </div>
       </div>
 

@@ -30,7 +30,7 @@ const DONE = [
   'Barra de imaginar: prompt de imagen, referencia de estilo, fotograma inicial y final, bucle, describir, fijar imágenes',
   'Ajustes: proporción, variedad, SD/HD, imágenes por creación (1–4, una tras otra), vídeo SD/HD, lote y movimiento',
   'Modo borrador: imágenes pequeñas y rápidas; «Mejorar», Variar y Remezclar las regeneran a tamaño completo. Ctrl+Enter mantiene el prompt',
-  'Modo conversacional: describes tu idea (escrita o por voz) y se escribe y ejecuta el prompt; luego pides cambios o «variación de la imagen 2»',
+  'Modo conversacional: describes tu idea (escrita o por voz) y un LLM local (GGUF) escribe y ejecuta el prompt; luego pides cambios o «variación de la imagen 2». El modelo se carga para cada mensaje y se descarga al terminar',
   'Personalizar: perfiles que aprenden de muestras de estilos reales (códigos --sref); un perfil es la mezcla de sus mejores códigos; global y adicionales, --p, predeterminados; los «me gusta» de Explorar › Estilos lo afinan',
   'Crear: progreso en directo, atajos (me gusta, variar, animar, papelera), repetir, usar, ejecutar en HD',
   'Acciones: variar, ampliar, remezclar sutil/fuerte, desplazar, alejar, editor, animar (auto, bucle, manual), usar, describir',
@@ -44,7 +44,6 @@ const DONE = [
 ];
 
 const MISSING = [
-  'Modo conversacional con IA de verdad: el integrado usa reglas sencillas en el navegador; para un LLM añade tu workflow en la página ComfyUI («Modo conversacional»)',
   'Tareas (valorar imágenes a cambio de tiempo de GPU)',
   'Selección inteligente y capas del editor',
   'Tareas, perfiles públicos, suscripciones, pagos y Discord',

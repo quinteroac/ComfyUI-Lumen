@@ -38,7 +38,7 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
   animate: 'Animar (imagen → vídeo)',
   extend: 'Alargar vídeo',
   describe: 'Describir (imagen → prompts)',
-  converse: 'Modo conversacional (mensaje → prompt, con un LLM)',
+  converse: 'Modo conversacional (workflow propio en lugar del GGUF)',
 };
 
 export type Motion = 'low' | 'high';

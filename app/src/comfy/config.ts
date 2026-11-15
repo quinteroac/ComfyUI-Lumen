@@ -23,6 +23,8 @@ export interface ComfyConfig {
   /** How the concept sliders apply a::2 weights: attention biases how much the image attends to the concept,
       weight_norm scales its attention values keeping each output at the magnitude of the concept as written. */
   conceptMode: 'attention' | 'weight_norm';
+  /** Conversational mode: a GGUF under models/LLM, loaded for each message in its own process and released after it. */
+  llm: { model: string; nGpuLayers: number; nCtx: number; maxTokens: number; temperature: number };
   /** Megapixels of Upscale. */
   upscaleMegapixels: number;
   /** Custom workflows (ComfyUI "Export (API)" JSON) per action; empty = built-in. */
@@ -79,6 +81,7 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     previewPrompt: 'A young woman with a bicycle on a city street beside a small flower shop, trees, a cat on a bench, daylight',
   },
   conceptMode: 'attention',
+  llm: { model: 'gemma-4-12b-heretic-Q6_K.gguf', nGpuLayers: -1, nCtx: 8192, maxTokens: 1024, temperature: 0.7 },
   upscaleMegapixels: 16,
   workflows: {},
 };
@@ -96,6 +99,7 @@ function load(): ComfyConfig {
     anima: { ...DEFAULT_CONFIG.anima, ...s.anima },
     moss: { ...DEFAULT_CONFIG.moss, ...s.moss },
     styleCodes: { ...DEFAULT_CONFIG.styleCodes, ...s.styleCodes },
+    llm: { ...DEFAULT_CONFIG.llm, ...s.llm },
   };
 }
 
