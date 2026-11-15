@@ -7,6 +7,7 @@ import { Media, VideoBadge } from '../components/Media';
 import { FolderButton } from '../components/Folders';
 import { imageHandlers } from '../components/ContextMenu';
 import { openStyleCreator } from './StyleCreator';
+import { t } from '../i18n';
 
 export function jobItems(job: Job): LbItem[] {
   return job.images
@@ -43,39 +44,39 @@ function Tile({ job, i }: { job: Job; i: number }) {
   const video = img.kind === 'video';
   return (
     <div className="job-img" style={{ aspectRatio: `${img.w} / ${img.h}` }} {...imageHandlers(() => [source])}>
-      <button className="tile-open" onClick={open} aria-label={`Abrir ${video ? 'vídeo' : 'imagen'} ${i + 1}`}>
+      <button className="tile-open" onClick={open} aria-label={`Abrir ${video ? t('vídeo') : 'imagen'} ${i + 1}`}>
         <Media img={img} alt={`${job.prompt} (${i + 1})`} />
       </button>
       {video && <VideoBadge />}
       <div className="hover-bar">
-        <button className={`icon-btn${img.liked ? ' on' : ''}`} aria-label="Me gusta" title="Me gusta" onClick={() => toggleLike(job.id, i)}>
+        <button className={`icon-btn${img.liked ? ' on' : ''}`} aria-label={t('Me gusta')} title={t('Me gusta')} onClick={() => toggleLike(job.id, i)}>
           <IconHeart size={16} filled={img.liked} />
         </button>
         {video ? (
           job.action !== 'upscale_video' && (
-            <button className="pill" data-action="extend" title="Alargar vídeo (auto)" onClick={() => runAction('extend', { source, prompt: job.rawPrompt, motion: job.inputs.motion })}>
-              Alargar
+            <button className="pill" data-action="extend" title={t('Alargar vídeo (auto)')} onClick={() => runAction('extend', { source, prompt: job.rawPrompt, motion: job.inputs.motion })}>
+              {t('Alargar')}
             </button>
           )
         ) : (
           <>
             {job.inputs.draft && (
-              <button className="pill" data-action="vary_subtle" title="Mejorar: regenerar este borrador a resolución completa" onClick={() => runAction('vary_subtle', { source })}>
-                Mejorar
+              <button className="pill" data-action="vary_subtle" title={t('Mejorar: regenerar este borrador a resolución completa')} onClick={() => runAction('vary_subtle', { source })}>
+                {t('Mejorar')}
               </button>
             )}
-            <button className="pill" data-action="vary_subtle" title="Variar (sutil)" onClick={() => runAction('vary_subtle', { source })}>
-              V·sutil
+            <button className="pill" data-action="vary_subtle" title={t('Variar (sutil)')} onClick={() => runAction('vary_subtle', { source })}>
+              {t('V·sutil')}
             </button>
-            <button className="pill" data-action="vary_strong" title="Variar (fuerte)" onClick={() => runAction('vary_strong', { source })}>
-              V·fuerte
+            <button className="pill" data-action="vary_strong" title={t('Variar (fuerte)')} onClick={() => runAction('vary_strong', { source })}>
+              {t('V·fuerte')}
             </button>
-            <button className="icon-btn" data-action="animate" aria-label="Animar" title="Animar (movimiento bajo)" onClick={() => runAction('animate', { source, prompt: job.prompt, motion: 'low' })}>
+            <button className="icon-btn" data-action="animate" aria-label={t('Animar')} title={t('Animar (movimiento bajo)')} onClick={() => runAction('animate', { source, prompt: job.prompt, motion: 'low' })}>
               <IconVideo size={16} />
             </button>
           </>
         )}
-        <button className="icon-btn" aria-label="Papelera" title="Mover a la papelera" onClick={() => setTrashed([source], true)}>
+        <button className="icon-btn" aria-label={t('Papelera')} title={t('Mover a la papelera')} onClick={() => setTrashed([source], true)}>
           <IconTrash size={16} />
         </button>
       </div>
@@ -87,23 +88,23 @@ function DescribeResult({ job }: { job: Job }) {
   const texts = job.texts ?? [];
   return (
     <div className="describe">
-      {texts.map((t, n) => (
+      {texts.map((prompt, n) => (
         <div key={n} className="describe-item">
           <span className="describe-n">{n + 1}</span>
-          <p>{t}</p>
+          <p>{prompt}</p>
           <div className="row">
-            <button className="btn small" onClick={() => setDraft(t)}>
-              Usar prompt
+            <button className="btn small" onClick={() => setDraft(prompt)}>
+              {t('Usar prompt')}
             </button>
-            <button className="btn small" data-action="imagine" onClick={() => runAction('imagine', { prompt: t })}>
-              Imaginar
+            <button className="btn small" data-action="imagine" onClick={() => runAction('imagine', { prompt })}>
+              {t('Imaginar')}
             </button>
           </div>
         </div>
       ))}
       {texts.length > 1 && (
-        <button className="btn small primary" data-action="imagine" onClick={() => texts.forEach((t) => runAction('imagine', { prompt: t }))}>
-          Ejecutar los {texts.length}
+        <button className="btn small primary" data-action="imagine" onClick={() => texts.forEach((prompt) => runAction('imagine', { prompt }))}>
+          {t('Ejecutar los {texts}', { texts: texts.length })}
         </button>
       )}
     </div>
@@ -132,7 +133,7 @@ function JobRow({ job }: { job: Job }) {
       )}
       <div className="job-side">
         <p className="job-prompt">{job.rawPrompt || job.prompt}</p>
-        {job.styleList && <p className="hint job-styles">Estilos: {job.styleList.split('\n').join(' · ')}</p>}
+        {job.styleList && <p className="hint job-styles">{t('Estilos:')} {job.styleList.split('\n').join(' · ')}</p>}
         {!!job.refs?.length && (
           <div className="job-refs">
             {job.refs.map((r, k) => (
@@ -157,25 +158,25 @@ function JobRow({ job }: { job: Job }) {
             <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(job.progress * 100)}>
               <div style={{ width: `${Math.max(3, job.progress * 100)}%` }} />
             </div>
-            <div className="status">{job.message ?? (job.status === 'queued' ? 'En cola…' : 'Generando…')}</div>
+            <div className="status">{job.message ?? (job.status === 'queued' ? t('En cola…') : t('Generando…'))}</div>
           </>
         )}
         {(job.status === 'error' || job.status === 'cancelled') && <div className={`status${job.status === 'error' ? ' error' : ''}`}>{job.message}</div>}
         <div className="job-actions">
           {busy ? (
             <button className="btn small" onClick={() => cancelJob(job.id)}>
-              Cancelar
+              {t('Cancelar')}
             </button>
           ) : (
             <>
               {job.action !== 'edit' && (
-                <button className="btn small" data-action={job.action} title="Volver a generar con una semilla nueva" onClick={() => rerunJob(job)}>
-                  <IconRerun size={15} /> Repetir
+                <button className="btn small" data-action={job.action} title={t('Volver a generar con una semilla nueva')} onClick={() => rerunJob(job)}>
+                  <IconRerun size={15} /> {t('Repetir')}
                 </button>
               )}
               <button
                 className="btn small"
-                title="Poner el prompt y las imágenes en la barra"
+                title={t('Poner el prompt y las imágenes en la barra')}
                 onClick={() => {
                   setDraft(job.rawPrompt);
                   const r = job.rerun?.refs;
@@ -186,20 +187,20 @@ function JobRow({ job }: { job: Job }) {
                   if (job.action === 'animate' && !r?.start && job.rerun?.image) addRef('start', imageToRef(job.rerun.image));
                 }}
               >
-                <IconCopy size={15} /> Usar
+                <IconCopy size={15} /> {t('Usar')}
               </button>
               {!video && job.action !== 'describe' && (
-                <button className="btn small" title="Abrir este prompt en el Creador de estilos" onClick={() => openStyleCreator(job.rawPrompt)}>
-                  Creador de estilos
+                <button className="btn small" title={t('Abrir este prompt en el Creador de estilos')} onClick={() => openStyleCreator(job.rawPrompt)}>
+                  {t('Creador de estilos')}
                 </button>
               )}
               {job.inputs.moodboard && <span className="chip">--p {job.inputs.moodboard}</span>}
               {!video && job.action !== 'describe' && job.action !== 'edit' && !job.inputs.hd && job.status === 'done' && (
-                <button className="btn small" title="Repetir en alta resolución" onClick={() => rerunJob(job, '--hd')}>
+                <button className="btn small" title={t('Repetir en alta resolución')} onClick={() => rerunJob(job, '--hd')}>
                   HD
                 </button>
               )}
-              <button className="btn small" aria-label="Mover a la papelera" title="Mover a la papelera" onClick={() => trashJob(job.id)}>
+              <button className="btn small" aria-label={t('Mover a la papelera')} title={t('Mover a la papelera')} onClick={() => trashJob(job.id)}>
                 <IconTrash size={15} />
               </button>
             </>
@@ -222,32 +223,32 @@ export function Create() {
   }, [jobs]);
 
   const list = useMemo(() => {
-    const t = q.trim().toLowerCase();
+    const needle = q.trim().toLowerCase();
     return jobs.filter((j) => {
       const live = j.status !== 'done' || j.texts?.length || j.images.some((im) => !im.trashed);
       if (!live) return false;
       if (folderId && !(j.folderId === folderId || j.images.some((im) => inFolder(j, im, folderId)))) return false;
-      if (t && !j.rawPrompt.toLowerCase().includes(t)) return false;
+      if (needle && !j.rawPrompt.toLowerCase().includes(needle)) return false;
       return true;
     });
   }, [jobs, folderId, q]);
 
   return (
-    <section aria-label="Crear">
+    <section aria-label={t('Crear')}>
       <div className="toolbar feed-toolbar">
         <FolderButton counts={counts} />
         <label className="search">
           <IconSearch size={16} />
-          <input type="search" placeholder="Buscar en tus prompts" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar en tus prompts" />
+          <input type="search" placeholder={t('Buscar en tus prompts')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('Buscar en tus prompts')} />
         </label>
       </div>
       {list.length === 0 ? (
         <div className="empty">
-          <h2>{folderId ? 'Esta carpeta está vacía' : q ? 'Sin resultados' : 'Empieza a imaginar'}</h2>
+          <h2>{folderId ? t('Esta carpeta está vacía') : q ? t('Sin resultados') : t('Empieza a imaginar')}</h2>
           <p>
             {folderId
-              ? 'Lo que crees ahora se guardará en esta carpeta.'
-              : `Escribe una idea arriba y pulsa Enter. Cada trabajo crea las imágenes que elijas en los ajustes de la barra (1–4), que puedes variar, ampliar, remezclar, editar o animar en vídeo.`}
+              ? t('Lo que crees ahora se guardará en esta carpeta.')
+              : t('Escribe una idea arriba y pulsa Enter. Cada trabajo crea las imágenes que elijas en los ajustes de la barra (1–4), que puedes variar, ampliar, remezclar, editar o animar en vídeo.')}
           </p>
         </div>
       ) : (

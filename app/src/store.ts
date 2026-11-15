@@ -11,6 +11,7 @@ import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
 import { hash, toPngBlob } from './images';
 import { expandPermutations, parsePrompt, type ParsedPrompt } from './prompt';
 import { navigate } from './router';
+import { t } from './i18n';
 
 export { parsePrompt };
 
@@ -61,7 +62,7 @@ interface State {
 
 /** Picks needed to unlock a profile. */
 export const UNLOCK_PICKS = 12;
-const GLOBAL_PROFILE = (): Profile => ({ id: 'global', name: 'Perfil global', scores: {}, picks: 0, isDefault: true, createdAt: Date.now() });
+const GLOBAL_PROFILE = (): Profile => ({ id: 'global', name: t('Perfil global'), scores: {}, picks: 0, isDefault: true, createdAt: Date.now() });
 const listeners = new Set<() => void>();
 const EMPTY_REFS: State['refs'] = { images: [], style: [], character: [], loop: false };
 let state: State = load();
@@ -89,7 +90,7 @@ function load(): State {
   if (!saved) return fresh;
   const jobs: Job[] = (saved.jobs ?? []).map((j: Job) => ({
     ...j,
-    ...(j.status === 'running' || j.status === 'queued' ? { status: 'error', message: 'Interrumpido al recargar la página.' } : {}),
+    ...(j.status === 'running' || j.status === 'queued' ? { status: 'error', message: t('Interrumpido al recargar la página.') } : {}),
   }));
   return {
     ...fresh,
@@ -208,7 +209,7 @@ export function createFolder(name: string): Folder | undefined {
   const n = name.trim();
   if (!n) return;
   if (state.folders.some((f) => f.name.toLowerCase() === n.toLowerCase())) {
-    toast('Ya existe una carpeta con ese nombre.', 'error');
+    toast(t('Ya existe una carpeta con ese nombre.'), 'error');
     return;
   }
   const f = { id: uid('f'), name: n };
@@ -254,7 +255,7 @@ export function folderImages(folderId: string): { job: Job; img: JobImage; index
 export function downloadFolder(folderId: string) {
   const items = folderImages(folderId);
   if (!items.length) {
-    toast('La carpeta está vacía.');
+    toast(t('La carpeta está vacía.'));
     return;
   }
   items.forEach(({ img, job, index }, n) =>
@@ -272,7 +273,7 @@ export function createFolderGroup(name: string): FolderGroup | undefined {
   const n = name.trim();
   if (!n) return;
   if (state.folderGroups.some((g) => g.name.toLowerCase() === n.toLowerCase())) {
-    toast('Ya existe un grupo con ese nombre.', 'error');
+    toast(t('Ya existe un grupo con ese nombre.'), 'error');
     return;
   }
   const g = { id: uid('g'), name: n };
@@ -294,7 +295,7 @@ export const deleteFolderGroup = (id: string) =>
 /* ------------------------------ moodboards & personalization ------------------------------ */
 
 export function createMoodboard(name: string): Moodboard {
-  const m: Moodboard = { id: `m${Math.random().toString(36).slice(2, 9)}`, name: name.trim() || 'Moodboard sin nombre', images: [], words: '', isDefault: state.moodboards.length === 0, createdAt: Date.now() };
+  const m: Moodboard = { id: `m${Math.random().toString(36).slice(2, 9)}`, name: name.trim() || t('Moodboard sin nombre'), images: [], words: '', isDefault: state.moodboards.length === 0, createdAt: Date.now() };
   set({ moodboards: [m, ...state.moodboards] });
   return m;
 }
@@ -309,7 +310,7 @@ export const removeBoardImage = (id: string, imageId: string) => updateBoard(id,
 export const deleteMoodboard = (id: string) => set({ moodboards: state.moodboards.filter((m) => m.id !== id) });
 export const togglePersonalization = () => {
   if (!state.personalization && !defaultSnapshots().length) {
-    toast(isUnlocked(state.profiles[0]) ? 'Marca un perfil o moodboard como predeterminado.' : `Desbloquea tu perfil global eligiendo ${UNLOCK_PICKS} imágenes, o crea un moodboard.`, 'error');
+    toast(isUnlocked(state.profiles[0]) ? t('Marca un perfil o moodboard como predeterminado.') : t('Desbloquea tu perfil global eligiendo {UNLOCK_PICKS} imágenes, o crea un moodboard.', { UNLOCK_PICKS }), 'error');
     navigate('personalize');
     return;
   }
@@ -323,10 +324,10 @@ const globalUnlocked = () => isUnlocked(state.profiles.find((p) => p.id === 'glo
 
 export function createProfile(name: string): Profile | undefined {
   if (!globalUnlocked()) {
-    toast(`Primero desbloquea tu perfil global (${UNLOCK_PICKS} imágenes elegidas).`, 'error');
+    toast(t('Primero desbloquea tu perfil global ({UNLOCK_PICKS} imágenes elegidas).', { UNLOCK_PICKS }), 'error');
     return;
   }
-  const p: Profile = { id: `u${Math.random().toString(36).slice(2, 9)}`, name: name.trim() || 'Perfil nuevo', scores: {}, picks: 0, isDefault: false, createdAt: Date.now() };
+  const p: Profile = { id: `u${Math.random().toString(36).slice(2, 9)}`, name: name.trim() || t('Perfil nuevo'), scores: {}, picks: 0, isDefault: false, createdAt: Date.now() };
   set({ profiles: [...state.profiles, p] });
   return p;
 }
@@ -387,10 +388,10 @@ function snapshot(m: Moodboard): MoodSnapshot {
  * into version codes (like the original does when a prompt is sent).
  */
 export function resolvePersonalization(text: string): string {
-  let t = text;
-  if (state.personalization && !/(^|\s)--(p|profile|personalize)\b/i.test(t)) t = `${t} --p`;
-  const m = t.match(/(^|\s)--(p|profile|personalize)\b([^-]*)/i);
-  if (!m) return t;
+  let out = text;
+  if (state.personalization && !/(^|\s)--(p|profile|personalize)\b/i.test(out)) out = `${out} --p`;
+  const m = out.match(/(^|\s)--(p|profile|personalize)\b([^-]*)/i);
+  if (!m) return out;
   const tokens = m[3].trim() ? m[3].trim().split(/\s+/) : ['default'];
   const codes: string[] = [];
   const snaps: Record<string, MoodSnapshot> = {};
@@ -405,12 +406,12 @@ export function resolvePersonalization(text: string): string {
         codes.push(s.code);
       }
     } else if (state.moodCodes[tok]) codes.push(tok);
-    else if (profile) toast(`El perfil «${profile.name}» aún no está desbloqueado (${profile.picks}/${UNLOCK_PICKS}).`, 'error');
-    else toast(tok === 'default' ? `No tienes perfiles ni moodboards predeterminados listos. Desbloquea tu perfil global eligiendo ${UNLOCK_PICKS} imágenes.` : `No conozco «${tok}».`, 'error');
+    else if (profile) toast(t('El perfil «{name}» aún no está desbloqueado ({picks}/{UNLOCK_PICKS}).', { name: profile.name, picks: profile.picks, UNLOCK_PICKS }), 'error');
+    else toast(tok === 'default' ? t('No tienes perfiles ni moodboards predeterminados listos. Desbloquea tu perfil global eligiendo {UNLOCK_PICKS} imágenes.', { UNLOCK_PICKS }) : t('No conozco «{tok}».', { tok }), 'error');
   }
   if (Object.keys(snaps).length) set({ moodCodes: { ...state.moodCodes, ...snaps } });
   const replacement = codes.length ? `${m[1]}--p ${[...new Set(codes)].join(' ')} ` : m[1];
-  return t.replace(m[0], replacement).replace(/\s+/g, ' ').trim();
+  return out.replace(m[0], replacement).replace(/\s+/g, ' ').trim();
 }
 
 /* ------------------------------ imagine bar references ------------------------------ */
@@ -540,6 +541,8 @@ export interface ActionOptions {
   maskSize?: { w: number; h: number };
   /** Add the parameters to the prompt (e.g. "--hd"). */
   extraParams?: string;
+  /** Replace the bar's settings for this action. */
+  settings?: Partial<CreateSettings>;
 }
 
 /** The imagine bar's send button: decides the action from the references and settings. */
@@ -551,15 +554,7 @@ export function submitBar(keepPrompt = false): Job[] {
   if (p) {
     jobs = runAction(p.kind, { source: p.source, image: p.image, prompt: text || p.originalPrompt, strength: p.strength });
   } else {
-    const first = parsePrompt(expandPermutations(text)[0] ?? '', state.settings);
-    const wantsVideo = state.settings.output === 'video' || first.video || !!refs.start;
-    const action: ActionKind = wantsVideo ? (refs.start ? 'animate' : 'video') : refs.images.length ? 'image_prompt' : 'imagine';
-    if (!text && (action === 'imagine' || action === 'video')) {
-      toast(action === 'video' ? 'Describe el vídeo o añade un fotograma inicial.' : 'Escribe qué quieres imaginar.', 'error');
-      return [];
-    }
-    const jobRefs: JobRefs = { images: refs.images, style: refs.style, character: refs.character, start: refs.start, end: refs.end, loop: refs.loop || first.loop };
-    jobs = runAction(action, { prompt: text, refs: jobRefs, image: refs.start ? refToImage(refs.start) : undefined });
+    jobs = imagine(text, { images: refs.images, style: refs.style, character: refs.character, start: refs.start, end: refs.end, loop: refs.loop });
   }
   if (jobs.length) {
     set({
@@ -569,6 +564,20 @@ export function submitBar(keepPrompt = false): Job[] {
     }, false);
   }
   return jobs;
+}
+
+/** A prompt and its pictures, as the bar sends them: a video with --video, video mode or a start frame (Animate),
+    an image prompt with image prompts, else Imagine. settings replace the bar's for this call. */
+export function imagine(text: string, refs: JobRefs, settings: Partial<CreateSettings> = {}): Job[] {
+  const s = { ...state.settings, ...settings };
+  const first = parsePrompt(expandPermutations(text)[0] ?? '', s);
+  const wantsVideo = s.output === 'video' || first.video || !!refs.start;
+  const action: ActionKind = wantsVideo ? (refs.start ? 'animate' : 'video') : refs.images?.length ? 'image_prompt' : 'imagine';
+  if (!text && (action === 'imagine' || action === 'video')) {
+    toast(action === 'video' ? t('Describe el vídeo o añade un fotograma inicial.') : t('Escribe qué quieres imaginar.'), 'error');
+    return [];
+  }
+  return runAction(action, { prompt: text, refs: { ...refs, loop: refs.loop || first.loop }, image: refs.start ? refToImage(refs.start) : undefined, settings });
 }
 
 function refToImage(r: RefImage): JobImage {
@@ -587,10 +596,10 @@ export function runAction(action: ActionKind, opts: ActionOptions = {}): Job[] {
   // --sref random becomes a code, so Repeat and Use keep the same styles (as on the original).
   text = text.replace(/(--sref\s+(?:[^-\s]+\s+)*?)random\b/gi, (_m, head: string) => `${head}${1 + Math.floor(Math.random() * 4294967295)}`);
   const prompts = expandPermutations(text);
-  if (prompts.length > 1) toast(`${prompts.length} prompts por permutación.`);
+  if (prompts.length > 1) toast(t('{prompts} prompts por permutación.', { prompts: prompts.length }));
   const jobs: Job[] = [];
   for (const one of prompts) {
-    const parsed = parsePrompt(one, src?.settings ?? state.settings);
+    const parsed = parsePrompt(one, { ...(src?.settings ?? state.settings), ...opts.settings });
     for (let r = 0; r < parsed.repeat; r++) {
       const job = createJob(action, one, parsed, opts, src);
       if (!job) return jobs;
@@ -612,11 +621,11 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   }
   // Pictures need H3 Image, except a character on Anima, which SnapRef takes.
   const pictures = !!(refs.images?.length || refs.style?.length || (refs.character?.length && parsed.engine !== 'anima'));
-  if (pictures && parsed.engine !== 'h3') toast('Las imágenes de referencia solo funcionan con H3 Image (el personaje también con Anima): se usa H3 Image.', 'info');
+  if (pictures && parsed.engine !== 'h3') toast(t('Las imágenes de referencia solo funcionan con H3 Image (el personaje también con Anima): se usa H3 Image.'), 'info');
   const inputs = baseInputs(action, parsed, state.draftMode, pictures);
   inputs.character_weight = parsed.characterWeight ?? 100;
   const videoRefs = (refs.images?.length ?? 0) + (refs.character?.length ?? 0) + (refs.style?.length ?? 0);
-  if (isVideoAction(action) && videoRefs > MAX_VIDEO_REFS) toast(`Un vídeo lee hasta ${MAX_VIDEO_REFS} imágenes de referencia: se usan las primeras ${MAX_VIDEO_REFS}.`, 'info');
+  if (isVideoAction(action) && videoRefs > MAX_VIDEO_REFS) toast(t('Un vídeo lee hasta {MAX_VIDEO_REFS} imágenes de referencia: se usan las primeras {MAX_VIDEO_REFS2}.', { MAX_VIDEO_REFS, MAX_VIDEO_REFS2: MAX_VIDEO_REFS }), 'info');
   if (moods.length) {
     // Profiles add their --sref mix to the job's codes.
     inputs.sref = [inputs.sref, ...moods.map((m) => m.sref)].filter(Boolean).join(' ') || undefined;
@@ -631,7 +640,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
 
   const needsImage: ActionKind[] = ['vary_subtle', 'vary_strong', 'upscale_subtle', 'upscale_creative', 'remix', 'zoom_out', 'pan', 'edit', 'retexture', 'animate', 'extend', 'upscale_video', 'describe'];
   if (needsImage.includes(action) && !srcImg && !opts.mask) {
-    toast('Esta acción necesita una imagen de partida.', 'error');
+    toast(t('Esta acción necesita una imagen de partida.'), 'error');
     return;
   }
 
@@ -702,11 +711,15 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       break;
     case 'extend':
       if ((srcImg?.extended ?? 0) >= 4) {
-        toast('Un vídeo se puede alargar como máximo 4 veces.', 'error');
+        toast(t('Un vídeo se puede alargar como máximo 4 veces.'), 'error');
         return;
       }
-      if (!srcImg?.latent && !cfg.workflows.extend) {
-        toast('Este vídeo no guardó su latente: solo se alargan los vídeos hechos con Lumen (texto → vídeo, Animar o Alargar).', 'error');
+      if (srcImg?.kind !== 'video') {
+        toast(t('Alargar solo funciona con vídeos.'), 'error');
+        return;
+      }
+      if (!srcImg.latent && !cfg.workflows.extend) {
+        toast(t('Este vídeo no guardó su latente: solo se alargan los vídeos hechos con Lumen (texto → vídeo, Animar o Alargar).'), 'error');
         return;
       }
       applyVideo(inputs, parsed, motion, opts.motionPrompt, w, h);
@@ -726,7 +739,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
     createdAt: Date.now(),
     action,
     rawPrompt,
-    prompt: parsed.plain || (isVideoAction(action) ? 'Animación de la imagen' : action === 'describe' ? 'Describir imagen' : ''),
+    prompt: parsed.plain || (isVideoAction(action) ? t('Animación de la imagen') : action === 'describe' ? t('Describir imagen') : ''),
     settings: parsed.settings,
     inputs,
     status: 'queued',
@@ -760,7 +773,7 @@ const controllers = new Map<string, AbortController>();
 
 export function cancelJob(jobId: string) {
   controllers.get(jobId)?.abort();
-  updateJob(jobId, { status: 'cancelled', message: 'Cancelado' });
+  updateJob(jobId, { status: 'cancelled', message: t('Cancelado') });
 }
 
 async function execute(job: Job, srcImg: JobImage | undefined, refs: JobRefs, mask?: string) {
@@ -800,7 +813,7 @@ async function onWhite(url: string, pad = { left: 0, right: 0, top: 0, bottom: 0
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, pad.left, pad.top);
-  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('No se pudo preparar la imagen.'))), 'image/png'));
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error(t('No se pudo preparar la imagen.')))), 'image/png'));
 }
 
 const FILL_ACTIONS: ActionKind[] = ['edit', 'zoom_out', 'pan'];
@@ -809,7 +822,7 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   const c = getConfig();
   const inputs = { ...job.inputs };
   const custom = c.workflows[job.action];
-  updateJob(job.id, { status: 'running', message: 'Subiendo imágenes…' }, false);
+  updateJob(job.id, { status: 'running', message: t('Subiendo imágenes…') }, false);
 
   // Put the images this job needs into ComfyUI's input folder.
   if (mask) inputs.image = await uploadImage(await onWhite(mask), `lumen_edit_${job.id}.png`);
@@ -827,7 +840,7 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   const defs = await nodeDefs();
 
   const video = isVideoAction(job.action);
-  updateJob(job.id, { inputs, message: 'En cola en ComfyUI…' }, false);
+  updateJob(job.id, { inputs, message: t('En cola en ComfyUI…') }, false);
 
   // The grid (and each video) is one ComfyUI run after another, seeds counting up from the job's seed;
   // each result shows as soon as it is ready.
@@ -838,8 +851,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   const texts: string[] = [];
   for (let n = 0; n < runs; n++) {
     const runInputs = { ...inputs, batch: job.action === 'describe' ? 4 : 1, seed: (inputs.seed + n) % 2 ** 32 };
-    // Built-in videos keep their AV latent, which Extend continues from.
-    if (video && !custom && job.action !== 'upscale_video') runInputs.latent_name = `lumen/latents/${job.id}_${n + 1}`;
+    // Built-in videos keep their AV latent (PrefixStream's node), which Extend continues from.
+    if (video && !custom && job.action !== 'upscale_video' && defs.MiniMaxSaveLatent) runInputs.latent_name = `lumen/latents/${job.id}_${n + 1}`;
     const { workflow } = buildWorkflow(runInputs, custom);
     checkWorkflow(workflow, defs);
     const label = runs > 1 ? `${n + 1}/${runs} · ` : '';
@@ -855,16 +868,16 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
     if (job.action === 'describe') continue;
     if (n === 0 && out.titled.styles) updateJob(job.id, { styleList: out.titled.styles }, false);
     if (withCaption && !inputs.caption) {
-      if (!out.titled.caption) throw new Error('El mejorador de prompt no escribió la descripción. Vuelve a intentarlo.');
+      if (!out.titled.caption) throw new Error(t('El mejorador de prompt no escribió la descripción. Vuelve a intentarlo.'));
       inputs.caption = out.titled.caption;
       updateJob(job.id, { inputs: { ...inputs } }, false);
     }
-    if (!out.files.length) throw new Error(`El workflow terminó sin ${video ? 'vídeo' : 'imágenes'}. ¿Tiene un nodo que guarde el resultado (SaveImage, SaveAnimatedWEBP, SaveVideo…)?`);
+    if (!out.files.length) throw new Error(video ? t('El workflow terminó sin vídeo. ¿Tiene un nodo que guarde el resultado (SaveImage, SaveAnimatedWEBP, SaveVideo…)?') : t('El workflow terminó sin imágenes. ¿Tiene un nodo que guarde el resultado (SaveImage, SaveAnimatedWEBP, SaveVideo…)?'));
     images.push(...(await toJobImages(out.files, runInputs, video, job.action === 'extend' ? (srcImg?.extended ?? 0) + 1 : undefined)));
     updateJob(job.id, { images: [...images] }, false);
   }
   if (job.action === 'describe') {
-    if (!texts.length) throw new Error('«Describir» no devolvió texto. Si es un workflow propio, usa un nodo que muestre el texto (ShowText, PreviewAny…).');
+    if (!texts.length) throw new Error(t('«Describir» no devolvió texto. Si es un workflow propio, usa un nodo que muestre el texto (ShowText, PreviewAny…).'));
     // The prompts keep the picture's shape, as on the original.
     const ar = srcImg ? simpleRatio(srcImg.w, srcImg.h) : '';
     return { images: [], texts: splitPrompts(texts).map((t) => (ar && !/--ar\s/.test(t) ? `${t} --ar ${ar}` : t)) };
@@ -916,7 +929,7 @@ export async function sendToAssistant(message: string) {
   const lastJobsTurn = [...state.chat].reverse().find((t) => t.role === 'assistant' && t.jobIds?.length);
   const lastJob = lastJobsTurn ? state.jobs.find((j) => j.id === lastJobsTurn.jobIds![0]) : undefined;
   const history = [...state.chat, { role: 'user' as const, text }];
-  set({ chat: [...history, { role: 'assistant', text: 'Pensando… (carga el modelo para este mensaje y lo descarga al terminar)' }], draft: '' }, false);
+  set({ chat: [...history, { role: 'assistant', text: t('Pensando… (carga el modelo para este mensaje y lo descarga al terminar)') }], draft: '' }, false);
   const answer = (turn: ChatTurn) => set({ chat: [...history, turn] }, false);
   try {
     const cfg = getConfig();
@@ -928,7 +941,7 @@ export async function sendToAssistant(message: string) {
       const inputs = { ...baseInputs('converse', parsePrompt(text, state.settings), false), message: text, current_prompt: lastPromptTurn?.prompt ?? '' };
       const out = await runWorkflow(buildWorkflow(inputs, cfg.workflows.converse).workflow);
       prompt = out.texts[0]?.trim() ?? '';
-      reply = prompt ? 'Así lo he escrito y ya lo estoy creando:' : 'El workflow no devolvió texto.';
+      reply = prompt ? t('Así lo he escrito y ya lo estoy creando:') : t('El workflow no devolvió texto.');
     } else {
       const { model, nGpuLayers, nCtx, maxTokens, temperature } = cfg.llm;
       const a = await askAssistant({

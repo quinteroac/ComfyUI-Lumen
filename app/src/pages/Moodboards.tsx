@@ -18,6 +18,7 @@ import {
 import { thumbDataUrl } from '../images';
 import type { BoardImage, Moodboard } from '../comfy/types';
 import { navigate } from '../router';
+import { t } from '../i18n';
 
 type NewImage = Omit<BoardImage, 'id'>;
 
@@ -54,16 +55,16 @@ function GalleryPicker({ onPick, onClose }: { onPick: (imgs: NewImage[]) => void
     .filter(({ img }) => img.kind !== 'video' && !img.trashed)
     .slice(0, 60);
   return (
-    <div className="lightbox style-modal" role="dialog" aria-modal="true" aria-label="Elegir de tus imágenes" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="lightbox style-modal" role="dialog" aria-modal="true" aria-label={t('Elegir de tus imágenes')} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="style-detail">
         <div className="lb-top">
-          <h2>Elegir de tus imágenes</h2>
-          <button className="icon-btn" aria-label="Cerrar" onClick={onClose}>
+          <h2>{t('Elegir de tus imágenes')}</h2>
+          <button className="icon-btn" aria-label={t('Cerrar')} onClick={onClose}>
             <IconClose />
           </button>
         </div>
         {items.length === 0 ? (
-          <p className="hint">Aún no has creado imágenes.</p>
+          <p className="hint">{t('Aún no has creado imágenes.')}</p>
         ) : (
           <div className="grid">
             {items.map(({ key, img, prompt }) => (
@@ -104,10 +105,10 @@ function GalleryPicker({ onPick, onClose }: { onPick: (imgs: NewImage[]) => void
               onClose();
             }}
           >
-            Añadir {sel.size || ''}
+            {t('Añadir')} {sel.size || ''}
           </button>
           <button className="btn" onClick={onClose}>
-            Cancelar
+            {t('Cancelar')}
           </button>
         </div>
       </div>
@@ -127,7 +128,7 @@ function Board({ m }: { m: Moodboard }) {
       const imgs = await p;
       addBoardImages(m.id, imgs);
     } catch {
-      toast('No se pudo añadir la imagen.', 'error');
+      toast(t('No se pudo añadir la imagen.'), 'error');
     } finally {
       setBusy(false);
     }
@@ -136,7 +137,7 @@ function Board({ m }: { m: Moodboard }) {
     const d = getState().draft.replace(/\s--p\b[^-]*/g, ' ').trim();
     setDraft(`${d} --p ${m.id}`.trim());
     navigate('imagine');
-    toast(`--p ${m.id} añadido a la barra`);
+    toast(t('--p {id} añadido a la barra', { id: m.id }));
   };
   return (
     <section className="card board" aria-label={m.name}>
@@ -149,33 +150,33 @@ function Board({ m }: { m: Moodboard }) {
               setRenaming(false);
             }}
           >
-            <input name="n" className="board-name-input" defaultValue={m.name} autoFocus onBlur={() => setRenaming(false)} aria-label="Nombre del moodboard" />
+            <input name="n" className="board-name-input" defaultValue={m.name} autoFocus onBlur={() => setRenaming(false)} aria-label={t('Nombre del moodboard')} />
           </form>
         ) : (
           <h2>{m.name}</h2>
         )}
         <div className="row">
-          <label className="switch" title="Usar por defecto cuando la personalización está activada">
-            <input type="checkbox" checked={m.isDefault} onChange={() => toggleMoodboardDefault(m.id)} /> Predeterminado
+          <label className="switch" title={t('Usar por defecto cuando la personalización está activada')}>
+            <input type="checkbox" checked={m.isDefault} onChange={() => toggleMoodboardDefault(m.id)} /> {t('Predeterminado')}
           </label>
-          <button className="btn small" onClick={use} title="Añadir --p a la barra de imaginar" disabled={!m.images.length}>
-            <IconCopy size={14} /> Usar
+          <button className="btn small" onClick={use} title={t('Añadir --p a la barra de imaginar')} disabled={!m.images.length}>
+            <IconCopy size={14} /> {t('Usar')}
           </button>
-          <button className="icon-btn" aria-label="Renombrar" title="Renombrar" onClick={() => setRenaming(true)}>
+          <button className="icon-btn" aria-label={t('Renombrar')} title={t('Renombrar')} onClick={() => setRenaming(true)}>
             <IconEdit size={16} />
           </button>
           <button
             className="icon-btn"
-            aria-label="Borrar moodboard"
-            title="Borrar (los códigos ya usados siguen funcionando)"
-            onClick={() => confirm(`¿Borrar «${m.name}»? Los códigos que ya usaste seguirán funcionando.`) && deleteMoodboard(m.id)}
+            aria-label={t('Borrar moodboard')}
+            title={t('Borrar (los códigos ya usados siguen funcionando)')}
+            onClick={() => confirm(t('¿Borrar «{name}»? Los códigos que ya usaste seguirán funcionando.', { name: m.name })) && deleteMoodboard(m.id)}
           >
             <IconTrash size={16} />
           </button>
         </div>
       </div>
       <p className="hint">
-        ID <code>{m.id}</code> · versión actual <code>--p {moodboardCode(m)}</code> · {m.images.length} imágenes
+        {t('ID')} <code>{m.id}</code> {t('· versión actual')} <code>--p {moodboardCode(m)}</code> {t('· {length} imágenes', { length: m.images.length })}
       </p>
       <div
         className="board-grid"
@@ -193,18 +194,18 @@ function Board({ m }: { m: Moodboard }) {
         {m.images.map((im) => (
           <div key={im.id} className="board-img">
             <img src={im.url} alt="" />
-            <button className="icon-btn tiny" aria-label="Quitar del moodboard" onClick={() => removeBoardImage(m.id, im.id)}>
+            <button className="icon-btn tiny" aria-label={t('Quitar del moodboard')} onClick={() => removeBoardImage(m.id, im.id)}>
               <IconClose size={12} />
             </button>
           </div>
         ))}
         <button className="board-add" onClick={() => file.current?.click()} disabled={busy}>
           <IconUpload size={18} />
-          <span>{busy ? 'Añadiendo…' : 'Subir'}</span>
+          <span>{busy ? t('Añadiendo…') : t('Subir')}</span>
         </button>
         <button className="board-add" onClick={() => setPicking(true)}>
           <IconPlus size={18} />
-          <span>De tus imágenes</span>
+          <span>{t('De tus imágenes')}</span>
         </button>
         <input
           ref={file}
@@ -228,14 +229,14 @@ function Board({ m }: { m: Moodboard }) {
           setUrl('');
         }}
       >
-        <input className="text-input" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Pegar la URL de una imagen" aria-label="URL de una imagen" />
+        <input className="text-input" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t('Pegar la URL de una imagen')} aria-label={t('URL de una imagen')} />
         <button className="btn small" type="submit" disabled={!url.trim()}>
-          Añadir URL
+          {t('Añadir URL')}
         </button>
       </form>
       <label className="field wide" style={{ marginTop: 8 }}>
-        Palabras del estilo (opcional)
-        <input value={m.words} onChange={(e) => setMoodboardWords(m.id, e.target.value)} placeholder="p. ej. tonos terrosos, luz suave, textura de papel" />
+        {t('Palabras del estilo (opcional)')}
+        <input value={m.words} onChange={(e) => setMoodboardWords(m.id, e.target.value)} placeholder={t('p. ej. tonos terrosos, luz suave, textura de papel')} />
       </label>
       {picking && <GalleryPicker onPick={(imgs) => addBoardImages(m.id, imgs)} onClose={() => setPicking(false)} />}
     </section>
@@ -248,9 +249,9 @@ export function Moodboards() {
   const [name, setName] = useState('');
   return (
     <div className="page">
-      <h1>Moodboards</h1>
+      <h1>{t('Moodboards')}</h1>
       <p className="lead">
-        Reúne imágenes para crear un estilo propio. Úsalo con <code>--p ID</code> en el prompt, o márcalo como predeterminado y activa la personalización junto a la barra para que se añada a todos tus prompts. La estilización (<code>--s</code>) controla cuánto se aplica.
+        {t('Reúne imágenes para crear un estilo propio. Úsalo con')} <code>{t('--p ID')}</code> {t('en el prompt, o márcalo como predeterminado y activa la personalización junto a la barra para que se añada a todos tus prompts. La estilización (')}<code>--sw</code>{t(') controla cuánto se aplica.')}
       </p>
       <div className="row" style={{ marginBottom: 16 }}>
         <form
@@ -261,25 +262,25 @@ export function Moodboards() {
             setName('');
           }}
         >
-          <input className="text-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del moodboard" aria-label="Nombre del nuevo moodboard" />
+          <input className="text-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Nombre del moodboard')} aria-label={t('Nombre del nuevo moodboard')} />
           <button className="btn primary" type="submit">
-            <IconPlus size={15} /> Nuevo moodboard
+            <IconPlus size={15} /> {t('Nuevo moodboard')}
           </button>
         </form>
         <button className={`btn${on ? ' primary' : ''}`} onClick={togglePersonalization}>
-          Personalización {on ? 'activada' : 'desactivada'}
+          {t('Personalización')} {on ? 'activada' : 'desactivada'}
         </button>
       </div>
       {boards.length === 0 ? (
         <div className="empty">
-          <h2>Aún no tienes moodboards</h2>
-          <p>Crea uno y añade imágenes subiéndolas, pegando una URL o eligiendo de tus creaciones.</p>
+          <h2>{t('Aún no tienes moodboards')}</h2>
+          <p>{t('Crea uno y añade imágenes subiéndolas, pegando una URL o eligiendo de tus creaciones.')}</p>
         </div>
       ) : (
         boards.map((m) => <Board key={m.id} m={m} />)
       )}
       <p className="hint">
-        Con tu ComfyUI, las imágenes del moodboard llegan a tus workflows como referencia de estilo ({'{{style_image}}'}) y su código como {'{{moodboard}}'}; el workflow integrado solo usa las palabras del estilo.
+        {t('Con tu ComfyUI, las imágenes del moodboard llegan a tus workflows como referencia de estilo (')}{'{{style_image}}'}{t(') y su código como')} {'{{moodboard}}'}{t('; el workflow integrado solo usa las palabras del estilo.')}
       </p>
     </div>
   );

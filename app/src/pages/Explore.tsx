@@ -8,6 +8,7 @@ import { navigate, useQueryParam } from '../router';
 import { previewKey, randomCode, requestPreview, styleLabels, styleTitle, usePreviews, type StylePreview } from '../stylePreviews';
 import { useConfig } from '../useConfig';
 import type { Job } from '../comfy/types';
+import { t } from '../i18n';
 
 type View = 'recent' | 'random' | 'likes';
 type Kind = 'images' | 'videos' | 'styles';
@@ -42,30 +43,30 @@ function Tile({ it, items, i }: { it: LbItem; items: LbItem[]; i: number }) {
       <div className="tile-actions" onClick={(e) => e.stopPropagation()}>
         <button
           className="icon-btn"
-          aria-label="Usar como prompt de imagen"
-          title="Usar imagen"
+          aria-label={t('Usar como prompt de imagen')}
+          title={t('Usar imagen')}
           onClick={() => {
             addRef('images', imageToRef(it.img));
-            toast('Añadida como prompt de imagen');
+            toast(t('Añadida como prompt de imagen'));
           }}
         >
           <IconImage size={16} />
         </button>
         <button
           className="icon-btn"
-          aria-label="Usar prompt"
-          title="Usar prompt"
+          aria-label={t('Usar prompt')}
+          title={t('Usar prompt')}
           onClick={() => {
             setDraft(it.prompt);
-            toast('Prompt copiado en la barra');
+            toast(t('Prompt copiado en la barra'));
           }}
         >
           <IconCopy size={16} />
         </button>
-        <button className="icon-btn" aria-label="Buscar parecidas" title="Buscar parecidas" onClick={() => navigate('explore', { q: words(it.prompt).slice(0, 2).join(' ') })}>
+        <button className="icon-btn" aria-label={t('Buscar parecidas')} title={t('Buscar parecidas')} onClick={() => navigate('explore', { q: words(it.prompt).slice(0, 2).join(' ') })}>
           <IconSearch size={16} />
         </button>
-        <button className={`icon-btn${liked ? ' on' : ''}`} aria-label={liked ? 'Quitar me gusta' : 'Me gusta'} onClick={() => it.jobId && toggleLike(it.jobId, it.index ?? 0)}>
+        <button className={`icon-btn${liked ? ' on' : ''}`} aria-label={liked ? t('Quitar me gusta') : t('Me gusta')} onClick={() => it.jobId && toggleLike(it.jobId, it.index ?? 0)}>
           <IconHeart size={16} filled={liked} />
         </button>
       </div>
@@ -80,7 +81,7 @@ function usedCodes(jobs: Job[]): string[] {
 
 function StyleThumb({ p, code }: { p?: StylePreview; code: string }) {
   if (p?.status === 'done' && p.image) return <Media img={p.image} alt={`Estilo --sref ${code}`} />;
-  return <div className="placeholder style-pending">{p?.status === 'error' ? 'Error' : p?.status === 'running' ? 'Generando…' : 'En cola'}</div>;
+  return <div className="placeholder style-pending">{p?.status === 'error' ? t('Error') : p?.status === 'running' ? t('Generando…') : t('En cola')}</div>;
 }
 
 /** Style Explorer: --sref codes with a real preview (the preview prompt from the ComfyUI page), to try, copy and like. */
@@ -123,7 +124,7 @@ function Styles({ q }: { q: string }) {
   const copy = (code: string) => {
     const d = getState().draft.replace(/\s--sref(\s+[^-\s]+)+/g, '').trim();
     setDraft(`${d} --sref ${code}`.trim());
-    toast(`--sref ${code} añadido a la barra`);
+    toast(t('--sref {code} añadido a la barra', { code }));
   };
   const shown = open ? preview(open) : undefined;
 
@@ -132,9 +133,9 @@ function Styles({ q }: { q: string }) {
       <div className="tabs" style={{ marginBottom: 12 }}>
         {(
           [
-            ['discover', 'Descubrir'],
-            ['likes', 'Me gusta'],
-            ['used', 'Usados'],
+            ['discover', t('Descubrir')],
+            ['likes', t('Me gusta')],
+            ['used', t('Usados')],
           ] as const
         ).map(([k, l]) => (
           <button key={k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>
@@ -142,22 +143,22 @@ function Styles({ q }: { q: string }) {
           </button>
         ))}
         {tab === 'discover' && (
-          <button className="btn small primary" onClick={discover} title="Genera vistas previas de 8 códigos al azar">
-            Descubrir 8 estilos
+          <button className="btn small primary" onClick={discover} title={t('Genera vistas previas de 8 códigos al azar')}>
+            {t('Descubrir 8 estilos')}
           </button>
         )}
       </div>
       {codes.length === 0 ? (
         <div className="empty">
-          <h2>Sin estilos</h2>
+          <h2>{t('Sin estilos')}</h2>
           <p>
             {tab === 'likes'
-              ? 'Pulsa el corazón en un estilo para guardarlo aquí.'
+              ? t('Pulsa el corazón en un estilo para guardarlo aquí.')
               : tab === 'used'
-                ? 'Los códigos --sref de tus creaciones aparecerán aquí.'
+                ? t('Los códigos --sref de tus creaciones aparecerán aquí.')
                 : q
-                  ? 'Prueba otra búsqueda.'
-                  : 'Pulsa «Descubrir 8 estilos»: cada código se genera con el prompt de vista previa (página ComfyUI).'}
+                  ? t('Prueba otra búsqueda.')
+                  : t('Pulsa «Descubrir 8 estilos»: cada código se genera con el prompt de vista previa (página ComfyUI).')}
           </p>
         </div>
       ) : (
@@ -168,8 +169,8 @@ function Styles({ q }: { q: string }) {
                 <StyleThumb p={preview(code)} code={code} />
               </div>
               <div className="style-name">
-                <strong>{styleTitle(preview(code)?.styles) || 'Estilo'}</strong>
-                <span>--sref {code}</span>
+                <strong>{styleTitle(preview(code)?.styles) || t('Estilo')}</strong>
+                <span>{t('--sref {code}', { code })}</span>
               </div>
             </div>
           ))}
@@ -181,9 +182,9 @@ function Styles({ q }: { q: string }) {
             <div className="lb-top">
               <div>
                 <h2>{styleTitle(shown?.styles) || `--sref ${open}`}</h2>
-                <p className="hint">--sref {open}</p>
+                <p className="hint">{t('--sref {open}', { open })}</p>
               </div>
-              <button className="icon-btn" aria-label="Cerrar" onClick={() => setOpen(null)}>
+              <button className="icon-btn" aria-label={t('Cerrar')} onClick={() => setOpen(null)}>
                 ✕
               </button>
             </div>
@@ -200,17 +201,17 @@ function Styles({ q }: { q: string }) {
             </ul>
             <div className="row">
               <button className="btn primary" data-action="imagine" onClick={() => tryStyle(open)}>
-                Probar estilo
+                {t('Probar estilo')}
               </button>
               <button className="btn" onClick={() => copy(open)}>
-                Copiar --sref
+                {t('Copiar --sref')}
               </button>
               <button className={`btn${liked.includes(open) ? ' primary' : ''}`} onClick={() => toggleStyleLike(open)}>
-                <IconHeart size={15} filled={liked.includes(open)} /> Me gusta
+                <IconHeart size={15} filled={liked.includes(open)} /> {t('Me gusta')}
               </button>
               {shown?.status === 'error' && (
                 <button className="btn" onClick={() => requestPreview(open, prompt)}>
-                  Reintentar
+                  {t('Reintentar')}
                 </button>
               )}
             </div>
@@ -239,15 +240,15 @@ export function Explore() {
   }, [jobs, kind, view, seed, q]);
 
   return (
-    <section aria-label="Explorar">
+    <section aria-label={t('Explorar')}>
       <div className="toolbar">
-        <div className="tabs" role="tablist" aria-label="Vista">
+        <div className="tabs" role="tablist" aria-label={t('Vista')}>
           {kind !== 'styles' &&
             (
               [
-                ['recent', 'Recientes'],
-                ['random', 'Aleatorio'],
-                ['likes', 'Me gusta'],
+                ['recent', t('Recientes')],
+                ['random', t('Aleatorio')],
+                ['likes', t('Me gusta')],
               ] as [View, string][]
             ).map(([k, label]) => (
               <button
@@ -267,14 +268,14 @@ export function Explore() {
         <div className="row">
           <label className="search">
             <IconSearch size={16} />
-            <input type="search" placeholder={kind === 'styles' ? 'Buscar estilos' : 'Buscar'} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar" />
+            <input type="search" placeholder={kind === 'styles' ? t('Buscar estilos') : t('Buscar')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('Buscar')} />
           </label>
-          <div className="tabs" role="tablist" aria-label="Tipo">
+          <div className="tabs" role="tablist" aria-label={t('Tipo')}>
             {(
               [
-                ['images', 'Imágenes'],
-                ['videos', 'Vídeos'],
-                ['styles', 'Estilos'],
+                ['images', t('Imágenes')],
+                ['videos', t('Vídeos')],
+                ['styles', t('Estilos')],
               ] as [Kind, string][]
             ).map(([k, label]) => (
               <button key={k} role="tab" aria-selected={kind === k} className={`tab${kind === k ? ' on' : ''}`} onClick={() => setKind(k)}>
@@ -288,8 +289,8 @@ export function Explore() {
         <Styles q={q} />
       ) : items.length === 0 ? (
         <div className="empty">
-          <h2>{q ? 'Sin resultados' : view === 'likes' ? 'Aún no te gusta nada' : kind === 'videos' ? 'Aún no hay vídeos' : 'Aún no has creado nada'}</h2>
-          <p>{q ? 'Prueba con otras palabras.' : view === 'likes' ? 'Pulsa el corazón en tus imágenes o vídeos para verlos aquí.' : 'Escribe una idea en la barra de arriba: todo lo que crees aparece aquí.'}</p>
+          <h2>{q ? t('Sin resultados') : view === 'likes' ? t('Aún no te gusta nada') : kind === 'videos' ? t('Aún no hay vídeos') : t('Aún no has creado nada')}</h2>
+          <p>{q ? t('Prueba con otras palabras.') : view === 'likes' ? t('Pulsa el corazón en tus imágenes o vídeos para verlos aquí.') : t('Escribe una idea en la barra de arriba: todo lo que crees aparece aquí.')}</p>
         </div>
       ) : (
         <div className="masonry">

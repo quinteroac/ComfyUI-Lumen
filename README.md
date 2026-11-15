@@ -10,6 +10,8 @@ Open it from the **Lumen** menu in ComfyUI, or at `http://<comfyui>/lumen/`.
 |---|---|
 | MiniMax H3 Image | every action: Imagine, image prompts, style references, Vary, Remix, Upscale, Zoom out, Pan, Editor |
 | Anima (`--anima`), MOSS Image (`--moss`) | Imagine without reference images |
+| MiniMax H3 Video (fl2va / ref2va + Pika Flex) | text → video, Animate, end frame, loop, up to 9 reference images, always with audio |
+| RelayVSR ×2 | Upscale video |
 
 Model files, sizes and sampler settings are set on the **ComfyUI** page of the app. The built-in workflows use core ComfyUI nodes only.
 
@@ -18,9 +20,30 @@ Model files, sizes and sampler settings are set on the **ComfyUI** page of the a
 - Zoom out, Pan and the Editor flatten the canvas on white and ask H3 Image to fill the white areas.
 - Each action can use your own workflow (ComfyUI *Export (API)* JSON with `{{placeholders}}`).
 
-Video, Describe and the conversational mode need a custom workflow for now.
+- Extend continues a Lumen video from its saved AV latent and stitches the new clip on (needs ComfyUI-MiniMaxH3-PrefixStream).
+- Describe uses the prompt enhancer's model; the conversational mode runs a local GGUF (llama-cpp-python) that is loaded per message and unloaded after.
+
+The page is in Spanish, English, Japanese and Chinese: the browser's language is used until one is picked in the sidebar.
 
 Settings, jobs and styles are saved in ComfyUI's user folder (`user/<user>/lumen/`).
+
+## MCP server
+
+`mcp/server.mjs` is a stdio MCP server (Node.js 22+, no dependencies) that only talks to the ComfyUI server in `LUMEN_URL` (default `http://127.0.0.1:8188`).
+
+```bash
+claude mcp add lumen -e LUMEN_URL=http://127.0.0.1:8188 -- node /path/to/ComfyUI/custom_nodes/ComfyUI-Lumen/mcp/server.mjs
+```
+
+| Tool | Effect |
+| --- | --- |
+| `list_jobs`, `get_job` | Jobs with status, prompt, enhancer caption, styles and images |
+| `view_image` | JPEG preview of a job image; a video as four frames in a 2×2 grid |
+| `imagine` | A prompt with Lumen's parameters and optional references (Lumen images or local files), like the imagine bar |
+| `act` | Vary, Upscale, Remix, Zoom out, Pan, Retexture, Animate, Extend, Upscale video or Describe on a job image |
+| `cancel_job` | Cancels a queued or running job |
+
+Reading works with Lumen closed. `imagine`, `act` and `cancel_job` are run by the open Lumen page, so they use the same enhancer, references and settings as its buttons and the jobs appear in Create.
 
 ## Building the page
 

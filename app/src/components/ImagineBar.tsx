@@ -27,6 +27,7 @@ import {
 } from '../store';
 import { DEFAULT_SETTINGS, type CreateSettings, type RefImage } from '../comfy/types';
 import { navigate, useRoute } from '../router';
+import { locale, t } from '../i18n';
 
 const ASPECTS = ['1:2', '9:16', '2:3', '3:4', '4:5', '1:1', '5:4', '4:3', '3:2', '16:9', '2:1'];
 
@@ -84,56 +85,56 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
   return (
     <div className="params">
       <div>
-        <div className="param-title">Proporción</div>
+        <div className="param-title">{t('Proporción')}</div>
         <AspectPreview aspect={s.aspect} />
         <input
           type="range"
-          aria-label="Proporción de la imagen"
+          aria-label={t('Proporción de la imagen')}
           min={0}
           max={ASPECTS.length - 1}
           value={ai === -1 ? 5 : ai}
           onChange={(e) => setSettings({ aspect: ASPECTS[Number(e.target.value)] })}
         />
         <Seg
-          label="Orientación"
+          label={t('Orientación')}
           value={ASPECTS.indexOf(s.aspect) < 5 ? 'portrait' : s.aspect === '1:1' ? 'square' : 'landscape'}
           onChange={(v) => setSettings({ aspect: v === 'portrait' ? '2:3' : v === 'square' ? '1:1' : '3:2' })}
           options={[
-            ['portrait', 'Vertical'],
-            ['square', 'Cuadrado'],
-            ['landscape', 'Horizontal'],
+            ['portrait', t('Vertical')],
+            ['square', t('Cuadrado')],
+            ['landscape', t('Horizontal')],
           ]}
         />
       </div>
       <div>
-        <div className="param-title">Variación</div>
-        <Slider label="Variedad" value={s.chaos} min={0} max={100} onChange={(v) => setSettings({ chaos: v })} />
+        <div className="param-title">{t('Variación')}</div>
+        <Slider label={t('Variedad')} value={s.chaos} min={0} max={100} onChange={(v) => setSettings({ chaos: v })} />
       </div>
       <div className="col-3">
-        <div className="param-title">Modelo</div>
-        <Row label="Imagen">
-          <Seg label="Resolución de imagen" value={s.resolution} onChange={(v) => setSettings({ resolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />
+        <div className="param-title">{t('Modelo')}</div>
+        <Row label={t('Imagen')}>
+          <Seg label={t('Resolución de imagen')} value={s.resolution} onChange={(v) => setSettings({ resolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />
         </Row>
-        <Row label="Imágenes">
-          <Seg label="Imágenes por creación" value={s.grid} onChange={(v) => setSettings({ grid: v })} options={[[1, '1'], [2, '2'], [3, '3'], [4, '4']]} />
+        <Row label={t('Imágenes')}>
+          <Seg label={t('Imágenes por creación')} value={s.grid} onChange={(v) => setSettings({ grid: v })} options={[[1, '1'], [2, '2'], [3, '3'], [4, '4']]} />
         </Row>
-        <div className="param-title">Más opciones</div>
-        <Row label="Vídeo · resolución">
-          <Seg label="Resolución de vídeo" value={s.videoResolution} onChange={(v) => setSettings({ videoResolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />
+        <div className="param-title">{t('Más opciones')}</div>
+        <Row label={t('Vídeo · resolución')}>
+          <Seg label={t('Resolución de vídeo')} value={s.videoResolution} onChange={(v) => setSettings({ videoResolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />
         </Row>
-        <Row label="Vídeo · lote">
-          <Seg label="Vídeos por prompt" value={s.videoBatch} onChange={(v) => setSettings({ videoBatch: v })} options={[[1, '1'], [2, '2'], [4, '4']]} />
+        <Row label={t('Vídeo · lote')}>
+          <Seg label={t('Vídeos por prompt')} value={s.videoBatch} onChange={(v) => setSettings({ videoBatch: v })} options={[[1, '1'], [2, '2'], [4, '4']]} />
         </Row>
-        <Row label="Vídeo · movimiento">
-          <Seg label="Movimiento" value={s.motion} onChange={(v) => setSettings({ motion: v })} options={[['low', 'Bajo'], ['high', 'Alto']]} />
+        <Row label={t('Vídeo · movimiento')}>
+          <Seg label={t('Movimiento')} value={s.motion} onChange={(v) => setSettings({ motion: v })} options={[['low', t('Bajo')], ['high', t('Alto')]]} />
         </Row>
       </div>
       <div className="params-foot">
         <span>
-          Parámetros en el prompt: --ar 16:9 · --seed 42 · --c 20 · --r 3 · --iw 1.5 · --cw 50 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
+          {t('Parámetros en el prompt: --ar 16:9 · --seed 42 · --c 20 · --r 3 · --iw 1.5 · --cw 50 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop ·')} {'{rojo, azul}'} {t('· espacio::2 barco')}
         </span>
         <button className="link-btn" type="button" onClick={() => setSettings({ ...DEFAULT_SETTINGS })}>
-          Restablecer
+          {t('Restablecer')}
         </button>
       </div>
     </div>
@@ -141,22 +142,22 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
 }
 
 const SLOT_LABEL: Record<RefSlot | 'describe', string> = {
-  images: 'Prompt de imagen',
-  style: 'Referencia de estilo',
-  character: 'Personaje (--cref)',
-  start: 'Fotograma inicial (animar)',
-  end: 'Fotograma final',
-  describe: 'Describir',
+  images: t('Prompt de imagen'),
+  style: t('Referencia de estilo'),
+  character: t('Personaje (--cref)'),
+  start: t('Fotograma inicial (animar)'),
+  end: t('Fotograma final'),
+  describe: t('Describir'),
 };
 
 function readFile(f: File): Promise<Omit<RefImage, 'id'>> {
   return new Promise((res, rej) => {
-    if (!f.type.startsWith('image/')) return rej(new Error('No es una imagen'));
-    if (f.size > 10 * 1024 * 1024) return rej(new Error('La imagen supera 10 MB'));
+    if (!f.type.startsWith('image/')) return rej(new Error(t('No es una imagen')));
+    if (f.size > 10 * 1024 * 1024) return rej(new Error(t('La imagen supera 10 MB')));
     const url = URL.createObjectURL(f);
     const img = new Image();
     img.onload = () => res({ url, w: img.naturalWidth, h: img.naturalHeight, blob: f, name: f.name });
-    img.onerror = () => rej(new Error('No se pudo leer la imagen'));
+    img.onerror = () => rej(new Error(t('No se pudo leer la imagen')));
     img.src = url;
   });
 }
@@ -166,7 +167,7 @@ function readUrl(url: string): Promise<Omit<RefImage, 'id'>> {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => res({ url, w: img.naturalWidth || 1024, h: img.naturalHeight || 1024, name: `ref_${Date.now()}.png` });
-    img.onerror = () => rej(new Error('No se pudo leer la imagen'));
+    img.onerror = () => rej(new Error(t('No se pudo leer la imagen')));
     img.src = url;
   });
 }
@@ -214,7 +215,7 @@ function Zone({ slot, onDescribe }: { slot: RefSlot | 'describe'; onDescribe: (i
         <span>{SLOT_LABEL[slot]}</span>
         {slot === 'end' && (
           <label className="switch small">
-            <input type="checkbox" checked={refs.loop} onChange={(e) => setLoop(e.target.checked)} /> Bucle
+            <input type="checkbox" checked={refs.loop} onChange={(e) => setLoop(e.target.checked)} /> {t('Bucle')}
           </label>
         )}
       </div>
@@ -222,17 +223,17 @@ function Zone({ slot, onDescribe }: { slot: RefSlot | 'describe'; onDescribe: (i
         {items.map((r) => (
           <div className="attach-chip" key={r.id}>
             <img src={r.url} alt={SLOT_LABEL[slot]} />
-            <button type="button" aria-label="Quitar imagen" onClick={() => removeRef(slot as RefSlot, r.id)}>
+            <button type="button" aria-label={t('Quitar imagen')} onClick={() => removeRef(slot as RefSlot, r.id)}>
               <IconClose size={14} />
             </button>
           </div>
         ))}
         {!(slot === 'end' && refs.loop) && (
-          <button type="button" className="zone-add" onClick={() => file.current?.click()} aria-label={`Subir imagen: ${SLOT_LABEL[slot]}`}>
+          <button type="button" className="zone-add" onClick={() => file.current?.click()} aria-label={t('Subir imagen: {slot}', { slot: SLOT_LABEL[slot] })}>
             +
           </button>
         )}
-        {slot === 'end' && refs.loop && <span className="hint">Usa el fotograma inicial</span>}
+        {slot === 'end' && refs.loop && <span className="hint">{t('Usa el fotograma inicial')}</span>}
       </div>
       <input
         ref={file}
@@ -268,21 +269,21 @@ function PersonalizeButton() {
           type="button"
           className={`icon-btn${on ? ' on accent' : ''}`}
           aria-pressed={on}
-          aria-label="Personalización (perfiles y moodboards)"
-          title={on ? `Personalización activada: ${defaults.map((d) => d.name).join(', ') || 'nada seleccionado'}` : 'Personalización desactivada'}
+          aria-label={t('Personalización (perfiles y moodboards)')}
+          title={on ? t('Personalización activada: {names}', { names: defaults.map((d) => d.name).join(', ') || t('nada seleccionado') }) : t('Personalización desactivada')}
           onClick={togglePersonalization}
         >
           <IconSparkle />
         </button>
-        <button type="button" className="icon-btn caret" aria-label="Elegir moodboards predeterminados" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button type="button" className="icon-btn caret" aria-label={t('Elegir moodboards predeterminados')} aria-expanded={open} onClick={() => setOpen(!open)}>
           ▾
         </button>
       </span>
       {open && (
         <div className="menu up" role="menu">
-          <span className="menu-label">Perfiles predeterminados</span>
+          <span className="menu-label">{t('Perfiles predeterminados')}</span>
           {profiles.map((p) => (
-            <button key={p.id} role="menuitemcheckbox" aria-checked={p.isDefault} onClick={() => toggleProfileDefault(p.id)} disabled={!isUnlocked(p)} title={isUnlocked(p) ? '' : 'Aún bloqueado'}>
+            <button key={p.id} role="menuitemcheckbox" aria-checked={p.isDefault} onClick={() => toggleProfileDefault(p.id)} disabled={!isUnlocked(p)} title={isUnlocked(p) ? '' : t('Aún bloqueado')}>
               {p.isDefault ? '✓' : '○'} {p.name} <span className="count">{isUnlocked(p) ? '' : `🔒 ${p.picks}/${UNLOCK_PICKS}`}</span>
             </button>
           ))}
@@ -293,10 +294,10 @@ function PersonalizeButton() {
               navigate('personalize');
             }}
           >
-            Gestionar perfiles…
+            {t('Gestionar perfiles…')}
           </button>
-          <span className="menu-label">Moodboards predeterminados</span>
-          {boards.length === 0 && <p className="hint">Aún no tienes moodboards.</p>}
+          <span className="menu-label">{t('Moodboards predeterminados')}</span>
+          {boards.length === 0 && <p className="hint">{t('Aún no tienes moodboards.')}</p>}
           {boards.map((b) => (
             <button key={b.id} role="menuitemcheckbox" aria-checked={b.isDefault} onClick={() => toggleMoodboardDefault(b.id)}>
               {b.isDefault ? '✓' : '○'} {b.name} <span className="count">{b.images.length}</span>
@@ -309,7 +310,7 @@ function PersonalizeButton() {
               navigate('moodboards');
             }}
           >
-            Gestionar moodboards…
+            {t('Gestionar moodboards…')}
           </button>
         </div>
       )}
@@ -327,19 +328,19 @@ function RefStrip() {
     ...(refs.end ? [{ slot: 'end' as const, r: refs.end }] : []),
   ];
   if (!all.length) return null;
-  const tag = { images: 'Imagen', style: 'Estilo', character: 'Personaje', start: 'Inicio', end: 'Final' };
+  const tag = { images: t('Imagen'), style: t('Estilo'), character: t('Personaje'), start: t('Inicio'), end: t('Final') };
   return (
     <div className="ref-strip">
       {all.map(({ slot, r }) => (
         <div className="attach-chip labeled" key={r.id} title={SLOT_LABEL[slot]}>
           <img src={r.url} alt={SLOT_LABEL[slot]} />
           <span>{tag[slot]}</span>
-          <button type="button" aria-label="Quitar imagen" onClick={() => removeRef(slot, r.id)}>
+          <button type="button" aria-label={t('Quitar imagen')} onClick={() => removeRef(slot, r.id)}>
             <IconClose size={14} />
           </button>
         </div>
       ))}
-      {refs.loop && <span className="chip">bucle</span>}
+      {refs.loop && <span className="chip">{t('bucle')}</span>}
     </div>
   );
 }
@@ -364,26 +365,26 @@ function ChatPanel() {
     <div className="chat" aria-live="polite">
       {chat.length === 0 && (
         <p className="hint">
-          Modo conversacional: describe tu idea con tus palabras y escribiré el prompt por ti. Después puedes pedir cambios («más cálido», «sin personas», «en vertical», «cambia el gato por un zorro») o actuar sobre una imagen («variación de la imagen 2», «anima la 3»).
+          {t('Modo conversacional: describe tu idea con tus palabras y escribiré el prompt por ti. Después puedes pedir cambios («más cálido», «sin personas», «en vertical», «cambia el gato por un zorro») o actuar sobre una imagen («variación de la imagen 2», «anima la 3»).')}
         </p>
       )}
-      {chat.slice(-8).map((t, i) => (
-        <div key={i} className={`chat-turn ${t.role}`}>
-          <span className="chat-who">{t.role === 'user' ? <IconUser size={14} /> : <IconChat size={14} />}</span>
+      {chat.slice(-8).map((turn, i) => (
+        <div key={i} className={`chat-turn ${turn.role}`}>
+          <span className="chat-who">{turn.role === 'user' ? <IconUser size={14} /> : <IconChat size={14} />}</span>
           <div>
-            <p>{t.text}</p>
-            {t.prompt && (
+            <p>{turn.text}</p>
+            {turn.prompt && (
               <div className="chat-prompt">
-                <code>{t.prompt}</code>
+                <code>{turn.prompt}</code>
                 <button
                   type="button"
                   className="link-btn"
                   onClick={() => {
                     toggleConversational();
-                    setDraft(t.prompt!);
+                    setDraft(turn.prompt!);
                   }}
                 >
-                  Editar a mano
+                  {t('Editar a mano')}
                 </button>
               </div>
             )}
@@ -392,7 +393,7 @@ function ChatPanel() {
       ))}
       {chat.length > 0 && (
         <button type="button" className="link-btn" onClick={clearChat}>
-          Empezar otra conversación
+          {t('Empezar otra conversación')}
         </button>
       )}
       <div ref={end} />
@@ -452,18 +453,18 @@ export function ImagineBar() {
 
   const placeholder =
     pending?.kind === 'remix'
-      ? 'Edita el prompt y pulsa Enter para remezclar'
+      ? t('Edita el prompt y pulsa Enter para remezclar')
       : pending?.kind === 'extend'
-        ? 'Cambia el prompt para alargar el vídeo'
+        ? t('Cambia el prompt para alargar el vídeo')
         : conversational
           ? listening
-            ? 'Te escucho…'
-            : 'Cuéntame tu idea con tus palabras («un faro en una tormenta», «hazlo de noche», «variación de la imagen 2»)'
+            ? t('Te escucho…')
+            : t('Cuéntame tu idea con tus palabras («un faro en una tormenta», «hazlo de noche», «variación de la imagen 2»)')
           : video
             ? refs.start
-              ? 'Describe el movimiento (opcional)…'
-              : 'Describe el vídeo que quieres crear…'
-            : '¿Qué vas a imaginar?';
+              ? t('Describe el movimiento (opcional)…')
+              : t('Describe el vídeo que quieres crear…')
+            : t('¿Qué vas a imaginar?');
   const canSend = !!draft.trim() || (!conversational && (!!refs.start || !!pending));
 
   // Voice (conversational mode): uses the browser's speech recognition; voice needs Draft mode.
@@ -471,7 +472,7 @@ export function ImagineBar() {
     const W = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
     const Ctor = W.SpeechRecognition ?? W.webkitSpeechRecognition;
     if (!Ctor) {
-      toast('Tu navegador no permite dictar por voz (prueba con Chrome o Edge).', 'error');
+      toast(t('Tu navegador no permite dictar por voz (prueba con Chrome o Edge).'), 'error');
       return;
     }
     if (listening) {
@@ -480,17 +481,17 @@ export function ImagineBar() {
     }
     if (!draftMode) {
       toggleDraftMode();
-      toast('La voz usa el modo borrador: lo he activado.');
+      toast(t('La voz usa el modo borrador: lo he activado.'));
     }
     const rec = new Ctor();
-    rec.lang = navigator.language || 'es-ES';
+    rec.lang = locale;
     rec.interimResults = true;
     let finalText = '';
     rec.onresult = (e) => {
-      let t = '';
-      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-      finalText = t;
-      setDraft(t);
+      let heard = '';
+      for (let i = 0; i < e.results.length; i++) heard += e.results[i][0].transcript;
+      finalText = heard;
+      setDraft(heard);
     };
     rec.onerror = () => setListening(false);
     rec.onend = () => {
@@ -535,20 +536,20 @@ export function ImagineBar() {
           <div className="bar-tags">
             {pending && (
               <span className="chip strong">
-                {pending.kind === 'remix' ? `Remix · ${pending.strength === 'subtle' ? 'Sutil' : 'Fuerte'}` : 'Alargar vídeo'}
+                {pending.kind === 'remix' ? `Remix · ${pending.strength === 'subtle' ? t('Sutil') : t('Fuerte')}` : t('Alargar vídeo')}
                 <img src={pending.image.url} alt="" className="chip-thumb" />
                 <button type="button" className="link-btn" onClick={() => setDraft(pending.originalPrompt)}>
-                  Restablecer prompt
+                  {t('Restablecer prompt')}
                 </button>
-                <button type="button" className="chip-x" aria-label="Cancelar" onClick={cancelPending}>
+                <button type="button" className="chip-x" aria-label={t('Cancelar')} onClick={cancelPending}>
                   <IconClose size={12} />
                 </button>
               </span>
             )}
             {folder && (
               <span className="chip strong">
-                <IconFolder size={13} /> Creando en «{folder.name}»
-                <button type="button" className="chip-x" aria-label="Salir de la carpeta" onClick={() => openFolder(undefined)}>
+                <IconFolder size={13} /> {t('Creando en «{name}»', { name: folder.name })}
+                <button type="button" className="chip-x" aria-label={t('Salir de la carpeta')} onClick={() => openFolder(undefined)}>
                   <IconClose size={12} />
                 </button>
               </span>
@@ -560,14 +561,14 @@ export function ImagineBar() {
             type="button"
             className={`icon-btn${imagesOpen ? ' on' : ''}${hasRefs ? ' has' : ''}`}
             aria-expanded={imagesOpen}
-            aria-label="Imágenes: prompt de imagen, estilo, fotogramas, describir"
-            title="Imágenes"
+            aria-label={t('Imágenes: prompt de imagen, estilo, fotogramas, describir')}
+            title={t('Imágenes')}
             onClick={() => setImagesOpen((o) => !o)}
           >
             <IconImage />
           </button>
           <label className="sr-only" htmlFor="imagine-input">
-            Prompt
+            {t('Prompt')}
           </label>
           <textarea
             id="imagine-input"
@@ -584,7 +585,7 @@ export function ImagineBar() {
             }}
           />
           {conversational && (
-            <button type="button" className={`icon-btn${listening ? ' on accent rec' : ''}`} aria-pressed={listening} aria-label="Hablar" title={listening ? 'Parar de escuchar' : 'Hablar (usa el modo borrador)'} onClick={startVoice}>
+            <button type="button" className={`icon-btn${listening ? ' on accent rec' : ''}`} aria-pressed={listening} aria-label={t('Hablar')} title={listening ? t('Parar de escuchar') : t('Hablar (usa el modo borrador)')} onClick={startVoice}>
               <IconMic />
             </button>
           )}
@@ -592,8 +593,8 @@ export function ImagineBar() {
             type="button"
             className={`icon-btn${conversational ? ' on accent' : ''}`}
             aria-pressed={conversational}
-            aria-label="Modo conversacional"
-            title={conversational ? 'Modo conversacional activado: describe tu idea y escribo el prompt' : 'Modo conversacional'}
+            aria-label={t('Modo conversacional')}
+            title={conversational ? t('Modo conversacional activado: describe tu idea y escribo el prompt') : t('Modo conversacional')}
             onClick={toggleConversational}
           >
             <IconChat />
@@ -603,8 +604,8 @@ export function ImagineBar() {
             type="button"
             className={`icon-btn${draftMode ? ' on accent' : ''}`}
             aria-pressed={draftMode}
-            aria-label="Modo borrador"
-            title={draftMode ? 'Modo borrador activado: muchas imágenes rápidas y pequeñas' : 'Modo borrador'}
+            aria-label={t('Modo borrador')}
+            title={draftMode ? t('Modo borrador activado: muchas imágenes rápidas y pequeñas') : t('Modo borrador')}
             onClick={toggleDraftMode}
           >
             <IconBolt />
@@ -613,20 +614,20 @@ export function ImagineBar() {
             type="button"
             className={`icon-btn${video ? ' on accent' : ''}`}
             aria-pressed={video}
-            aria-label="Crear vídeo"
-            title={video ? 'Modo vídeo (pulsa para volver a imagen)' : 'Crear vídeo'}
+            aria-label={t('Crear vídeo')}
+            title={video ? t('Modo vídeo (pulsa para volver a imagen)') : t('Crear vídeo')}
             onClick={() => setSettings({ output: settings.output === 'video' ? 'image' : 'video' })}
           >
             <IconVideo />
           </button>
-          <button type="button" className={`icon-btn${open ? ' on' : ''}`} aria-expanded={open} aria-label="Ajustes de creación" title="Ajustes de creación" onClick={() => setOpen((o) => !o)}>
+          <button type="button" className={`icon-btn${open ? ' on' : ''}`} aria-expanded={open} aria-label={t('Ajustes de creación')} title={t('Ajustes de creación')} onClick={() => setOpen((o) => !o)}>
             <IconSliders />
           </button>
           <button
             type="submit"
             className="icon-btn send-btn"
-            aria-label={video ? 'Crear vídeo' : 'Imaginar'}
-            title={`${video ? 'Crear vídeo' : 'Imaginar'} (Enter · Ctrl+Enter mantiene el texto)`}
+            aria-label={video ? t('Crear vídeo') : t('Imaginar')}
+            title={video ? t('Crear vídeo (Enter · Ctrl+Enter mantiene el texto)') : t('Imaginar (Enter · Ctrl+Enter mantiene el texto)')}
             disabled={!canSend}
             data-action={pending ? pending.kind : video ? (refs.start ? 'animate' : 'video') : refs.images.length ? 'image_prompt' : 'imagine'}
           >
@@ -645,13 +646,13 @@ export function ImagineBar() {
               <Zone slot="describe" onDescribe={describe} />
             </div>
             <div className="params-foot">
-              <span>Arrastra imágenes a cada sección o pulsa +. Máximo 10 MB por imagen.</span>
+              <span>{t('Arrastra imágenes a cada sección o pulsa +. Máximo 10 MB por imagen.')}</span>
               <span className="row">
-                <button type="button" className={`btn small${locked ? ' primary' : ''}`} onClick={toggleRefsLock} title="Mantener las imágenes para los siguientes prompts">
-                  <IconLock size={14} /> {locked ? 'Fijadas' : 'Fijar'}
+                <button type="button" className={`btn small${locked ? ' primary' : ''}`} onClick={toggleRefsLock} title={t('Mantener las imágenes para los siguientes prompts')}>
+                  <IconLock size={14} /> {locked ? t('Fijadas') : t('Fijar')}
                 </button>
                 <button type="button" className="btn small" onClick={clearRefs}>
-                  <IconTrash size={14} /> Quitar todas
+                  <IconTrash size={14} /> {t('Quitar todas')}
                 </button>
               </span>
             </div>

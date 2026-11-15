@@ -22,12 +22,13 @@ import { navigate } from '../router';
 import { Media } from '../components/Media';
 import { useConfig } from '../useConfig';
 import { previewKey, randomCode, requestPreview, styleTitle, usePreviews, type StylePreview } from '../stylePreviews';
+import { t } from '../i18n';
 
 const BATCH = 8;
 
 function Preview({ p }: { p?: StylePreview }) {
   if (p?.status === 'done' && p.image) return <Media img={p.image} alt="" />;
-  return <span className="placeholder style-pending">{p?.status === 'error' ? 'Error' : p?.status === 'running' ? 'Generando…' : 'En cola'}</span>;
+  return <span className="placeholder style-pending">{p?.status === 'error' ? t('Error') : p?.status === 'running' ? t('Generando…') : t('En cola')}</span>;
 }
 
 /** Real style samples (random --sref codes on the preview prompt, shared with Explore): pick the ones you like. */
@@ -48,7 +49,7 @@ function Rater({ p, onClose }: { p: Profile; onClose: () => void }) {
   const commit = () => {
     const shown = batch.filter((c) => preview(c)?.status === 'done');
     recordProfilePicks(p.id, shown.filter((c) => picked.has(c)), shown.filter((c) => !picked.has(c)));
-    if (p.picks < UNLOCK_PICKS && p.picks + picked.size >= UNLOCK_PICKS) toast(`¡«${p.name}» desbloqueado! Ya puedes usarlo con --p.`);
+    if (p.picks < UNLOCK_PICKS && p.picks + picked.size >= UNLOCK_PICKS) toast(t('¡«{name}» desbloqueado! Ya puedes usarlo con --p.', { name: p.name }));
     setPicked(new Set());
     setBatch(newBatch());
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -58,16 +59,16 @@ function Rater({ p, onClose }: { p: Profile; onClose: () => void }) {
       <div className="toolbar">
         <div>
           <h2 style={{ margin: 0 }}>{p.name}</h2>
-          <p className="hint">Elige los estilos que más te gusten (no por su contenido). Aprende de lo que eliges y de lo que no.</p>
+          <p className="hint">{t('Elige los estilos que más te gusten (no por su contenido). Aprende de lo que eliges y de lo que no.')}</p>
         </div>
         <button className="btn small" onClick={onClose}>
-          Terminar
+          {t('Terminar')}
         </button>
       </div>
-      <div className="progress big" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Progreso de desbloqueo">
+      <div className="progress big" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('Progreso de desbloqueo')}>
         <div style={{ width: `${pct}%` }} />
       </div>
-      <p className="hint">{isUnlocked(p) ? `Desbloqueado · ${total} elegidos: cuantos más elijas, mejor te conoce.` : `${total} / ${UNLOCK_PICKS} para desbloquear`}</p>
+      <p className="hint">{isUnlocked(p) ? t('Desbloqueado · {total} elegidos: cuantos más elijas, mejor te conoce.', { total }) : t('{total} / {UNLOCK_PICKS} para desbloquear', { total, UNLOCK_PICKS })}</p>
       <div className="samples" style={{ marginTop: 12 }}>
         {batch.map((code) => {
           const pv = preview(code);
@@ -95,7 +96,7 @@ function Rater({ p, onClose }: { p: Profile; onClose: () => void }) {
       </div>
       <div className="sentinel">
         <button className="btn primary" onClick={commit} disabled={!ready}>
-          {!ready ? 'Generando muestras…' : picked.size ? `Guardar ${picked.size} y ver más` : 'Ninguna me gusta: ver más'}
+          {!ready ? t('Generando muestras…') : picked.size ? t('Guardar {size} y ver más', { size: picked.size }) : t('Ninguna me gusta: ver más')}
         </button>
       </div>
     </div>
@@ -114,11 +115,11 @@ function ProfileCard({ p, onRate }: { p: Profile; onRate: () => void }) {
     const d = getState().draft.replace(/\s--p\b[^-]*/g, ' ').trim();
     setDraft(`${d} --p ${p.id}`.trim());
     navigate('imagine');
-    toast(`--p ${p.id} añadido a la barra`);
+    toast(t('--p {id} añadido a la barra', { id: p.id }));
   };
   return (
     <section className="card profile" aria-label={p.name}>
-      <button className="profile-thumbs" onClick={onRate} title="Elegir imágenes para este perfil">
+      <button className="profile-thumbs" onClick={onRate} title={t('Elegir imágenes para este perfil')}>
         {top.slice(0, 3).map((code) => (
           <Preview key={code} p={previews[previewKey(code, prompt)]} />
         ))}
@@ -134,44 +135,44 @@ function ProfileCard({ p, onRate }: { p: Profile; onRate: () => void }) {
                 setRenaming(false);
               }}
             >
-              <input name="n" className="board-name-input" defaultValue={p.name} autoFocus onBlur={() => setRenaming(false)} aria-label="Nombre del perfil" />
+              <input name="n" className="board-name-input" defaultValue={p.name} autoFocus onBlur={() => setRenaming(false)} aria-label={t('Nombre del perfil')} />
             </form>
           ) : (
             <h2>{p.name}</h2>
           )}
           <div className="row">
-            <button className="icon-btn" aria-label="Renombrar" title="Renombrar" onClick={() => setRenaming(true)}>
+            <button className="icon-btn" aria-label={t('Renombrar')} title={t('Renombrar')} onClick={() => setRenaming(true)}>
               <IconEdit size={16} />
             </button>
             {p.id !== 'global' && (
-              <button className="icon-btn" aria-label="Borrar perfil" title="Borrar (los códigos ya usados siguen funcionando)" onClick={() => confirm(`¿Borrar «${p.name}»?`) && deleteProfile(p.id)}>
+              <button className="icon-btn" aria-label={t('Borrar perfil')} title={t('Borrar (los códigos ya usados siguen funcionando)')} onClick={() => confirm(t('¿Borrar «{name}»?', { name: p.name })) && deleteProfile(p.id)}>
                 <IconTrash size={16} />
               </button>
             )}
           </div>
         </div>
-        <div className="progress" aria-label="Progreso">
+        <div className="progress" aria-label={t('Progreso')}>
           <div style={{ width: `${Math.min(100, (p.picks / UNLOCK_PICKS) * 100)}%` }} />
         </div>
         <p className="hint">
           {unlocked ? (
             <>
-              ID <code>{p.id}</code> · versión <code>--p {profileCode(p)}</code> · {p.picks} elegidos
-              {sref ? <> · mezcla <code>--sref {sref}</code></> : null}
+              {t('ID')} <code>{p.id}</code> {t('· versión')} <code>--p {profileCode(p)}</code> {t('· {picks} elegidos', { picks: p.picks })}
+              {sref ? <> {t('· mezcla')} <code>{t('--sref {sref}', { sref })}</code></> : null}
             </>
           ) : (
-            `Bloqueado: elige ${UNLOCK_PICKS - p.picks} imágenes más para desbloquearlo.`
+            t('Bloqueado: elige {0} imágenes más para desbloquearlo.', { '0': UNLOCK_PICKS - p.picks })
           )}
         </p>
         <div className="row">
           <button className="btn small primary" onClick={onRate}>
-            {unlocked ? 'Seguir eligiendo' : 'Desbloquear'}
+            {unlocked ? t('Seguir eligiendo') : t('Desbloquear')}
           </button>
           <button className="btn small" onClick={use} disabled={!unlocked}>
-            <IconCopy size={14} /> Usar
+            <IconCopy size={14} /> {t('Usar')}
           </button>
-          <label className="switch small" title="Usar por defecto cuando la personalización está activada">
-            <input type="checkbox" checked={p.isDefault} onChange={() => toggleProfileDefault(p.id)} /> Predeterminado
+          <label className="switch small" title={t('Usar por defecto cuando la personalización está activada')}>
+            <input type="checkbox" checked={p.isDefault} onChange={() => toggleProfileDefault(p.id)} /> {t('Predeterminado')}
           </label>
         </div>
       </div>
@@ -189,9 +190,9 @@ export function Personalize() {
   const global = profiles.find((p) => p.id === 'global');
   return (
     <div className="page">
-      <h1>Personalizar</h1>
+      <h1>{t('Personalizar')}</h1>
       <p className="lead">
-        Enseña tus gustos eligiendo entre muestras de estilos reales (códigos <code>--sref</code> generados con el prompt de vista previa). Tu perfil global se desbloquea tras {UNLOCK_PICKS} elecciones; los «me gusta» en Explorar › Estilos también lo afinan. Un perfil es la mezcla de sus 4 mejores códigos: úsalo con <code>--p</code> o activa la personalización junto a la barra; <code>--sw</code> controla cuánto se aplica.
+        {t('Enseña tus gustos eligiendo entre muestras de estilos reales (códigos')} <code>--sref</code> {t('generados con el prompt de vista previa). Tu perfil global se desbloquea tras {UNLOCK_PICKS} elecciones; los «me gusta» en Explorar › Estilos también lo afinan. Un perfil es la mezcla de sus 4 mejores códigos: úsalo con', { UNLOCK_PICKS })} <code>--p</code> {t('o activa la personalización junto a la barra;')} <code>--sw</code> {t('controla cuánto se aplica.')}
       </p>
       <div className="row" style={{ marginBottom: 16 }}>
         <form
@@ -205,23 +206,23 @@ export function Personalize() {
             }
           }}
         >
-          <input className="text-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del perfil" aria-label="Nombre del nuevo perfil" disabled={!isUnlocked(global)} />
-          <button className="btn" type="submit" disabled={!isUnlocked(global)} title={isUnlocked(global) ? '' : 'Primero desbloquea tu perfil global'}>
-            <IconPlus size={15} /> Nuevo perfil
+          <input className="text-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Nombre del perfil')} aria-label={t('Nombre del nuevo perfil')} disabled={!isUnlocked(global)} />
+          <button className="btn" type="submit" disabled={!isUnlocked(global)} title={isUnlocked(global) ? '' : t('Primero desbloquea tu perfil global')}>
+            <IconPlus size={15} /> {t('Nuevo perfil')}
           </button>
         </form>
         <button className={`btn${on ? ' primary' : ''}`} onClick={togglePersonalization}>
-          Personalización {on ? 'activada' : 'desactivada'}
+          {t('Personalización')} {on ? 'activada' : 'desactivada'}
         </button>
         <button className="btn" onClick={() => navigate('moodboards')}>
-          Moodboards
+          {t('Moodboards')}
         </button>
       </div>
       {profiles.map((p) => (
         <ProfileCard key={p.id} p={p} onRate={() => setRating(p.id)} />
       ))}
       <p className="hint">
-        Con los workflows integrados, un perfil añade su mezcla al --sref del trabajo (nodos Style Code de H3, MOSS y Anima); con tu propio workflow también recibes su código como {'{{moodboard}}'}.
+        {t('Con los workflows integrados, un perfil añade su mezcla al --sref del trabajo (nodos Style Code de H3, MOSS y Anima); con tu propio workflow también recibes su código como')} {'{{moodboard}}'}.
       </p>
     </div>
   );

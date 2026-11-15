@@ -14,15 +14,16 @@ import { Personalize } from './pages/Personalize';
 import { StyleCreator } from './pages/StyleCreator';
 import { ContextMenu } from './components/ContextMenu';
 import { useStore } from './store';
+import { LANGS, lang, setLang, t, type Lang } from './i18n';
 
 const NAV: { route: Route; label: string; Icon: typeof IconExplore; phone: boolean }[] = [
-  { route: 'explore', label: 'Explorar', Icon: IconExplore, phone: true },
-  { route: 'imagine', label: 'Crear', Icon: IconCreate, phone: true },
-  { route: 'edit', label: 'Editar', Icon: IconEdit, phone: true },
-  { route: 'personalize', label: 'Personalizar', Icon: IconSparkle, phone: false },
-  { route: 'moodboards', label: 'Moodboards', Icon: IconBoard, phone: false },
-  { route: 'style-creator', label: 'Crear estilos', Icon: IconPalette, phone: false },
-  { route: 'organize', label: 'Organizar', Icon: IconOrganize, phone: true },
+  { route: 'explore', label: t('Explorar'), Icon: IconExplore, phone: true },
+  { route: 'imagine', label: t('Crear'), Icon: IconCreate, phone: true },
+  { route: 'edit', label: t('Editar'), Icon: IconEdit, phone: true },
+  { route: 'personalize', label: t('Personalizar'), Icon: IconSparkle, phone: false },
+  { route: 'moodboards', label: t('Moodboards'), Icon: IconBoard, phone: false },
+  { route: 'style-creator', label: t('Crear estilos'), Icon: IconPalette, phone: false },
+  { route: 'organize', label: t('Organizar'), Icon: IconOrganize, phone: true },
   { route: 'comfyui', label: 'ComfyUI', Icon: IconNodes, phone: false },
 ];
 
@@ -35,7 +36,7 @@ function MoreMenu({ current }: { current: Route }) {
     <div className="nav-more">
       <button className={`nav-item${active ? ' active' : ''}`} aria-expanded={open} onClick={() => setOpen(!open)}>
         <IconMore size={22} />
-        <span>Más</span>
+        <span>{t('Más')}</span>
       </button>
       {open && (
         <div className="menu up right" role="menu">
@@ -93,10 +94,25 @@ function ThemeToggle() {
     setDark(!dark);
   };
   return (
-    <button className="nav-item" onClick={toggle} title={dark ? 'Modo claro' : 'Modo oscuro'}>
+    <button className="nav-item" onClick={toggle} title={dark ? t('Modo claro') : t('Modo oscuro')}>
       {dark ? <IconSun size={22} /> : <IconMoon size={22} />}
-      <span>{dark ? 'Modo claro' : 'Modo oscuro'}</span>
+      <span>{dark ? t('Modo claro') : t('Modo oscuro')}</span>
     </button>
+  );
+}
+
+function LangPicker() {
+  return (
+    <label className="nav-item lang-pick" title={t('Idioma')}>
+      <span aria-hidden="true">文A</span>
+      <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t('Idioma')}>
+        {Object.entries(LANGS).map(([code, name]) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -119,7 +135,7 @@ export function App() {
 
   return (
     <div className="shell">
-      <nav className="sidebar" aria-label="Principal">
+      <nav className="sidebar" aria-label={t('Principal')}>
         <a className="brand" href={routeHref('explore')} onClick={(e) => (e.preventDefault(), navigate('explore'))}>
           <Logo />
           <span>Lumen</span>
@@ -131,11 +147,12 @@ export function App() {
           <MoreMenu current={route} />
         </div>
         <div className="nav-bottom">
-          <NavLink route="help" label="Ayuda" Icon={IconHelp} current={route} />
+          <NavLink route="help" label={t('Ayuda')} Icon={IconHelp} current={route} />
           <ThemeToggle />
+          <LangPicker />
           <div className="conn">
             <span className="dot on" />
-            <span>ComfyUI{running ? ` · ${running} en curso` : ''}</span>
+            <span>ComfyUI{running ? t(' · {running} en curso', { running }) : ''}</span>
           </div>
         </div>
       </nav>
@@ -147,18 +164,19 @@ export function App() {
             <span>Lumen</span>
           </a>
           <span className="row">
-            <a className="nav-item" href={routeHref('help')} aria-label="Ayuda" title="Ayuda" onClick={(e) => (e.preventDefault(), navigate('help'))}>
+            <a className="nav-item" href={routeHref('help')} aria-label={t('Ayuda')} title={t('Ayuda')} onClick={(e) => (e.preventDefault(), navigate('help'))}>
               <IconHelp size={22} />
-              <span>Ayuda</span>
+              <span>{t('Ayuda')}</span>
             </a>
             <ThemeToggle />
+            <LangPicker />
           </span>
         </div>
         {route === 'explore' && (
           <header className="hero">
-            <h1>Imagina cualquier cosa</h1>
-            <h2>Crea imágenes y vídeos con tu propio ComfyUI</h2>
-            <p>Escribe una idea en la barra de abajo y pulsa Enter. Se crea con MiniMax H3 Image; añade --anima o --moss para Anima o MOSS Image.</p>
+            <h1>{t('Imagina cualquier cosa')}</h1>
+            <h2>{t('Crea imágenes y vídeos con tu propio ComfyUI')}</h2>
+            <p>{t('Escribe una idea en la barra de abajo y pulsa Enter. Se crea con MiniMax H3 Image; añade --anima o --moss para Anima o MOSS Image.')}</p>
           </header>
         )}
         {(route === 'explore' || route === 'imagine' || route === 'organize') && <ImagineBar />}
@@ -172,9 +190,9 @@ export function App() {
         {route === 'comfyui' && <ComfySettings />}
         {route === 'help' && <Help />}
         <footer className="foot">
-          Lumen · los botones de generación envían tu workflow a ComfyUI ·{' '}
+          {t('Lumen · los botones de generación envían tu workflow a ComfyUI ·')}{' '}
           <a href={routeHref('comfyui')} onClick={(e) => (e.preventDefault(), navigate('comfyui'))}>
-            Ajustes de ComfyUI
+            {t('Ajustes de ComfyUI')}
           </a>
         </footer>
       </main>

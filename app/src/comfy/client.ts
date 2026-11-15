@@ -1,5 +1,6 @@
 // Minimal ComfyUI HTTP + WebSocket client for the server that serves this page.
 import type { ApiWorkflow } from './workflows';
+import { t } from '../i18n';
 
 export interface ImageRef {
   filename: string;
@@ -27,20 +28,20 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch('/api' + path, init);
   } catch {
-    throw new Error('No se pudo conectar con ComfyUI. ¿Sigue encendido?');
+    throw new Error(t('No se pudo conectar con ComfyUI. ¿Sigue encendido?'));
   }
   if (!res.ok) {
     let detail = '';
     try {
       const body = await res.json();
-      detail = body?.error?.message ?? '';
+      detail = body?.error?.type === 'lumen_assistant_busy' ? t('El asistente de Lumen está usando la GPU; espera a que responda.') : (body?.error?.message ?? '');
       const nodeErrors = body?.node_errors ? Object.values(body.node_errors as Record<string, { errors?: { message: string; details: string }[] }>) : [];
       const first = nodeErrors[0]?.errors?.[0];
       if (first) detail += ` — ${first.message}: ${first.details}`;
     } catch {
       /* not json */
     }
-    throw new Error(`ComfyUI respondió ${res.status}${detail ? `: ${detail}` : ''}`);
+    throw new Error(t('ComfyUI respondió {status}{1}', { status: res.status, '1': detail ? `: ${detail}` : '' }));
   }
   return (await res.json()) as T;
 }
@@ -89,7 +90,7 @@ export async function uploadImage(blob: Blob, name: string): Promise<string> {
 /** Copies an image that ComfyUI already made (output folder) into its input folder. */
 export async function reuseOutputAsInput(ref: ImageRef): Promise<string> {
   const res = await fetch(viewUrl(ref));
-  if (!res.ok) throw new Error('No se pudo leer la imagen desde ComfyUI.');
+  if (!res.ok) throw new Error(t('No se pudo leer la imagen desde ComfyUI.'));
   return uploadImage(await res.blob(), `lumen_src_${ref.filename}`);
 }
 
@@ -100,10 +101,18 @@ export interface AssistantAnswer {
 }
 
 /** One conversational turn: the pack's route loads the GGUF in its own process, answers and releases it. */
+/** The assistant route's error codes, in the page's language. */
+const ASSISTANT_ERRORS: Record<string, string> = {
+  model_missing: 'No encuentro el modelo GGUF «{name}» en models/LLM. Elígelo en la página ComfyUI de Lumen.',
+  busy: 'ComfyUI está generando; el asistente responde cuando termine la cola.',
+  timeout: 'El asistente tardó demasiado y se detuvo.',
+  failed: 'El modelo GGUF falló: {detail}',
+};
+
 export async function askAssistant(body: { model: string; settings: Record<string, number>; message: string; current_prompt: string; images: number }): Promise<AssistantAnswer> {
   const res = await fetch('/lumen/assistant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const data = await res.json().catch(() => ({ error: `El asistente respondió ${res.status}.` }));
-  if (!res.ok) throw new Error(data.error ?? `El asistente respondió ${res.status}.`);
+  const data = await res.json().catch(() => ({ error: t('El asistente respondió {status}.', { status: res.status }) }));
+  if (!res.ok) throw new Error((data.code && ASSISTANT_ERRORS[data.code as string] ? t(ASSISTANT_ERRORS[data.code as string], data) : data.error) ?? t('El asistente respondió {status}.', { status: res.status }));
   return data as AssistantAnswer;
 }
 
@@ -220,7 +229,7 @@ export async function runWorkflow(workflow: ApiWorkflow, cb: RunCallbacks = {}, 
         if (!entry) return;
         if (entry.status?.status_str === 'error') {
           const msg = entry.status.messages?.find((m) => m[0] === 'execution_error')?.[1]?.exception_message;
-          finish(new Error(msg ? `Error en ComfyUI: ${msg}` : 'ComfyUI falló al ejecutar el workflow.'));
+          finish(new Error(msg ? t('Error en ComfyUI: {msg}', { msg }) : t('ComfyUI falló al ejecutar el workflow.')));
         } else if (entry.status?.completed || entry.outputs) {
           finish(undefined, { files: imagesFrom(entry), texts: textsFrom(entry), titled: titledFrom(entry, workflow) });
         }
@@ -251,7 +260,7 @@ export async function runWorkflow(workflow: ApiWorkflow, cb: RunCallbacks = {}, 
         if (d.prompt_id && d.prompt_id !== promptId) return;
         switch (msg.type) {
           case 'execution_start':
-            cb.onProgress?.(0.02, 'Empezando…');
+            cb.onProgress?.(0.02, t('Empezando…'));
             break;
           case 'execution_cached':
             for (const n of (d.nodes as string[]) ?? []) doneNodes.add(n);
@@ -260,7 +269,7 @@ export async function runWorkflow(workflow: ApiWorkflow, cb: RunCallbacks = {}, 
             if (d.node === null) void checkHistory();
             else if (typeof d.node === 'string') {
               doneNodes.add(d.node);
-              cb.onProgress?.(Math.min(0.95, doneNodes.size / nodeCount), 'Procesando…');
+              cb.onProgress?.(Math.min(0.95, doneNodes.size / nodeCount), t('Procesando…'));
             }
             break;
           case 'progress': {
@@ -272,10 +281,10 @@ export async function runWorkflow(workflow: ApiWorkflow, cb: RunCallbacks = {}, 
             void checkHistory();
             break;
           case 'execution_error':
-            finish(new Error(`Error en ComfyUI: ${String(d.exception_message ?? 'desconocido')}`));
+            finish(new Error(t('Error en ComfyUI: {msg}', { msg: String(d.exception_message ?? t('desconocido')) })));
             break;
           case 'execution_interrupted':
-            finish(new Error('Interrumpido en ComfyUI.'));
+            finish(new Error(t('Interrumpido en ComfyUI.')));
             break;
         }
       };

@@ -1,4 +1,5 @@
 import type { Engine } from './config';
+import { t } from '../i18n';
 
 /** Every generation button in the UI maps to one of these actions. */
 export type ActionKind =
@@ -24,23 +25,23 @@ export const VIDEO_ACTIONS: ActionKind[] = ['video', 'animate', 'extend', 'upsca
 export const isVideoAction = (a: ActionKind) => VIDEO_ACTIONS.includes(a);
 
 export const ACTION_LABELS: Record<ActionKind, string> = {
-  imagine: 'Imaginar (texto → imagen)',
-  image_prompt: 'Prompt de imagen (imagen + texto → imagen)',
-  vary_subtle: 'Variar · Sutil',
-  vary_strong: 'Variar · Fuerte',
-  upscale_subtle: 'Ampliar · Sutil',
-  upscale_creative: 'Ampliar · Creativo',
-  remix: 'Remezclar (cambiar el prompt)',
-  zoom_out: 'Alejar (zoom out)',
-  pan: 'Desplazar (pan)',
-  edit: 'Editor (borrar zonas / ampliar lienzo)',
-  retexture: 'Retexturizar (misma estructura, otro estilo)',
-  video: 'Vídeo (texto → vídeo)',
-  animate: 'Animar (imagen → vídeo)',
-  extend: 'Alargar vídeo',
-  upscale_video: 'Ampliar vídeo ×2 (RelayVSR)',
-  describe: 'Describir (imagen → prompts)',
-  converse: 'Modo conversacional (workflow propio en lugar del GGUF)',
+  imagine: t('Imaginar (texto → imagen)'),
+  image_prompt: t('Prompt de imagen (imagen + texto → imagen)'),
+  vary_subtle: t('Variar · Sutil'),
+  vary_strong: t('Variar · Fuerte'),
+  upscale_subtle: t('Ampliar · Sutil'),
+  upscale_creative: t('Ampliar · Creativo'),
+  remix: t('Remezclar (cambiar el prompt)'),
+  zoom_out: t('Alejar (zoom out)'),
+  pan: t('Desplazar (pan)'),
+  edit: t('Editor (borrar zonas / ampliar lienzo)'),
+  retexture: t('Retexturizar (misma estructura, otro estilo)'),
+  video: t('Vídeo (texto → vídeo)'),
+  animate: t('Animar (imagen → vídeo)'),
+  extend: t('Alargar vídeo'),
+  upscale_video: t('Ampliar vídeo ×2 (RelayVSR)'),
+  describe: t('Describir (imagen → prompts)'),
+  converse: t('Modo conversacional (workflow propio en lugar del GGUF)'),
 };
 
 export type Motion = 'low' | 'high';

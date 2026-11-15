@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // What Lumen keeps (jobs, settings, styles, saved searches) lives in ComfyUI's user folder,
 // one JSON file per name under user/<user>/lumen/, read once before the app starts.
 const files: Record<string, unknown> = {};
@@ -10,7 +11,7 @@ export async function loadSaved(names: string[]) {
     names.map(async (name) => {
       const res = await fetch(fileUrl(name));
       if (res.ok) files[name] = await res.json();
-      else if (res.status !== 404) throw new Error(`No se pudo leer lumen/${name}.json (${res.status}).`);
+      else if (res.status !== 404) throw new Error(t('No se pudo leer lumen/{name}.json ({status}).', { name, status: res.status }));
     }),
   );
 }
@@ -20,7 +21,7 @@ export const saved = <T,>(name: string): T | undefined => files[name] as T | und
 function write(name: string, keepalive = false) {
   delete timers[name];
   void fetch(fileUrl(name), { method: 'POST', body: JSON.stringify(files[name]), keepalive }).then((res) => {
-    if (!res.ok) console.error(`Lumen: no se pudo guardar lumen/${name}.json (${res.status})`);
+    if (!res.ok) console.error(t('Lumen: no se pudo guardar lumen/{name}.json ({status})', { name, status: res.status }));
   });
 }
 

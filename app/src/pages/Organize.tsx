@@ -8,6 +8,7 @@ import { FolderButton } from '../components/Folders';
 import { imageHandlers } from '../components/ContextMenu';
 import { jobMeta } from './Create';
 import { save, saved as savedFile } from '../saved';
+import { locale, t } from '../i18n';
 
 type Filter = 'all' | 'liked' | 'images' | 'videos' | 'upscaled' | 'edited' | 'trash';
 type Item = LbItem & { day: string; dayKey: string; key: string; job: Job };
@@ -46,7 +47,7 @@ export function Organize() {
       if (job.status !== 'done') continue;
       if (q.trim() && !matches(job, q)) continue;
       const d = new Date(job.createdAt);
-      const day = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+      const day = d.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
       const dayKey = d.toISOString().slice(0, 10);
       job.images.forEach((img, index) => {
         if (filter === 'trash' ? !img.trashed : img.trashed) return;
@@ -82,14 +83,14 @@ export function Organize() {
   };
   const clear = () => setSel(new Set());
   const saveSearch = () => {
-    const t = q.trim();
-    if (!t || saved.includes(t)) return;
-    const next = [...saved, t];
+    const search = q.trim();
+    if (!search || saved.includes(search)) return;
+    const next = [...saved, search];
     setSaved(next);
     save('searches', next);
   };
-  const removeSaved = (t: string) => {
-    const next = saved.filter((x) => x !== t);
+  const removeSaved = (search: string) => {
+    const next = saved.filter((x) => x !== search);
     setSaved(next);
     save('searches', next);
   };
@@ -105,18 +106,18 @@ export function Organize() {
     );
 
   return (
-    <section aria-label="Organizar" className="organize">
+    <section aria-label={t('Organizar')} className="organize">
       <div className="toolbar">
-        <div className="tabs" role="tablist" aria-label="Filtro">
+        <div className="tabs" role="tablist" aria-label={t('Filtro')}>
           {(
             [
-              ['all', 'Todas'],
-              ['liked', 'Me gusta'],
-              ['images', 'Imágenes'],
-              ['videos', 'Vídeos'],
-              ['upscaled', 'Ampliadas'],
-              ['edited', 'Editadas'],
-              ['trash', 'Papelera'],
+              ['all', t('Todas')],
+              ['liked', t('Me gusta')],
+              ['images', t('Imágenes')],
+              ['videos', t('Vídeos')],
+              ['upscaled', t('Ampliadas')],
+              ['edited', t('Editadas')],
+              ['trash', t('Papelera')],
             ] as [Filter, string][]
           ).map(([k, label]) => (
             <button
@@ -137,23 +138,23 @@ export function Organize() {
           <FolderButton counts={counts} />
           <label className="search">
             <IconSearch size={16} />
-            <input type="search" placeholder="Buscar: palabras, --ar 16:9, HD…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar en tus imágenes" />
+            <input type="search" placeholder={t('Buscar: palabras, --ar 16:9, HD…')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t('Buscar en tus imágenes')} />
           </label>
           {q.trim() && !saved.includes(q.trim()) && (
-            <button className="btn small" onClick={saveSearch} title="Guardar esta búsqueda">
-              Guardar búsqueda
+            <button className="btn small" onClick={saveSearch} title={t('Guardar esta búsqueda')}>
+              {t('Guardar búsqueda')}
             </button>
           )}
         </div>
       </div>
       {saved.length > 0 && (
         <div className="saved-searches">
-          {saved.map((t) => (
-            <span key={t} className={`chip strong${q.trim() === t ? ' on' : ''}`}>
-              <button className="link-plain" onClick={() => setQ(t)}>
-                {t}
+          {saved.map((search) => (
+            <span key={search} className={`chip strong${q.trim() === search ? ' on' : ''}`}>
+              <button className="link-plain" onClick={() => setQ(search)}>
+                {search}
               </button>
-              <button className="chip-x" aria-label={`Borrar búsqueda ${t}`} onClick={() => removeSaved(t)}>
+              <button className="chip-x" aria-label={t('Borrar búsqueda {search}', { search })} onClick={() => removeSaved(search)}>
                 <IconClose size={12} />
               </button>
             </span>
@@ -162,16 +163,16 @@ export function Organize() {
       )}
       {filter === 'trash' && all.length > 0 && (
         <div className="banner">
-          <span>Las imágenes en la papelera no aparecen en Crear. Puedes restaurarlas o vaciarla.</span>
-          <button className="btn small" onClick={() => confirm('¿Vaciar la papelera? Se borran de este navegador.') && emptyTrash()}>
-            Vaciar papelera
+          <span>{t('Las imágenes en la papelera no aparecen en Crear. Puedes restaurarlas o vaciarla.')}</span>
+          <button className="btn small" onClick={() => confirm(t('¿Vaciar la papelera? Se borran de este navegador.')) && emptyTrash()}>
+            {t('Vaciar papelera')}
           </button>
         </div>
       )}
       {all.length === 0 ? (
         <div className="empty">
-          <h2>{jobs.length ? 'Nada por aquí' : 'Tu archivo está vacío'}</h2>
-          <p>{jobs.length ? 'Cambia el filtro, la carpeta o la búsqueda.' : 'Las imágenes y vídeos que crees aparecerán aquí, ordenados por día.'}</p>
+          <h2>{jobs.length ? t('Nada por aquí') : t('Tu archivo está vacío')}</h2>
+          <p>{jobs.length ? t('Cambia el filtro, la carpeta o la búsqueda.') : t('Las imágenes y vídeos que crees aparecerán aquí, ordenados por día.')}</p>
         </div>
       ) : (
         <div className="organize-body">
@@ -188,7 +189,7 @@ export function Organize() {
                       setSel(next);
                     }}
                   >
-                    Seleccionar el día
+                    {t('Seleccionar el día')}
                   </button>
                 </div>
                 <div className="grid">
@@ -209,7 +210,7 @@ export function Organize() {
                           <Media img={it.img} alt={it.prompt} />
                         </button>
                         {it.img.kind === 'video' && <VideoBadge />}
-                        <button className={`select-box${isSel ? ' on' : ''}`} aria-label={isSel ? 'Quitar de la selección' : 'Seleccionar'} aria-pressed={isSel} onClick={(e) => toggle(it, i, e.shiftKey)}>
+                        <button className={`select-box${isSel ? ' on' : ''}`} aria-label={isSel ? t('Quitar de la selección') : t('Seleccionar')} aria-pressed={isSel} onClick={(e) => toggle(it, i, e.shiftKey)}>
                           {isSel && <IconCheck size={14} />}
                         </button>
                         {it.img.liked && (
@@ -225,7 +226,7 @@ export function Organize() {
             ))}
           </div>
           {groups.length > 1 && (
-            <nav className="timeline" aria-label="Línea de tiempo">
+            <nav className="timeline" aria-label={t('Línea de tiempo')}>
               {groups.map((g) => (
                 <a key={g.dayKey} href={`#day-${g.dayKey}`} title={g.day}>
                   {g.dayKey.slice(5).replace('-', '/')}
@@ -236,13 +237,13 @@ export function Organize() {
         </div>
       )}
       {selected.length > 0 && (
-        <div className="bulk-bar" role="toolbar" aria-label="Acciones con la selección">
-          <strong>{selected.length} seleccionadas</strong>
+        <div className="bulk-bar" role="toolbar" aria-label={t('Acciones con la selección')}>
+          <strong>{t('{selected} seleccionadas', { selected: selected.length })}</strong>
           <button className="btn small" onClick={() => setLiked(selRefs, true)}>
-            <IconHeart size={14} /> Me gusta
+            <IconHeart size={14} /> {t('Me gusta')}
           </button>
           <button className="btn small" onClick={() => setLiked(selRefs, false)}>
-            Quitar me gusta
+            {t('Quitar me gusta')}
           </button>
           {filter === 'trash' ? (
             <button
@@ -252,7 +253,7 @@ export function Organize() {
                 clear();
               }}
             >
-              Restaurar
+              {t('Restaurar')}
             </button>
           ) : (
             <button
@@ -262,19 +263,19 @@ export function Organize() {
                 clear();
               }}
             >
-              Papelera
+              {t('Papelera')}
             </button>
           )}
           {folders.length > 0 && (
             <select
               className="select-small"
               value=""
-              aria-label="Añadir a carpeta"
+              aria-label={t('Añadir a carpeta')}
               onChange={(e) => {
                 if (e.target.value) addToFolder(selRefs, e.target.value);
               }}
             >
-              <option value="">Añadir a carpeta…</option>
+              <option value="">{t('Añadir a carpeta…')}</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -284,14 +285,14 @@ export function Organize() {
           )}
           {folderId && (
             <button className="btn small" onClick={() => addToFolder(selRefs, folderId, false)}>
-              <IconFolder size={14} /> Quitar de la carpeta
+              <IconFolder size={14} /> {t('Quitar de la carpeta')}
             </button>
           )}
           <button className="btn small" onClick={download}>
-            <IconDownload size={14} /> Descargar
+            <IconDownload size={14} /> {t('Descargar')}
           </button>
           <button className="btn small" onClick={clear}>
-            Cancelar
+            {t('Cancelar')}
           </button>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // Small browser-side helpers for images and ids.
 
 export function hash(text: string): number {
@@ -33,5 +34,5 @@ export async function toPngBlob(url: string, w: number, h: number): Promise<Blob
   c.width = w;
   c.height = h;
   c.getContext('2d')!.drawImage(img, 0, 0, w, h);
-  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('No se pudo convertir la imagen'))), 'image/png'));
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error(t('No se pudo convertir la imagen')))), 'image/png'));
 }

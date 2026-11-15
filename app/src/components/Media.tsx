@@ -1,5 +1,6 @@
 import type { JobImage } from '../comfy/types';
 import { isVideoFile } from '../comfy/client';
+import { t } from '../i18n';
 
 /** Shows an image, or a video: mp4/webm in a looping muted player, animated webp/gif/svg as an image. */
 export function Media({ img, alt, controls = false, lazy = true }: { img: JobImage; alt: string; controls?: boolean; lazy?: boolean }) {
@@ -12,11 +13,11 @@ export function Media({ img, alt, controls = false, lazy = true }: { img: JobIma
 
 export function VideoBadge() {
   return (
-    <span className="video-badge" aria-label="Vídeo">
+    <span className="video-badge" aria-label={t('Vídeo')}>
       <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M7 4.5v15l12-7.5z" fill="currentColor" />
       </svg>
-      Vídeo
+      {t('Vídeo')}
     </span>
   );
 }

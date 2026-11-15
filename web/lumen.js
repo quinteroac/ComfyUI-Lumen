@@ -4,6 +4,23 @@ import { app } from '../../scripts/app.js';
 // Closing only hides it, so jobs that are running keep being followed.
 let overlay;
 
+// The language Lumen uses (same origin, so the same saved choice), else the browser's.
+const TEXT = {
+    es: { back: 'Volver a ComfyUI (Esc)', open: 'Abrir Lumen' },
+    en: { back: 'Back to ComfyUI (Esc)', open: 'Open Lumen' },
+    ja: { back: 'ComfyUI に戻る（Esc）', open: 'Lumen を開く' },
+    zh: { back: '返回 ComfyUI（Esc）', open: '打开 Lumen' },
+};
+function text() {
+    let lang = navigator.language.slice(0, 2);
+    try {
+        lang = localStorage.getItem('lumen.lang') || lang;
+    } catch {
+        // Blocked storage: the browser's language.
+    }
+    return TEXT[lang] ?? TEXT.en;
+}
+
 function close() {
     overlay.style.display = 'none';
 }
@@ -18,7 +35,7 @@ function open() {
         frame.style.cssText = 'width:100%;height:100%;border:0;display:block';
         const button = document.createElement('button');
         button.textContent = '✕';
-        button.title = 'Volver a ComfyUI (Esc)';
+        button.title = text().back;
         button.style.cssText = 'position:absolute;top:10px;right:14px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:16px;cursor:pointer';
         button.onclick = close;
         overlay.append(frame, button);
@@ -37,7 +54,7 @@ app.registerExtension({
             id: 'lumen', icon: 'pi pi-sparkles', title: 'Lumen', tooltip: 'Lumen', type: 'custom',
             render(container) {
                 const button = document.createElement('button');
-                button.textContent = 'Abrir Lumen';
+                button.textContent = text().open;
                 button.style.cssText = 'display:block;width:calc(100% - 32px);margin:16px;padding:10px 14px;border:0;border-radius:8px;background:#e8e8e8;color:#111;font-weight:600;cursor:pointer';
                 button.onclick = open;
                 container.replaceChildren(button);

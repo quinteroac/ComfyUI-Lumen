@@ -7,6 +7,7 @@ import { nodeDefs, runWorkflow, viewUrl } from './comfy/client';
 import type { JobImage } from './comfy/types';
 import { baseInputs, getState, parsePrompt } from './store';
 import { save, saved } from './saved';
+import { t } from './i18n';
 
 export interface StylePreview {
   code: string;
@@ -65,7 +66,7 @@ async function render(key: string) {
     checkWorkflow(workflow, await nodeDefs());
     const out = await runWorkflow(workflow);
     const file = out.files[0];
-    if (!file) throw new Error('ComfyUI no devolvió imagen.');
+    if (!file) throw new Error(t('ComfyUI no devolvió imagen.'));
     update(key, { status: 'done', image: { url: viewUrl(file), ref: file, w: inputs.width, h: inputs.height }, styles: out.texts[0] });
   } catch (e) {
     update(key, { status: 'error', error: e instanceof Error ? e.message : String(e) });

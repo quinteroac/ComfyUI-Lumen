@@ -15,6 +15,7 @@ import {
   useStore,
 } from '../store';
 import type { Folder } from '../comfy/types';
+import { t } from '../i18n';
 
 /** Drag format for images dragged onto folders. */
 export const DRAG_TYPE = 'application/x-lumen-images';
@@ -45,7 +46,7 @@ function FolderRow({ f, count, onOpen }: { f: Folder; count: number; onOpen: () 
           setRenaming(false);
         }}
       >
-        <input name="n" defaultValue={f.name} autoFocus aria-label="Nombre de la carpeta" onBlur={() => setRenaming(false)} />
+        <input name="n" defaultValue={f.name} autoFocus aria-label={t('Nombre de la carpeta')} onBlur={() => setRenaming(false)} />
       </form>
     );
   return (
@@ -64,26 +65,26 @@ function FolderRow({ f, count, onOpen }: { f: Folder; count: number; onOpen: () 
         const items = readDragItems(e.dataTransfer);
         if (items?.length) {
           addToFolder(items, f.id);
-          toast(`${items.length} ${items.length === 1 ? 'imagen añadida' : 'imágenes añadidas'} a «${f.name}»`);
+          toast(`${items.length} ${items.length === 1 ? t('imagen añadida') : t('imágenes añadidas')} a «${f.name}»`);
         }
       }}
     >
-      <button role="menuitem" onClick={onOpen} title="Abrir: lo que crees se guardará aquí">
+      <button role="menuitem" onClick={onOpen} title={t('Abrir: lo que crees se guardará aquí')}>
         <IconFolder size={14} /> {f.name} <span className="count">{count}</span>
       </button>
       <div className="menu-wrap">
-        <button className="icon-btn tiny" aria-label={`Opciones de ${f.name}`} aria-expanded={menu} onClick={() => setMenu(!menu)}>
+        <button className="icon-btn tiny" aria-label={t('Opciones de {name}', { name: f.name })} aria-expanded={menu} onClick={() => setMenu(!menu)}>
           <IconMore size={14} />
         </button>
         {menu && (
           <div className="menu sub" role="menu">
             <button role="menuitem" onClick={() => (setMenu(false), setRenaming(true))}>
-              Renombrar
+              {t('Renombrar')}
             </button>
             <button role="menuitem" onClick={() => (setMenu(false), downloadFolder(f.id))}>
-              Descargar
+              {t('Descargar')}
             </button>
-            {groups.length > 0 && <span className="menu-label">Mover a</span>}
+            {groups.length > 0 && <span className="menu-label">{t('Mover a')}</span>}
             {groups
               .filter((g) => g.id !== f.groupId)
               .map((g) => (
@@ -93,7 +94,7 @@ function FolderRow({ f, count, onOpen }: { f: Folder; count: number; onOpen: () 
               ))}
             {f.groupId && (
               <button role="menuitem" onClick={() => (setMenu(false), moveFolderToGroup(f.id, undefined))}>
-                ↳ Fuera del grupo
+                {t('↳ Fuera del grupo')}
               </button>
             )}
             <button
@@ -101,10 +102,10 @@ function FolderRow({ f, count, onOpen }: { f: Folder; count: number; onOpen: () 
               className="danger"
               onClick={() => {
                 setMenu(false);
-                if (confirm(`¿Borrar la carpeta «${f.name}»? Las imágenes no se borran.`)) deleteFolder(f.id);
+                if (confirm(t('¿Borrar la carpeta «{name}»? Las imágenes no se borran.', { name: f.name }))) deleteFolder(f.id);
               }}
             >
-              Borrar
+              {t('Borrar')}
             </button>
           </div>
         )}
@@ -139,18 +140,18 @@ export function FolderButton({ counts }: { counts: Record<string, number> }) {
     <div className="menu-wrap">
       <span className={`folder-btn${cur ? ' on' : ''}`}>
         <button className="btn small" aria-expanded={open} onClick={() => setOpen(!open)}>
-          <IconFolder size={15} /> {cur ? cur.name : 'Carpetas'}
+          <IconFolder size={15} /> {cur ? cur.name : t('Carpetas')}
         </button>
         {cur && (
-          <button className="icon-btn tiny" aria-label="Salir de la carpeta" onClick={() => openFolder(undefined)}>
+          <button className="icon-btn tiny" aria-label={t('Salir de la carpeta')} onClick={() => openFolder(undefined)}>
             <IconClose size={13} />
           </button>
         )}
       </span>
       {open && (
         <div className="menu wide" role="menu">
-          {folders.length === 0 && <p className="hint">Aún no tienes carpetas.</p>}
-          {folders.length > 0 && <p className="hint">Arrastra imágenes a una carpeta para añadirlas.</p>}
+          {folders.length === 0 && <p className="hint">{t('Aún no tienes carpetas.')}</p>}
+          {folders.length > 0 && <p className="hint">{t('Arrastra imágenes a una carpeta para añadirlas.')}</p>}
           {ungrouped.map(row)}
           {groups.map((g) => (
             <div key={g.id} className="menu-group">
@@ -163,20 +164,20 @@ export function FolderButton({ counts }: { counts: Record<string, number> }) {
                     setRenamingGroup(null);
                   }}
                 >
-                  <input name="n" defaultValue={g.name} autoFocus aria-label="Nombre del grupo" onBlur={() => setRenamingGroup(null)} />
+                  <input name="n" defaultValue={g.name} autoFocus aria-label={t('Nombre del grupo')} onBlur={() => setRenamingGroup(null)} />
                 </form>
               ) : (
                 <div className="menu-label group">
-                  <span onDoubleClick={() => setRenamingGroup(g.id)} title="Doble clic para renombrar">
+                  <span onDoubleClick={() => setRenamingGroup(g.id)} title={t('Doble clic para renombrar')}>
                     {g.name}
                   </span>
-                  <button className="chip-x" aria-label={`Deshacer el grupo ${g.name}`} title="Deshacer el grupo (las carpetas se quedan)" onClick={() => deleteFolderGroup(g.id)}>
+                  <button className="chip-x" aria-label={t('Deshacer el grupo {name}', { name: g.name })} title={t('Deshacer el grupo (las carpetas se quedan)')} onClick={() => deleteFolderGroup(g.id)}>
                     <IconClose size={11} />
                   </button>
                 </div>
               )}
               {folders.filter((f) => f.groupId === g.id).map(row)}
-              {!folders.some((f) => f.groupId === g.id) && <p className="hint">Mueve carpetas aquí con su menú ⋯</p>}
+              {!folders.some((f) => f.groupId === g.id) && <p className="hint">{t('Mueve carpetas aquí con su menú ⋯')}</p>}
             </div>
           ))}
           <form
@@ -187,14 +188,14 @@ export function FolderButton({ counts }: { counts: Record<string, number> }) {
               if (ok) setName('');
             }}
           >
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === 'folder' ? 'Nueva carpeta + Enter' : 'Nuevo grupo + Enter'} aria-label={mode === 'folder' ? 'Nueva carpeta' : 'Nuevo grupo de carpetas'} />
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === 'folder' ? t('Nueva carpeta + Enter') : t('Nuevo grupo + Enter')} aria-label={mode === 'folder' ? t('Nueva carpeta') : t('Nuevo grupo de carpetas')} />
           </form>
           <div className="row" style={{ padding: '4px 4px 0', gap: 6 }}>
             <button className={`btn small${mode === 'folder' ? ' primary' : ''}`} onClick={() => setMode('folder')}>
-              Nueva carpeta
+              {t('Nueva carpeta')}
             </button>
             <button className={`btn small${mode === 'group' ? ' primary' : ''}`} onClick={() => setMode('group')}>
-              Nuevo grupo
+              {t('Nuevo grupo')}
             </button>
           </div>
         </div>

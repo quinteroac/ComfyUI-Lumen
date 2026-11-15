@@ -42,12 +42,21 @@ def gguf_files():
     return sorted({str(path.relative_to(root)) for root in roots() for path in root.rglob("*.gguf") if not path.name.startswith("mmproj")})
 
 
+class MissingModel(ValueError):
+    pass
+
+
 def model_path(name):
     for root in roots():
         path = (root / name).resolve()
         if path.is_relative_to(root) and path.is_file():
             return path
-    raise ValueError(f"No encuentro el modelo GGUF «{name}» en models/LLM. Elígelo en la página ComfyUI de Lumen.")
+    raise MissingModel(name)
+
+
+def failure(code, message, status, **details):
+    """An error the page shows in its own language by code; message is the English fallback."""
+    return web.json_response({"error": message, "code": code, **details}, status=status)
 
 
 def settings_of(body):
@@ -73,7 +82,7 @@ def free_gpu():
 @web.middleware
 async def guard_workflows(request, handler):
     if request.method == "POST" and request.path in ("/prompt", "/api/prompt") and LOCK.locked():
-        return web.json_response({"error": {"type": "lumen_assistant_busy", "message": "El asistente de Lumen está usando la GPU; espera a que responda.",
+        return web.json_response({"error": {"type": "lumen_assistant_busy", "message": "Lumen's assistant is using the GPU; wait for its answer.",
                                             "details": "", "extra_info": {}}, "node_errors": {}}, status=409)
     return await handler(request)
 
@@ -93,10 +102,12 @@ async def assistant(request):
         path = model_path(str(body["model"]))
         settings = settings_of(body)
         message = str(body["message"]).strip()
+    except MissingModel as error:
+        return failure("model_missing", f"GGUF model {error} is not in models/LLM. Pick it on Lumen's ComfyUI page.", 400, name=str(error))
     except (ValueError, KeyError, TypeError) as error:
         return web.json_response({"error": str(error)}, status=400)
     if LOCK.locked() or workflow_busy():
-        return web.json_response({"error": "ComfyUI está generando; el asistente responde cuando termine la cola."}, status=409)
+        return failure("busy", "ComfyUI is generating; the assistant answers when the queue is done.", 409)
     context = f"Current prompt: {body.get('current_prompt') or '(none)'}\nImages in the last result: {int(body.get('images', 0))}\n\nMessage: {message}"
     payload = {"model_path": str(path), "settings": settings,
                "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": context}]}
@@ -107,7 +118,7 @@ async def assistant(request):
         try:
             out, err = await asyncio.wait_for(process.communicate((json.dumps(payload) + "\n").encode()), TIMEOUT)
         except asyncio.TimeoutError:
-            return web.json_response({"error": "El asistente tardó demasiado y se detuvo."}, status=504)
+            return failure("timeout", "The assistant took too long and was stopped.", 504)
         finally:
             # A timeout or a closed page stops the worker; its exit frees the model.
             if process.returncode is None:
@@ -116,5 +127,5 @@ async def assistant(request):
     if process.returncode != 0:
         await asyncio.to_thread(free_gpu)
         tail = err.decode(errors="replace").strip().splitlines()[-4:]
-        return web.json_response({"error": "El modelo GGUF falló: " + " ".join(tail)}, status=500)
+        return failure("failed", "The GGUF model failed: " + " ".join(tail), 500, detail=" ".join(tail))
     return web.json_response(json.loads(out.decode().strip().splitlines()[-1]))

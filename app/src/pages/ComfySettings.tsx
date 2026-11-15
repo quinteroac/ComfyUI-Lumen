@@ -5,10 +5,11 @@ import { ACTION_LABELS, type ActionKind, type JobInputs } from '../comfy/types';
 import { ACTION_ORDER, PLACEHOLDERS, buildWorkflow, parseWorkflow } from '../comfy/workflows';
 import { useConfig } from '../useConfig';
 import { baseInputs, getState, parsePrompt, toast } from '../store';
+import { t } from '../i18n';
 
 function sampleInputs(action: ActionKind): JobInputs {
   const s = getState();
-  const p = parsePrompt(s.draft || 'un faro bajo la aurora --ar 3:2', s.settings);
+  const p = parsePrompt(s.draft || t('un faro bajo la aurora --ar 3:2'), s.settings);
   return {
     ...baseInputs(action, p, false),
     seed: 123456789,
@@ -49,14 +50,14 @@ function WorkflowSlot({ action }: { action: ActionKind }) {
       <div className="wf-head">
         <div>
           <strong>{ACTION_LABELS[action]}</strong>{' '}
-          <span className="chip">{value.trim() ? (error ? 'JSON no válido' : 'workflow propio') : 'integrado'}</span>
+          <span className="chip">{value.trim() ? (error ? t('JSON no válido') : t('workflow propio')) : 'integrado'}</span>
         </div>
         <div className="row">
           <button className="btn small" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Cerrar' : 'Editar'}
+            {open ? t('Cerrar') : t('Editar')}
           </button>
           <button className="btn small" onClick={() => file.current?.click()}>
-            Subir .json
+            {t('Subir .json')}
           </button>
           <button
             className="btn small"
@@ -69,7 +70,7 @@ function WorkflowSlot({ action }: { action: ActionKind }) {
               }
             }}
           >
-            {preview ? 'Ocultar envío' : 'Ver envío'}
+            {preview ? t('Ocultar envío') : t('Ver envío')}
           </button>
           <input
             ref={file}
@@ -89,15 +90,15 @@ function WorkflowSlot({ action }: { action: ActionKind }) {
       </div>
       {open && (
         <div className="field wide" style={{ marginTop: 8 }}>
-          <textarea aria-label={`Workflow para ${ACTION_LABELS[action]}`} value={value} placeholder="Pega aquí el JSON de «Export (API)». Vacío = se usa el workflow integrado." onChange={(e) => save(e.target.value)} />
+          <textarea aria-label={t('Workflow para {0}', { '0': ACTION_LABELS[action] })} value={value} placeholder={t('Pega aquí el JSON de «Export (API)». Vacío = se usa el workflow integrado.')} onChange={(e) => save(e.target.value)} />
           <div className="row">
             {error && <span className="err">{error}</span>}
             <button className="btn small" onClick={() => downloadJson(`lumen_${action}_integrado.json`, buildWorkflow({ ...sampleInputs(action), prompt: '{{prompt}}' }).workflow)}>
-              Descargar workflow integrado
+              {t('Descargar workflow integrado')}
             </button>
             {value && (
               <button className="btn small" onClick={() => save('')}>
-                Volver al integrado
+                {t('Volver al integrado')}
               </button>
             )}
           </div>
@@ -144,7 +145,7 @@ export function ComfySettings() {
 
   useEffect(() => {
     testConnection()
-      .then((r) => setStatus({ ok: true, text: `Conectado · ComfyUI ${r.version} · ${r.device}` }))
+      .then((r) => setStatus({ ok: true, text: t('Conectado · ComfyUI {version} · {device}', { version: r.version, device: r.device }) }))
       .catch((e: Error) => setStatus({ ok: false, text: e.message }));
     nodeDefs().then(setDefs, () => undefined);
     llmModels().then(setGgufs, () => undefined);
@@ -159,7 +160,7 @@ export function ComfySettings() {
   return (
     <div className="page">
       <h1>ComfyUI</h1>
-      <p className="lead">Cada botón de generación envía un workflow a este ComfyUI y muestra el progreso en directo. Los ajustes se guardan en tu carpeta de usuario de ComfyUI (lumen/config.json).</p>
+      <p className="lead">{t('Cada botón de generación envía un workflow a este ComfyUI y muestra el progreso en directo. Los ajustes se guardan en tu carpeta de usuario de ComfyUI (lumen/config.json).')}</p>
       {MODEL_LISTS.map(([id, node, input]) => (
         <datalist id={id} key={id}>
           {comboOptions(defs, node, input).map((o) => (
@@ -169,25 +170,25 @@ export function ComfySettings() {
       ))}
 
       <div className="card">
-        <h2>Conexión</h2>
-        {status ? <p className={status.ok ? 'ok' : 'err'}>{status.text}</p> : <p className="hint">Comprobando…</p>}
+        <h2>{t('Conexión')}</h2>
+        {status ? <p className={status.ok ? 'ok' : 'err'}>{status.text}</p> : <p className="hint">{t('Comprobando…')}</p>}
       </div>
 
       <div className="card">
-        <h2>MiniMax H3 Image</h2>
+        <h2>{t('MiniMax H3 Image')}</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
-          Hace todas las acciones: Imaginar, Prompt de imagen, Variar, Remezclar, Ampliar, Alejar, Desplazar y el Editor. Variar, Remezclar y Ampliar redibujan la imagen desde un paso más tarde de estos sigmas. Alejar y Desplazar ponen la imagen en un lienzo blanco más grande, y el Editor deja en blanco lo borrado; el mejorador de prompt oficial de MiniMax escribe qué debe aparecer ahí.
+          {t('Hace todas las acciones: Imaginar, Prompt de imagen, Variar, Remezclar, Ampliar, Alejar, Desplazar y el Editor. Variar, Remezclar y Ampliar redibujan la imagen desde un paso más tarde de estos sigmas. Alejar y Desplazar ponen la imagen en un lienzo blanco más grande, y el Editor deja en blanco lo borrado; el mejorador de prompt oficial de MiniMax escribe qué debe aparecer ahí.')}
         </p>
         <div className="form-grid">
-          <ModelField label="Modelo" list="unet-list" value={cfg.h3.unet} onChange={(v) => h3({ unet: v })} />
-          <ModelField label="Codificador de texto" list="clip-list" value={cfg.h3.clip} onChange={(v) => h3({ clip: v })} />
+          <ModelField label={t('Modelo')} list="unet-list" value={cfg.h3.unet} onChange={(v) => h3({ unet: v })} />
+          <ModelField label={t('Codificador de texto')} list="clip-list" value={cfg.h3.clip} onChange={(v) => h3({ clip: v })} />
           <ModelField label="VAE" list="vae-list" value={cfg.h3.vae} onChange={(v) => h3({ vae: v })} />
-          <ModelField label="Mejorador de prompt (Alejar, Desplazar, Editor)" list="clip-list" value={cfg.h3.peClip} onChange={(v) => h3({ peClip: v })} />
-          <NumberField label="Megapíxeles borrador (--draft)" min={0.25} max={20} step={0.25} value={cfg.h3.draft} onChange={(v) => h3({ draft: v })} />
-          <NumberField label="Megapíxeles SD" min={0.25} max={20} step={0.25} value={cfg.h3.sd} onChange={(v) => h3({ sd: v })} />
-          <NumberField label="Megapíxeles HD (--hd)" min={0.25} max={20} step={0.25} value={cfg.h3.hd} onChange={(v) => h3({ hd: v })} />
-          <NumberField label="LCM s_noise inicio" min={0} max={2} step={0.05} value={cfg.h3.sNoise} onChange={(v) => h3({ sNoise: v })} />
-          <NumberField label="LCM s_noise final" min={0} max={2} step={0.05} value={cfg.h3.sNoiseEnd} onChange={(v) => h3({ sNoiseEnd: v })} />
+          <ModelField label={t('Mejorador de prompt (Alejar, Desplazar, Editor)')} list="clip-list" value={cfg.h3.peClip} onChange={(v) => h3({ peClip: v })} />
+          <NumberField label={t('Megapíxeles borrador (--draft)')} min={0.25} max={20} step={0.25} value={cfg.h3.draft} onChange={(v) => h3({ draft: v })} />
+          <NumberField label={t('Megapíxeles SD')} min={0.25} max={20} step={0.25} value={cfg.h3.sd} onChange={(v) => h3({ sd: v })} />
+          <NumberField label={t('Megapíxeles HD (--hd)')} min={0.25} max={20} step={0.25} value={cfg.h3.hd} onChange={(v) => h3({ hd: v })} />
+          <NumberField label={t('LCM s_noise inicio')} min={0} max={2} step={0.05} value={cfg.h3.sNoise} onChange={(v) => h3({ sNoise: v })} />
+          <NumberField label={t('LCM s_noise final')} min={0} max={2} step={0.05} value={cfg.h3.sNoiseEnd} onChange={(v) => h3({ sNoiseEnd: v })} />
           <label className="field wide">
             Sigmas
             <input value={cfg.h3.sigmas} onChange={(e) => h3({ sigmas: e.target.value })} spellCheck={false} />
@@ -196,17 +197,17 @@ export function ComfySettings() {
       </div>
 
       <div className="card">
-        <h2>Anima (--anima) y MOSS Image (--moss)</h2>
-        <p className="hint" style={{ marginBottom: 12 }}>Con sus LoRAs rápidas (Anima turbo, 8 pasos; MOSS DMD, 8 pasos). Solo para Imaginar sin imágenes de referencia; todo lo que parte de una imagen se hace con H3 Image.</p>
+        <h2>{t('Anima (--anima) y MOSS Image (--moss)')}</h2>
+        <p className="hint" style={{ marginBottom: 12 }}>{t('Con sus LoRAs rápidas (Anima turbo, 8 pasos; MOSS DMD, 8 pasos). Solo para Imaginar sin imágenes de referencia; todo lo que parte de una imagen se hace con H3 Image.')}</p>
         <div className="form-grid">
-          <ModelField label="Anima · modelo" list="unet-list" value={cfg.anima.unet} onChange={(v) => anima({ unet: v })} />
-          <ModelField label="Anima · LoRA turbo (vacío = ninguna)" list="lora-list" value={cfg.anima.lora} onChange={(v) => anima({ lora: v })} />
-          <ModelField label="Anima · codificador" list="clip-list" value={cfg.anima.clip} onChange={(v) => anima({ clip: v })} />
-          <ModelField label="Anima · VAE" list="vae-list" value={cfg.anima.vae} onChange={(v) => anima({ vae: v })} />
-          <NumberField label="Anima · pasos" min={1} max={100} value={cfg.anima.steps} onChange={(v) => anima({ steps: v })} />
-          <NumberField label="Anima · CFG" min={1} max={20} step={0.5} value={cfg.anima.cfg} onChange={(v) => anima({ cfg: v })} />
+          <ModelField label={t('Anima · modelo')} list="unet-list" value={cfg.anima.unet} onChange={(v) => anima({ unet: v })} />
+          <ModelField label={t('Anima · LoRA turbo (vacío = ninguna)')} list="lora-list" value={cfg.anima.lora} onChange={(v) => anima({ lora: v })} />
+          <ModelField label={t('Anima · codificador')} list="clip-list" value={cfg.anima.clip} onChange={(v) => anima({ clip: v })} />
+          <ModelField label={t('Anima · VAE')} list="vae-list" value={cfg.anima.vae} onChange={(v) => anima({ vae: v })} />
+          <NumberField label={t('Anima · pasos')} min={1} max={100} value={cfg.anima.steps} onChange={(v) => anima({ steps: v })} />
+          <NumberField label={t('Anima · CFG')} min={1} max={20} step={0.5} value={cfg.anima.cfg} onChange={(v) => anima({ cfg: v })} />
           <label className="field">
-            Anima · sampler
+            {t('Anima · sampler')}
             <select value={cfg.anima.sampler} onChange={(e) => anima({ sampler: e.target.value })}>
               {(samplers.length ? samplers : [cfg.anima.sampler]).map((o) => (
                 <option key={o}>{o}</option>
@@ -214,18 +215,18 @@ export function ComfySettings() {
             </select>
           </label>
           <label className="field">
-            Anima · scheduler
+            {t('Anima · scheduler')}
             <select value={cfg.anima.scheduler} onChange={(e) => anima({ scheduler: e.target.value })}>
               {(schedulers.length ? schedulers : [cfg.anima.scheduler]).map((o) => (
                 <option key={o}>{o}</option>
               ))}
             </select>
           </label>
-          <NumberField label="Anima · megapíxeles borrador" min={0.25} max={20} step={0.25} value={cfg.anima.draft} onChange={(v) => anima({ draft: v })} />
-          <NumberField label="Anima · megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.anima.sd} onChange={(v) => anima({ sd: v })} />
-          <NumberField label="Anima · megapíxeles HD" min={0.25} max={16} step={0.25} value={cfg.anima.hd} onChange={(v) => anima({ hd: v })} />
+          <NumberField label={t('Anima · megapíxeles borrador')} min={0.25} max={20} step={0.25} value={cfg.anima.draft} onChange={(v) => anima({ draft: v })} />
+          <NumberField label={t('Anima · megapíxeles SD')} min={0.25} max={16} step={0.25} value={cfg.anima.sd} onChange={(v) => anima({ sd: v })} />
+          <NumberField label={t('Anima · megapíxeles HD')} min={0.25} max={16} step={0.25} value={cfg.anima.hd} onChange={(v) => anima({ hd: v })} />
           <label className="field">
-            Anima · SnapRef (--cref)
+            {t('Anima · SnapRef (--cref)')}
             <select value={cfg.anima.snapref} onChange={(e) => anima({ snapref: e.target.value })}>
               {(comboOptions(defs, 'SnapRef', 'adapter').length ? comboOptions(defs, 'SnapRef', 'adapter') : [cfg.anima.snapref]).map((o) => (
                 <option key={o}>{o}</option>
@@ -233,24 +234,24 @@ export function ComfySettings() {
             </select>
           </label>
           <label className="field">
-            Anima · modo SnapRef
+            {t('Anima · modo SnapRef')}
             <select value={cfg.anima.snaprefMode} onChange={(e) => anima({ snaprefMode: e.target.value as 'cs' | 'char' })}>
-              <option value="cs">cs: personaje y estilo de la imagen</option>
-              <option value="char">char: solo el personaje</option>
+              <option value="cs">{t('cs: personaje y estilo de la imagen')}</option>
+              <option value="char">{t('char: solo el personaje')}</option>
             </select>
           </label>
           <label className="field wide">
-            Anima · prompt negativo
+            {t('Anima · prompt negativo')}
             <input value={cfg.anima.negative} onChange={(e) => anima({ negative: e.target.value })} />
           </label>
-          <ModelField label="MOSS · modelo" list="unet-list" value={cfg.moss.unet} onChange={(v) => moss({ unet: v })} />
-          <ModelField label="MOSS · LoRA DMD (vacío = ninguna)" list="lora-list" value={cfg.moss.lora} onChange={(v) => moss({ lora: v })} />
-          <ModelField label="MOSS · codificador" list="clip-list" value={cfg.moss.clip} onChange={(v) => moss({ clip: v })} />
-          <ModelField label="MOSS · VAE" list="vae-list" value={cfg.moss.vae} onChange={(v) => moss({ vae: v })} />
-          <NumberField label="MOSS · pasos" min={1} max={100} value={cfg.moss.steps} onChange={(v) => moss({ steps: v })} />
-          <NumberField label="MOSS · CFG" min={1} max={20} step={0.5} value={cfg.moss.cfg} onChange={(v) => moss({ cfg: v })} />
+          <ModelField label={t('MOSS · modelo')} list="unet-list" value={cfg.moss.unet} onChange={(v) => moss({ unet: v })} />
+          <ModelField label={t('MOSS · LoRA DMD (vacío = ninguna)')} list="lora-list" value={cfg.moss.lora} onChange={(v) => moss({ lora: v })} />
+          <ModelField label={t('MOSS · codificador')} list="clip-list" value={cfg.moss.clip} onChange={(v) => moss({ clip: v })} />
+          <ModelField label={t('MOSS · VAE')} list="vae-list" value={cfg.moss.vae} onChange={(v) => moss({ vae: v })} />
+          <NumberField label={t('MOSS · pasos')} min={1} max={100} value={cfg.moss.steps} onChange={(v) => moss({ steps: v })} />
+          <NumberField label={t('MOSS · CFG')} min={1} max={20} step={0.5} value={cfg.moss.cfg} onChange={(v) => moss({ cfg: v })} />
           <label className="field">
-            MOSS · sampler
+            {t('MOSS · sampler')}
             <select value={cfg.moss.sampler} onChange={(e) => moss({ sampler: e.target.value })}>
               {(samplers.length ? samplers : [cfg.moss.sampler]).map((o) => (
                 <option key={o}>{o}</option>
@@ -258,114 +259,114 @@ export function ComfySettings() {
             </select>
           </label>
           <label className="field">
-            MOSS · scheduler
+            {t('MOSS · scheduler')}
             <select value={cfg.moss.scheduler} onChange={(e) => moss({ scheduler: e.target.value })}>
               {(schedulers.length ? schedulers : [cfg.moss.scheduler]).map((o) => (
                 <option key={o}>{o}</option>
               ))}
             </select>
           </label>
-          <NumberField label="MOSS · megapíxeles borrador" min={0.25} max={20} step={0.25} value={cfg.moss.draft} onChange={(v) => moss({ draft: v })} />
-          <NumberField label="MOSS · megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.moss.sd} onChange={(v) => moss({ sd: v })} />
-          <NumberField label="MOSS · megapíxeles HD" min={0.25} max={16} step={0.25} value={cfg.moss.hd} onChange={(v) => moss({ hd: v })} />
+          <NumberField label={t('MOSS · megapíxeles borrador')} min={0.25} max={20} step={0.25} value={cfg.moss.draft} onChange={(v) => moss({ draft: v })} />
+          <NumberField label={t('MOSS · megapíxeles SD')} min={0.25} max={16} step={0.25} value={cfg.moss.sd} onChange={(v) => moss({ sd: v })} />
+          <NumberField label={t('MOSS · megapíxeles HD')} min={0.25} max={16} step={0.25} value={cfg.moss.hd} onChange={(v) => moss({ hd: v })} />
           <label className="field wide">
-            MOSS · prompt negativo
+            {t('MOSS · prompt negativo')}
             <input value={cfg.moss.negative} onChange={(e) => moss({ negative: e.target.value })} />
           </label>
         </div>
       </div>
 
       <div className="card">
-        <h2>Estilos (--sref)</h2>
+        <h2>{t('Estilos (--sref)')}</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
-          Cada código --sref elige al azar (siempre los mismos para el mismo código) estilos de la lista del pack Style Code de cada modelo y los mezcla con pesos; varios códigos se mezclan entre sí (--sref 123 456::0.5) y --sref random elige uno. --sw 100 es la fuerza 1.5 del nodo. Solo se aplica al Imaginar y al Prompt de imagen, no a las ediciones.
+          {t('Cada código --sref elige al azar (siempre los mismos para el mismo código) estilos de la lista del pack Style Code de cada modelo y los mezcla con pesos; varios códigos se mezclan entre sí (--sref 123 456::0.5) y --sref random elige uno. --sw 100 es la fuerza 1.5 del nodo. Solo se aplica al Imaginar y al Prompt de imagen, no a las ediciones.')}
         </p>
         <div className="form-grid">
-          <NumberField label="Estilos por código (H3, MOSS)" min={1} max={8} value={cfg.styleCodes.styles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, styles: v } })} />
-          <NumberField label="Anima · estilos por código" min={0} max={8} value={cfg.styleCodes.animaStyles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaStyles: v } })} />
-          <NumberField label="Anima · artistas por código" min={0} max={8} value={cfg.styleCodes.animaArtists} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaArtists: v } })} />
+          <NumberField label={t('Estilos por código (H3, MOSS)')} min={1} max={8} value={cfg.styleCodes.styles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, styles: v } })} />
+          <NumberField label={t('Anima · estilos por código')} min={0} max={8} value={cfg.styleCodes.animaStyles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaStyles: v } })} />
+          <NumberField label={t('Anima · artistas por código')} min={0} max={8} value={cfg.styleCodes.animaArtists} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaArtists: v } })} />
           <label className="field wide">
-            Prompt de las vistas previas (Explorar › Estilos)
+            {t('Prompt de las vistas previas (Explorar › Estilos)')}
             <input value={cfg.styleCodes.previewPrompt} onChange={(e) => setConfig({ styleCodes: { ...cfg.styleCodes, previewPrompt: e.target.value } })} />
           </label>
         </div>
       </div>
 
       <div className="card">
-        <h2>Vídeo (MiniMax H3)</h2>
+        <h2>{t('Vídeo (MiniMax H3)')}</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
-          Texto → vídeo, Animar, fotograma final y bucle usan el modelo fl2va con su LoRA Pika Flex; con referencias, ref2va con la suya. Siempre con los sigmas de Pika y lcm, con audio, y el prompt lo escribe el mejorador (la guía oficial de vídeo de MiniMax) una vez por trabajo.
+          {t('Texto → vídeo, Animar, fotograma final y bucle usan el modelo fl2va con su LoRA Pika Flex; con referencias, ref2va con la suya. Siempre con los sigmas de Pika y lcm, con audio, y el prompt lo escribe el mejorador (la guía oficial de vídeo de MiniMax) una vez por trabajo.')}
         </p>
         <div className="form-grid">
-          <ModelField label="Modelo fl2va" list="unet-list" value={cfg.video.fl2va} onChange={(v) => setConfig({ video: { ...cfg.video, fl2va: v } })} />
-          <ModelField label="LoRA fl2va" list="lora-list" value={cfg.video.fl2vaLora} onChange={(v) => setConfig({ video: { ...cfg.video, fl2vaLora: v } })} />
-          <ModelField label="Modelo ref2va" list="unet-list" value={cfg.video.ref2va} onChange={(v) => setConfig({ video: { ...cfg.video, ref2va: v } })} />
-          <ModelField label="LoRA ref2va" list="lora-list" value={cfg.video.ref2vaLora} onChange={(v) => setConfig({ video: { ...cfg.video, ref2vaLora: v } })} />
-          <ModelField label="VAE de vídeo" list="vae-list" value={cfg.video.vae} onChange={(v) => setConfig({ video: { ...cfg.video, vae: v } })} />
-          <ModelField label="VAE de audio" list="vae-list" value={cfg.video.audioVae} onChange={(v) => setConfig({ video: { ...cfg.video, audioVae: v } })} />
-          <NumberField label="Megapíxeles SD" min={0.1} max={4} step={0.1} value={cfg.video.sd} onChange={(v) => setConfig({ video: { ...cfg.video, sd: v } })} />
-          <NumberField label="Megapíxeles HD" min={0.1} max={4} step={0.1} value={cfg.video.hd} onChange={(v) => setConfig({ video: { ...cfg.video, hd: v } })} />
-          <NumberField label="Fotogramas (24 fps; 124 ≈ 5 s)" min={5} max={362} step={17} value={cfg.video.frames} onChange={(v) => setConfig({ video: { ...cfg.video, frames: v } })} />
-          <ModelField label="RelayVSR ×2 (Ampliar vídeo)" list="unet-list" value={cfg.video.vsr} onChange={(v) => setConfig({ video: { ...cfg.video, vsr: v } })} />
-          <ModelField label="VAE de RelayVSR" list="vae-list" value={cfg.video.vsrVae} onChange={(v) => setConfig({ video: { ...cfg.video, vsrVae: v } })} />
+          <ModelField label={t('Modelo fl2va')} list="unet-list" value={cfg.video.fl2va} onChange={(v) => setConfig({ video: { ...cfg.video, fl2va: v } })} />
+          <ModelField label={t('LoRA fl2va')} list="lora-list" value={cfg.video.fl2vaLora} onChange={(v) => setConfig({ video: { ...cfg.video, fl2vaLora: v } })} />
+          <ModelField label={t('Modelo ref2va')} list="unet-list" value={cfg.video.ref2va} onChange={(v) => setConfig({ video: { ...cfg.video, ref2va: v } })} />
+          <ModelField label={t('LoRA ref2va')} list="lora-list" value={cfg.video.ref2vaLora} onChange={(v) => setConfig({ video: { ...cfg.video, ref2vaLora: v } })} />
+          <ModelField label={t('VAE de vídeo')} list="vae-list" value={cfg.video.vae} onChange={(v) => setConfig({ video: { ...cfg.video, vae: v } })} />
+          <ModelField label={t('VAE de audio')} list="vae-list" value={cfg.video.audioVae} onChange={(v) => setConfig({ video: { ...cfg.video, audioVae: v } })} />
+          <NumberField label={t('Megapíxeles SD')} min={0.1} max={4} step={0.1} value={cfg.video.sd} onChange={(v) => setConfig({ video: { ...cfg.video, sd: v } })} />
+          <NumberField label={t('Megapíxeles HD')} min={0.1} max={4} step={0.1} value={cfg.video.hd} onChange={(v) => setConfig({ video: { ...cfg.video, hd: v } })} />
+          <NumberField label={t('Fotogramas (24 fps; 124 ≈ 5 s)')} min={5} max={362} step={17} value={cfg.video.frames} onChange={(v) => setConfig({ video: { ...cfg.video, frames: v } })} />
+          <ModelField label={t('RelayVSR ×2 (Ampliar vídeo)')} list="unet-list" value={cfg.video.vsr} onChange={(v) => setConfig({ video: { ...cfg.video, vsr: v } })} />
+          <ModelField label={t('VAE de RelayVSR')} list="vae-list" value={cfg.video.vsrVae} onChange={(v) => setConfig({ video: { ...cfg.video, vsrVae: v } })} />
           <label className="field wide">
-            Sigmas (lcm)
+            {t('Sigmas (lcm)')}
             <input value={cfg.video.sigmas} onChange={(e) => setConfig({ video: { ...cfg.video, sigmas: e.target.value } })} spellCheck={false} />
           </label>
         </div>
       </div>
 
       <div className="card">
-        <h2>Modo conversacional (GGUF)</h2>
+        <h2>{t('Modo conversacional (GGUF)')}</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
-          Un LLM local escribe y edita el prompt. Para cada mensaje se descargan los modelos de ComfyUI, el GGUF se carga en un proceso aparte y ese proceso termina al responder, así que no queda memoria ocupada. Mientras responde no se lanzan generaciones, y no responde si la cola de ComfyUI está trabajando.
+          {t('Un LLM local escribe y edita el prompt. Para cada mensaje se descargan los modelos de ComfyUI, el GGUF se carga en un proceso aparte y ese proceso termina al responder, así que no queda memoria ocupada. Mientras responde no se lanzan generaciones, y no responde si la cola de ComfyUI está trabajando.')}
         </p>
         <div className="form-grid">
           <label className="field">
-            Modelo (models/LLM)
+            {t('Modelo (models/LLM)')}
             <select value={cfg.llm.model} onChange={(e) => setConfig({ llm: { ...cfg.llm, model: e.target.value } })}>
               {(ggufs.includes(cfg.llm.model) ? ggufs : [cfg.llm.model, ...ggufs]).map((o) => (
                 <option key={o}>{o}</option>
               ))}
             </select>
           </label>
-          <NumberField label="Capas en GPU (-1 = todas, 0 = CPU)" min={-1} max={999} value={cfg.llm.nGpuLayers} onChange={(v) => setConfig({ llm: { ...cfg.llm, nGpuLayers: v } })} />
-          <NumberField label="Contexto (tokens)" min={1024} max={131072} step={1024} value={cfg.llm.nCtx} onChange={(v) => setConfig({ llm: { ...cfg.llm, nCtx: v } })} />
-          <NumberField label="Máximo de tokens de respuesta" min={64} max={8192} step={64} value={cfg.llm.maxTokens} onChange={(v) => setConfig({ llm: { ...cfg.llm, maxTokens: v } })} />
-          <NumberField label="Temperatura" min={0} max={2} step={0.05} value={cfg.llm.temperature} onChange={(v) => setConfig({ llm: { ...cfg.llm, temperature: v } })} />
+          <NumberField label={t('Capas en GPU (-1 = todas, 0 = CPU)')} min={-1} max={999} value={cfg.llm.nGpuLayers} onChange={(v) => setConfig({ llm: { ...cfg.llm, nGpuLayers: v } })} />
+          <NumberField label={t('Contexto (tokens)')} min={1024} max={131072} step={1024} value={cfg.llm.nCtx} onChange={(v) => setConfig({ llm: { ...cfg.llm, nCtx: v } })} />
+          <NumberField label={t('Máximo de tokens de respuesta')} min={64} max={8192} step={64} value={cfg.llm.maxTokens} onChange={(v) => setConfig({ llm: { ...cfg.llm, maxTokens: v } })} />
+          <NumberField label={t('Temperatura')} min={0} max={2} step={0.05} value={cfg.llm.temperature} onChange={(v) => setConfig({ llm: { ...cfg.llm, temperature: v } })} />
         </div>
       </div>
 
       <div className="card">
-        <h2>Pesos del prompt (a::2)</h2>
+        <h2>{t('Pesos del prompt (a::2)')}</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
-          Cada segmento con peso se aplica con el slider de concepto de cada modelo (MiniMaxH3ConceptSlider, MOSSConceptSlider, AnimaTagSlider), encadenados tras --sref.
+          {t('Cada segmento con peso se aplica con el slider de concepto de cada modelo (MiniMaxH3ConceptSlider, MOSSConceptSlider, AnimaTagSlider), encadenados tras --sref.')}
         </p>
         <div className="form-grid">
           <label className="field">
-            Modo
+            {t('Modo')}
             <select value={cfg.conceptMode} onChange={(e) => setConfig({ conceptMode: e.target.value as ComfyConfig['conceptMode'] })}>
-              <option value="attention">attention: cuánto atiende la imagen al concepto</option>
-              <option value="weight_norm">weight_norm: escala el concepto manteniendo su magnitud</option>
+              <option value="attention">{t('attention: cuánto atiende la imagen al concepto')}</option>
+              <option value="weight_norm">{t('weight_norm: escala el concepto manteniendo su magnitud')}</option>
             </select>
           </label>
         </div>
       </div>
 
       <div className="card">
-        <h2>Tamaños</h2>
+        <h2>{t('Tamaños')}</h2>
         <div className="form-grid">
-          <NumberField label="Megapíxeles al ampliar" min={1} max={32} step={1} value={cfg.upscaleMegapixels} onChange={(v) => setConfig({ upscaleMegapixels: v })} />
+          <NumberField label={t('Megapíxeles al ampliar')} min={1} max={32} step={1} value={cfg.upscaleMegapixels} onChange={(v) => setConfig({ upscaleMegapixels: v })} />
         </div>
         <p className="hint" style={{ marginTop: 12 }}>
-          Cuántas imágenes hace cada creación (1–4) se elige en los ajustes de la barra; se generan una tras otra. Ampliar hace una sola imagen: sutil redibuja desde sigma 0.53, creativo desde 0.75.
+          {t('Cuántas imágenes hace cada creación (1–4) se elige en los ajustes de la barra; se generan una tras otra. Ampliar hace una sola imagen: sutil redibuja desde sigma 0.53, creativo desde 0.75.')}
         </p>
       </div>
 
       <div className="card">
-        <h2>Tus workflows</h2>
+        <h2>{t('Tus workflows')}</h2>
         <p className="hint">
-          En ComfyUI abre tu workflow y usa <strong>Workflow → Export (API)</strong>. Pégalo en la acción que quieras. Puedes marcar dónde va cada dato escribiendo marcadores como valor de un campo; si no pones ninguno, se rellenan solos el prompt, la semilla, el tamaño y la imagen de entrada de los nodos habituales (KSampler, CLIPTextEncode, EmptyLatentImage, LoadImage). Si tu workflow tiene varios LoadImage, pon «estilo» en el título del de la referencia de estilo y «final» en el del fotograma final. Para «Describir», usa un nodo que muestre el texto (ShowText, PreviewAny…).
+          {t('En ComfyUI abre tu workflow y usa')} <strong>{t('Workflow → Export (API)')}</strong>{t('. Pégalo en la acción que quieras. Puedes marcar dónde va cada dato escribiendo marcadores como valor de un campo; si no pones ninguno, se rellenan solos el prompt, la semilla, el tamaño y la imagen de entrada de los nodos habituales (KSampler, CLIPTextEncode, EmptyLatentImage, LoadImage). Si tu workflow tiene varios LoadImage, pon «estilo» en el título del de la referencia de estilo y «final» en el del fotograma final. Para «Describir», usa un nodo que muestre el texto (ShowText, PreviewAny…).')}
         </p>
         <ul className="ph-list">
           {PLACEHOLDERS.map((p) => (

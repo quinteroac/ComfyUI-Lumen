@@ -3,6 +3,7 @@ import { IconBrush, IconEraser, IconMove, IconRedo, IconUndo, IconUpload, IconDo
 import { openEditor, runAction, toast, useStore, type EditorTarget } from '../store';
 import { navigate } from '../router';
 import type { JobImage } from '../comfy/types';
+import { t } from '../i18n';
 
 type Tool = 'move' | 'erase' | 'restore';
 interface Snap {
@@ -14,7 +15,7 @@ interface Snap {
 }
 
 const PRESETS: [string, number | null][] = [
-  ['Original', null],
+  [t('Original'), null],
   ['1:1', 1],
   ['4:5', 4 / 5],
   ['2:3', 2 / 3],
@@ -29,7 +30,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => res(img);
-    img.onerror = () => rej(new Error('No se pudo abrir la imagen.'));
+    img.onerror = () => rej(new Error(t('No se pudo abrir la imagen.')));
     img.src = url;
   });
 }
@@ -51,7 +52,7 @@ function Picker() {
   return (
     <div className="page">
       <h1>Editor</h1>
-      <p className="lead">Borra zonas para regenerarlas, cambia la proporción o aleja la imagen, y escribe qué quieres ver. Se envía a ComfyUI como un único trabajo de edición.</p>
+      <p className="lead">{t('Borra zonas para regenerarlas, cambia la proporción o aleja la imagen, y escribe qué quieres ver. Se envía a ComfyUI como un único trabajo de edición.')}</p>
       <div
         className="drop-area"
         onDragOver={(e) => e.preventDefault()}
@@ -61,15 +62,15 @@ function Picker() {
         }}
       >
         <IconUpload size={28} />
-        <p>Arrastra una imagen aquí o</p>
+        <p>{t('Arrastra una imagen aquí o')}</p>
         <button className="btn primary" onClick={() => file.current?.click()}>
-          Subir imagen
+          {t('Subir imagen')}
         </button>
         <input ref={file} type="file" accept="image/*" hidden onChange={(e) => fromFile(e.target.files?.[0])} />
       </div>
       {recent.length > 0 && (
         <>
-          <h2 className="day">O elige una de tus imágenes</h2>
+          <h2 className="day">{t('O elige una de tus imágenes')}</h2>
           <div className="grid">
             {recent.map(({ img, j, index }) => (
               <button key={`${j.id}-${index}`} className="job-img" onClick={() => openEditor({ image: img, prompt: j.rawPrompt, source: { jobId: j.id, index } })} aria-label={j.prompt}>
@@ -213,7 +214,7 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
     const image: JobImage = { url: target.image.url, w: iw, h: ih };
     if (mode === 'retexture') {
       if (!prompt.trim()) {
-        toast('Describe el nuevo aspecto: materiales, colores, luz o estilo.', 'error');
+        toast(t('Describe el nuevo aspecto: materiales, colores, luz o estilo.'), 'error');
         return;
       }
       const jobs = runAction('retexture', { prompt, source: target.source, image: target.source ? undefined : image });
@@ -224,11 +225,11 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
     try {
       out = exportPng();
     } catch {
-      toast('No se pudo leer la imagen (permiso del navegador).', 'error');
+      toast(t('No se pudo leer la imagen (permiso del navegador).'), 'error');
       return;
     }
     if (!prompt.trim()) {
-      toast('Escribe qué quieres ver en la imagen editada.', 'error');
+      toast(t('Escribe qué quieres ver en la imagen editada.'), 'error');
       return;
     }
     const jobs = runAction('edit', { prompt, mask: out.url, maskSize: { w: out.w, h: out.h }, source: target.source, image: target.source ? undefined : image });
@@ -237,47 +238,47 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
 
   return (
     <div className="editor">
-      <div className="tabs" role="tablist" aria-label="Modo del editor" style={{ marginBottom: 8 }}>
+      <div className="tabs" role="tablist" aria-label={t('Modo del editor')} style={{ marginBottom: 8 }}>
         <button role="tab" aria-selected={mode === 'edit'} className={`tab${mode === 'edit' ? ' on' : ''}`} onClick={() => setMode('edit')}>
-          Editar
+          {t('Editar')}
         </button>
         <button role="tab" aria-selected={mode === 'retexture'} className={`tab${mode === 'retexture' ? ' on' : ''}`} onClick={() => setMode('retexture')}>
-          Retexturizar
+          {t('Retexturizar')}
         </button>
       </div>
       {mode === 'edit' && (
-      <div className="editor-tools" role="toolbar" aria-label="Herramientas del editor">
+      <div className="editor-tools" role="toolbar" aria-label={t('Herramientas del editor')}>
         <div className="seg">
-          <button className={tool === 'move' ? 'on' : ''} onClick={() => setTool('move')} title="Mover / escalar">
-            <IconMove size={16} /> Mover
+          <button className={tool === 'move' ? 'on' : ''} onClick={() => setTool('move')} title={t('Mover / escalar')}>
+            <IconMove size={16} /> {t('Mover')}
           </button>
-          <button className={tool === 'erase' ? 'on' : ''} onClick={() => setTool('erase')} title="Borrar: las zonas borradas se regeneran">
-            <IconEraser size={16} /> Borrar
+          <button className={tool === 'erase' ? 'on' : ''} onClick={() => setTool('erase')} title={t('Borrar: las zonas borradas se regeneran')}>
+            <IconEraser size={16} /> {t('Borrar')}
           </button>
-          <button className={tool === 'restore' ? 'on' : ''} onClick={() => setTool('restore')} title="Restaurar zonas borradas">
-            <IconBrush size={16} /> Restaurar
+          <button className={tool === 'restore' ? 'on' : ''} onClick={() => setTool('restore')} title={t('Restaurar zonas borradas')}>
+            <IconBrush size={16} /> {t('Restaurar')}
           </button>
         </div>
         {tool === 'move' ? (
           <label className="slider inline">
-            <span>Escala {Math.round(scale * 100)}%</span>
+            <span>{t('Escala')} {Math.round(scale * 100)}%</span>
             <input type="range" min={0.25} max={1} step={0.01} value={scale} onChange={(e) => setScale(Number(e.target.value))} onPointerUp={() => push()} />
           </label>
         ) : (
           <label className="slider inline">
-            <span>Pincel {brush}px</span>
+            <span>{t('Pincel {brush}px', { brush })}</span>
             <input type="range" min={5} max={150} value={brush} onChange={(e) => setBrush(Number(e.target.value))} />
           </label>
         )}
         <div className="row">
-          <button className="icon-btn" aria-label="Deshacer" title="Deshacer" onClick={undo} disabled={hist.at <= 0}>
+          <button className="icon-btn" aria-label={t('Deshacer')} title={t('Deshacer')} onClick={undo} disabled={hist.at <= 0}>
             <IconUndo size={18} />
           </button>
-          <button className="icon-btn" aria-label="Rehacer" title="Rehacer" onClick={redo} disabled={hist.at >= hist.stack.length - 1}>
+          <button className="icon-btn" aria-label={t('Rehacer')} title={t('Rehacer')} onClick={redo} disabled={hist.at >= hist.stack.length - 1}>
             <IconRedo size={18} />
           </button>
           <button className="btn small" onClick={reset}>
-            Restablecer
+            {t('Restablecer')}
           </button>
         </div>
       </div>
@@ -305,7 +306,7 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
         <canvas
           ref={view}
           className={`editor-canvas ${tool}`}
-          aria-label="Lienzo del editor"
+          aria-label={t('Lienzo del editor')}
           onPointerDown={(e) => {
             (e.target as HTMLElement).setPointerCapture(e.pointerId);
             if (tool === 'move') drag.current = { x: e.clientX, y: e.clientY, ox: off.x, oy: off.y };
@@ -324,22 +325,22 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
       </div>
       <p className="hint">
         {mode === 'edit'
-          ? `Lienzo ${cw}×${ch}px · las zonas a cuadros (borradas o vacías) se generarán de nuevo.`
-          : 'Retexturizar mantiene la composición, la cámara y la forma y el sitio de cada elemento, y cambia materiales, colores, luz y estilo según el prompt. Usa la imagen completa (sin borrar ni mover).'}
+          ? t('Lienzo {cw}×{ch}px · las zonas a cuadros (borradas o vacías) se generarán de nuevo.', { cw, ch })
+          : t('Retexturizar mantiene la composición, la cámara y la forma y el sitio de cada elemento, y cambia materiales, colores, luz y estilo según el prompt. Usa la imagen completa (sin borrar ni mover).')}
       </p>
       <div className="field wide" style={{ marginTop: 12 }}>
-        <label htmlFor="edit-prompt">{mode === 'edit' ? 'Editar prompt' : 'Nuevo aspecto'}</label>
+        <label htmlFor="edit-prompt">{mode === 'edit' ? t('Editar prompt') : t('Nuevo aspecto')}</label>
         <textarea
           id="edit-prompt"
           className="edit-prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder={mode === 'edit' ? 'Describe la imagen completa que quieres ver' : 'p. ej. «hecho de cristal bajo luz de neón» o «pintura al óleo de los años 50»'}
+          placeholder={mode === 'edit' ? t('Describe la imagen completa que quieres ver') : t('p. ej. «hecho de cristal bajo luz de neón» o «pintura al óleo de los años 50»')}
         />
       </div>
       <div className="row" style={{ marginTop: 12 }}>
         <button className="btn primary" data-action={mode} onClick={submit}>
-          {mode === 'edit' ? 'Enviar edición' : 'Retexturizar'}
+          {mode === 'edit' ? t('Enviar edición') : t('Retexturizar')}
         </button>
         <button
           className="btn"
@@ -350,14 +351,14 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
               a.download = `lumen-edicion-${Date.now()}.png`;
               a.click();
             } catch {
-              toast('No se pudo exportar la imagen.', 'error');
+              toast(t('No se pudo exportar la imagen.'), 'error');
             }
           }}
         >
-          <IconDownload size={15} /> Descargar edición
+          <IconDownload size={15} /> {t('Descargar edición')}
         </button>
         <button className="btn" onClick={() => openEditor(undefined)}>
-          Elegir otra imagen
+          {t('Elegir otra imagen')}
         </button>
       </div>
     </div>
@@ -377,7 +378,7 @@ export function Editor() {
   return (
     <div className="page">
       <h1>Editor</h1>
-      {error ? <p className="err">{error}</p> : img ? <Canvas key={target.image.url} target={target} img={img} /> : <p className="hint">Cargando imagen…</p>}
+      {error ? <p className="err">{error}</p> : img ? <Canvas key={target.image.url} target={target} img={img} /> : <p className="hint">{t('Cargando imagen…')}</p>}
     </div>
   );
 }

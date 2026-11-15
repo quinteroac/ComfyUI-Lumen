@@ -4,6 +4,7 @@ import { getState, runAction, setDraft, toast, toggleStyleLike, useStore } from 
 import { navigate } from '../router';
 import { Media } from '../components/Media';
 import { previewKey, randomCode, requestPreview, styleLabels, styleTitle, usePreviews, type StylePreview } from '../stylePreviews';
+import { t } from '../i18n';
 
 /* Open the Style Creator with a prompt (from the Create page). */
 let incoming = '';
@@ -32,24 +33,24 @@ function SampleCard({ code, p, picked, onPick, onTry, hotkey }: { code: string; 
   const ready = p?.status === 'done' && p.image;
   return (
     <div className={`sample${picked ? ' picked' : ''}`}>
-      <button className="sample-img" onClick={onPick} aria-pressed={picked} aria-label={`Elegir estilo --sref ${code}`} disabled={!ready}>
-        {ready ? <Media img={p.image!} alt="" /> : <span className="placeholder style-pending">{p?.status === 'error' ? 'Error' : p?.status === 'running' ? 'Generando…' : 'En cola'}</span>}
+      <button className="sample-img" onClick={onPick} aria-pressed={picked} aria-label={t('Elegir estilo --sref {code}', { code })} disabled={!ready}>
+        {ready ? <Media img={p.image!} alt="" /> : <span className="placeholder style-pending">{p?.status === 'error' ? t('Error') : p?.status === 'running' ? t('Generando…') : t('En cola')}</span>}
         {hotkey !== undefined && <span className="hotkey">{hotkey}</span>}
         {picked && <span className="picked-mark">✓</span>}
       </button>
       <div className="sample-actions">
-        <button className="pill" onClick={onTry} title="Probar este código con tu prompt">
-          Probar
+        <button className="pill" onClick={onTry} title={t('Probar este código con tu prompt')}>
+          {t('Probar')}
         </button>
         <button className="pill" onClick={() => setInfo(!info)} aria-expanded={info}>
-          Detalles
+          {t('Detalles')}
         </button>
         <button
           className={`icon-btn${liked.includes(code) ? ' on' : ''}`}
-          aria-label="Guardar en estilos que te gustan"
+          aria-label={t('Guardar en estilos que te gustan')}
           onClick={() => {
             toggleStyleLike(code);
-            toast(liked.includes(code) ? 'Quitado de tus estilos' : `Guardado en Explorar › Estilos › Me gusta (--sref ${code})`);
+            toast(liked.includes(code) ? t('Quitado de tus estilos') : t('Guardado en Explorar › Estilos › Me gusta (--sref {code})', { code }));
           }}
         >
           <IconHeart size={14} filled={liked.includes(code)} />
@@ -57,7 +58,7 @@ function SampleCard({ code, p, picked, onPick, onTry, hotkey }: { code: string; 
       </div>
       {info && (
         <p className="sample-info">
-          --sref {code}
+          {t('--sref {code}', { code })}
           {styleLabels(p?.styles).map((s) => ` · ${s.label} ${s.weight.toFixed(2)}`)}
         </p>
       )}
@@ -95,7 +96,7 @@ export function StyleCreator() {
 
   const start = () => {
     if (!prompt.trim()) {
-      toast('Escribe un prompt para ver cómo queda cada estilo.', 'error');
+      toast(t('Escribe un prompt para ver cómo queda cada estilo.'), 'error');
       return;
     }
     setStarted(true);
@@ -128,7 +129,7 @@ export function StyleCreator() {
 
   const tryOne = (code: string) => {
     runAction('imagine', { prompt: `${prompt.trim()} --sref ${code}` });
-    toast(`Probando --sref ${code} (lo verás en Crear)`);
+    toast(t('Probando --sref {code} (lo verás en Crear)', { code }));
   };
 
   // Hotkeys: 1–9 and 0 pick from the newest samples.
@@ -149,20 +150,20 @@ export function StyleCreator() {
   if (!started) {
     return (
       <div className="page">
-        <h1>Creador de estilos</h1>
+        <h1>{t('Creador de estilos')}</h1>
         <p className="lead">
-          Cada muestra es un código <code>--sref</code> al azar generado con tu prompt. Elige las que tengan un estilo que te guste (no por su contenido): cada {PICKS_PER_ROUND} elecciones se genera tu prompt con los códigos elegidos mezclados, y ese <code>--sref</code> es tu estilo.
+          {t('Cada muestra es un código')} <code>--sref</code> {t('al azar generado con tu prompt. Elige las que tengan un estilo que te guste (no por su contenido): cada {PICKS_PER_ROUND} elecciones se genera tu prompt con los códigos elegidos mezclados, y ese', { PICKS_PER_ROUND })} <code>--sref</code> {t('es tu estilo.')}
         </p>
         <div className="card">
           <label className="field wide">
-            Prompt para las muestras
-            <input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Un prompt sencillo muestra mejor el estilo, p. ej. «un faro junto al mar»" />
+            {t('Prompt para las muestras')}
+            <input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={t('Un prompt sencillo muestra mejor el estilo, p. ej. «un faro junto al mar»')} />
           </label>
           <p className="hint" style={{ marginTop: 8 }}>
-            Las muestras se generan una a una en tamaño borrador con H3 Image, siempre con la misma semilla; las rondas, con tus ajustes normales.
+            {t('Las muestras se generan una a una en tamaño borrador con H3 Image, siempre con la misma semilla; las rondas, con tus ajustes normales.')}
           </p>
           <button className="btn primary" style={{ marginTop: 12 }} onClick={start}>
-            Empezar
+            {t('Empezar')}
           </button>
         </div>
       </div>
@@ -174,25 +175,25 @@ export function StyleCreator() {
       <div className="creator-main">
         <div className="toolbar">
           <div>
-            <h1 className="creator-title">Creador de estilos</h1>
+            <h1 className="creator-title">{t('Creador de estilos')}</h1>
             <p className="hint">
-              «{prompt}» · {picked.length} elegidas · ronda {rounds.length}
-              {picksSinceRound.current ? ` · ${PICKS_PER_ROUND - picksSinceRound.current} para la siguiente` : ''}
+              {t('«{prompt}» · {picked} elegidas · ronda {rounds}', { prompt, picked: picked.length, rounds: rounds.length })}
+              {picksSinceRound.current ? t(' · {0} para la siguiente', { '0': PICKS_PER_ROUND - picksSinceRound.current }) : ''}
             </p>
           </div>
           <div className="row">
-            <label className="switch small" title="Teclas 1–9 y 0 para elegir entre las últimas muestras">
-              <input type="checkbox" checked={hotkeys} onChange={(e) => setHotkeys(e.target.checked)} /> Atajos de teclado
+            <label className="switch small" title={t('Teclas 1–9 y 0 para elegir entre las últimas muestras')}>
+              <input type="checkbox" checked={hotkeys} onChange={(e) => setHotkeys(e.target.checked)} /> {t('Atajos de teclado')}
             </label>
             <button
               className="btn small primary"
               onClick={() => {
-                if (rounds.length) toast('Sesión terminada: tus rondas y sus --sref están en Crear.');
+                if (rounds.length) toast(t('Sesión terminada: tus rondas y sus --sref están en Crear.'));
                 setStarted(false);
                 navigate('imagine');
               }}
             >
-              Terminar sesión
+              {t('Terminar sesión')}
             </button>
           </div>
         </div>
@@ -205,17 +206,17 @@ export function StyleCreator() {
         </div>
         <div className="sentinel">
           <button className="btn" onClick={loadBatch} disabled={busy}>
-            {busy ? 'Generando muestras…' : 'Más muestras'}
+            {busy ? t('Generando muestras…') : t('Más muestras')}
           </button>
         </div>
       </div>
-      <aside className="creator-side" aria-label="Rondas">
-        <h2 className="day">Rondas</h2>
+      <aside className="creator-side" aria-label={t('Rondas')}>
+        <h2 className="day">{t('Rondas')}</h2>
         {pinned && (
           <div className="pinned">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <strong>Ronda {pinned.n}</strong>
-              <button className="icon-btn tiny" aria-label="Soltar" onClick={() => setPinned(null)}>
+              <strong>{t('Ronda {n}', { n: pinned.n })}</strong>
+              <button className="icon-btn tiny" aria-label={t('Soltar')} onClick={() => setPinned(null)}>
                 <IconClose size={12} />
               </button>
             </div>
@@ -228,25 +229,25 @@ export function StyleCreator() {
               ))}
           </div>
         )}
-        {rounds.length === 0 && <p className="hint">Elige {PICKS_PER_ROUND} muestras para la primera ronda.</p>}
+        {rounds.length === 0 && <p className="hint">{t('Elige {PICKS_PER_ROUND} muestras para la primera ronda.', { PICKS_PER_ROUND })}</p>}
         {rounds.map((r) => {
           const job = jobOf(r);
           const first = job?.images[0];
           return (
             <div key={r.n} className="round">
-              <button className="round-thumb" onClick={() => setPinned(r)} title="Fijar las imágenes de esta ronda" disabled={!first}>
+              <button className="round-thumb" onClick={() => setPinned(r)} title={t('Fijar las imágenes de esta ronda')} disabled={!first}>
                 {first ? <Media img={first} alt={`Ronda ${r.n}`} /> : <span className="placeholder" style={{ display: 'block', width: '100%', height: '100%' }} />}
               </button>
               <div className="round-info">
-                <strong>Ronda {r.n}</strong>
+                <strong>{t('Ronda {n}', { n: r.n })}</strong>
                 <button
                   className="link-btn"
                   onClick={() => {
                     setDraft(`${withoutSref(getState().draft)} --sref ${r.sref}`.trim());
-                    toast(`--sref ${r.sref} añadido a la barra`);
+                    toast(t('--sref {sref} añadido a la barra', { sref: r.sref }));
                   }}
                 >
-                  --sref {r.sref}
+                  {t('--sref {sref}', { sref: r.sref })}
                 </button>
                 <span className="hint">{job?.status === 'done' ? styleTitle(job.styleList) : `${Math.round((job?.progress ?? 0) * 100)}%`}</span>
               </div>

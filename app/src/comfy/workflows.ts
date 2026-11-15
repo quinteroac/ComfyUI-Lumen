@@ -6,6 +6,7 @@ import VIDEO_GUIDE from './h3_video_guide.txt?raw';
 import REF_VIDEO_GUIDE from './h3_video_ref_guide.txt?raw';
 import { getConfig, type ComfyConfig } from './config';
 import { comboOptions } from './client';
+import { t } from '../i18n';
 
 export type ApiWorkflow = Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }>;
 
@@ -528,7 +529,7 @@ function upscaleVideoWorkflow(i: JobInputs, v: ComfyConfig['video']): ApiWorkflo
 export function builtInWorkflow(i: JobInputs): ApiWorkflow {
   switch (i.action) {
     case 'converse':
-      throw new Error('El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.');
+      throw new Error(t('El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.'));
   }
   const c = getConfig();
   if (i.action === 'describe') return describeWorkflow(i, c.h3.peClip);
@@ -543,12 +544,12 @@ const MODEL_INPUTS = ['unet_name', 'clip_name', 'vae_name', 'lora_name', 'ckpt_n
 /** Clear errors for a missing node or model before the workflow is sent. */
 export function checkWorkflow(wf: ApiWorkflow, defs: Record<string, unknown>) {
   for (const node of Object.values(wf)) {
-    if (!defs[node.class_type]) throw new Error(`Falta el nodo ${node.class_type} en ComfyUI. Instala o activa el pack que lo trae.`);
+    if (!defs[node.class_type]) throw new Error(t('Falta el nodo {class_type} en ComfyUI. Instala o activa el pack que lo trae.', { class_type: node.class_type }));
     for (const key of MODEL_INPUTS) {
       const value = node.inputs[key];
       if (typeof value !== 'string') continue;
       const options = comboOptions(defs as Parameters<typeof comboOptions>[0], node.class_type, key);
-      if (!options.includes(value)) throw new Error(`No encuentro el modelo «${value}» (${node.class_type}). Elígelo en la página ComfyUI.`);
+      if (!options.includes(value)) throw new Error(t('No encuentro el modelo «{value}» ({class_type}). Elígelo en la página ComfyUI.', { value, class_type: node.class_type }));
     }
   }
 }
@@ -651,9 +652,9 @@ function autoFill(wf: ApiWorkflow, i: JobInputs) {
 export function parseWorkflow(json: string): ApiWorkflow {
   const data = JSON.parse(json);
   if (data && Array.isArray(data.nodes)) {
-    throw new Error('Este JSON es el formato de la interfaz. En ComfyUI usa «Workflow → Export (API)» y pega ese archivo.');
+    throw new Error(t('Este JSON es el formato de la interfaz. En ComfyUI usa «Workflow → Export (API)» y pega ese archivo.'));
   }
-  if (!data || typeof data !== 'object') throw new Error('El workflow no es un objeto JSON.');
+  if (!data || typeof data !== 'object') throw new Error(t('El workflow no es un objeto JSON.'));
   return data as ApiWorkflow;
 }
 
@@ -670,36 +671,36 @@ export function buildWorkflow(i: JobInputs, custom?: string): { workflow: ApiWor
 
 /** Placeholders a custom workflow may use. */
 export const PLACEHOLDERS: { key: keyof JobInputs; desc: string }[] = [
-  { key: 'prompt', desc: 'texto del prompt' },
-  { key: 'concepts', desc: 'segmentos con peso (a::2), lista de {text, weight}' },
+  { key: 'prompt', desc: t('texto del prompt') },
+  { key: 'concepts', desc: t('segmentos con peso (a::2), lista de {text, weight}') },
   { key: 'seed', desc: 'semilla' },
-  { key: 'width', desc: 'ancho en px' },
-  { key: 'height', desc: 'alto en px' },
-  { key: 'batch', desc: 'imágenes por ejecución (1: el grid se hace en ejecuciones seguidas)' },
-  { key: 'engine', desc: 'modelo pedido: h3, anima (--anima) o moss (--moss)' },
-  { key: 'denoise', desc: 'fuerza de cambio (0–1)' },
-  { key: 'image', desc: 'imagen de entrada (vary, upscale, zoom, pan)' },
-  { key: 'chaos', desc: 'variedad 0–100' },
-  { key: 'aspect', desc: 'relación de aspecto' },
-  { key: 'pad_left', desc: 'relleno izq. (pan/zoom)' },
-  { key: 'motion_prompt', desc: 'descripción del movimiento (vídeo)' },
-  { key: 'motion', desc: 'movimiento: low / high (vídeo)' },
-  { key: 'frames', desc: 'fotogramas del vídeo' },
-  { key: 'fps', desc: 'fotogramas por segundo' },
-  { key: 'end_image', desc: 'fotograma final (vídeo)' },
-  { key: 'loop', desc: 'vídeo en bucle (true/false)' },
-  { key: 'image_2', desc: '2.º prompt de imagen' },
-  { key: 'images', desc: 'todos los prompts de imagen (lista)' },
-  { key: 'style_images', desc: 'todas las referencias de estilo (lista)' },
-  { key: 'image_weight', desc: 'peso de la imagen (--iw)' },
-  { key: 'style_image', desc: 'primera referencia de estilo' },
-  { key: 'style_weight', desc: 'peso del estilo (--sw)' },
-  { key: 'sref', desc: 'código de estilo (--sref)' },
-  { key: 'moodboard', desc: 'códigos de moodboard / perfil (--p)' },
-  { key: 'message', desc: 'tu mensaje (modo conversacional)' },
-  { key: 'current_prompt', desc: 'el prompt actual (modo conversacional)' },
-  { key: 'hd', desc: 'alta resolución (true/false)' },
-  { key: 'tile', desc: 'patrón repetible (--tile)' },
+  { key: 'width', desc: t('ancho en px') },
+  { key: 'height', desc: t('alto en px') },
+  { key: 'batch', desc: t('imágenes por ejecución (1: el grid se hace en ejecuciones seguidas)') },
+  { key: 'engine', desc: t('modelo pedido: h3, anima (--anima) o moss (--moss)') },
+  { key: 'denoise', desc: t('fuerza de cambio (0–1)') },
+  { key: 'image', desc: t('imagen de entrada (vary, upscale, zoom, pan)') },
+  { key: 'chaos', desc: t('variedad 0–100') },
+  { key: 'aspect', desc: t('relación de aspecto') },
+  { key: 'pad_left', desc: t('relleno izq. (pan/zoom)') },
+  { key: 'motion_prompt', desc: t('descripción del movimiento (vídeo)') },
+  { key: 'motion', desc: t('movimiento: low / high (vídeo)') },
+  { key: 'frames', desc: t('fotogramas del vídeo') },
+  { key: 'fps', desc: t('fotogramas por segundo') },
+  { key: 'end_image', desc: t('fotograma final (vídeo)') },
+  { key: 'loop', desc: t('vídeo en bucle (true/false)') },
+  { key: 'image_2', desc: t('2.º prompt de imagen') },
+  { key: 'images', desc: t('todos los prompts de imagen (lista)') },
+  { key: 'style_images', desc: t('todas las referencias de estilo (lista)') },
+  { key: 'image_weight', desc: t('peso de la imagen (--iw)') },
+  { key: 'style_image', desc: t('primera referencia de estilo') },
+  { key: 'style_weight', desc: t('peso del estilo (--sw)') },
+  { key: 'sref', desc: t('código de estilo (--sref)') },
+  { key: 'moodboard', desc: t('códigos de moodboard / perfil (--p)') },
+  { key: 'message', desc: t('tu mensaje (modo conversacional)') },
+  { key: 'current_prompt', desc: t('el prompt actual (modo conversacional)') },
+  { key: 'hd', desc: t('alta resolución (true/false)') },
+  { key: 'tile', desc: t('patrón repetible (--tile)') },
 ];
 
 export const ACTION_ORDER: ActionKind[] = [

@@ -176,6 +176,24 @@ h3 {
 .nav-bottom {
   margin-top: auto;
 }
+.lang-pick {
+  position: relative;
+}
+.lang-pick select {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.nav-item.lang-pick > span {
+  display: inline;
+  width: 22px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+}
 .conn {
   display: flex;
   align-items: center;
@@ -975,6 +993,12 @@ input[type='range'] {
   .nav-item {
     justify-content: center;
     padding: 12px;
+  }
+  /* Compact: the 文A mark shows and the list opens from it. */
+  .lang-pick select {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
   }
   .main {
     margin-left: var(--sidebar-compact);
