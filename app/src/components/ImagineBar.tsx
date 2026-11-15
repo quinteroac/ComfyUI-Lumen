@@ -46,8 +46,7 @@ function loraMatches(loras: string[], q: string, text: string): string[] {
   const folder = /(^|\s)--anima\b/.test(text) ? 'anima/' : /(^|\s)--moss\b/.test(text) ? 'moss/' : 'minimax/';
   return loras
     .filter((name) => words.every((w) => name.toLowerCase().includes(w)))
-    .sort((a, b) => Number(b.startsWith(folder)) - Number(a.startsWith(folder)) || a.localeCompare(b))
-    .slice(0, 8);
+    .sort((a, b) => Number(b.startsWith(folder)) - Number(a.startsWith(folder)) || a.localeCompare(b));
 }
 
 const ASPECTS = ['1:2', '9:16', '2:3', '3:4', '4:5', '1:1', '5:4', '4:3', '3:2', '16:9', '2:1'];
@@ -444,6 +443,7 @@ export function ImagineBar() {
   const [pick, setPick] = useState(0);
   const [hidden, setHidden] = useState('');
   const caretAfter = useRef<number | null>(null);
+  const pointer = useRef('');
   const lora = loraQuery(draft, caret);
   const suggestions = lora && hidden !== draft ? loraMatches(loras, lora.q, draft) : [];
 
@@ -452,6 +452,10 @@ export function ImagineBar() {
   }, [!!lora, loras.length]);
 
   useEffect(() => setPick(0), [lora?.q]);
+
+  useEffect(() => {
+    if (suggestions.length) document.getElementById(`lora-${pick}`)?.scrollIntoView({ block: 'nearest' });
+  }, [pick, suggestions.length]);
 
   // After a picked LoRA the caret goes right after it, before the next key lands.
   useLayoutEffect(() => {
@@ -721,7 +725,12 @@ export function ImagineBar() {
                   e.preventDefault();
                   acceptLora(name);
                 }}
-                onMouseEnter={() => setPick(n)}
+                onMouseMove={(e) => {
+                  // Chrome also sends mousemove when the list scrolls under a still pointer; only a real move picks.
+                  const at = `${e.screenX},${e.screenY}`;
+                  if (at !== pointer.current) setPick(n);
+                  pointer.current = at;
+                }}
               >
                 {name.replace(/\.safetensors$/i, '')}
               </li>
