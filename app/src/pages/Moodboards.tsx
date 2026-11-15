@@ -280,7 +280,7 @@ export function Moodboards() {
         boards.map((m) => <Board key={m.id} m={m} />)
       )}
       <p className="hint">
-        {t('Con tu ComfyUI, las imágenes del moodboard llegan a tus workflows como referencia de estilo (')}{'{{style_image}}'}{t(') y su código como')} {'{{moodboard}}'}{t('; el workflow integrado solo usa las palabras del estilo.')}
+        {t('Con tu ComfyUI, las imágenes del moodboard llegan a tus workflows como referencia de estilo (')}{'{{style_image}}'}{t(') y su código como')} {'{{moodboard}}'}{t('; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.')}
       </p>
     </div>
   );

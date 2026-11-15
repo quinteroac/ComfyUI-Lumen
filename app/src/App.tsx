@@ -8,7 +8,7 @@ import { Create } from './pages/Create';
 import { Organize } from './pages/Organize';
 import { ComfySettings } from './pages/ComfySettings';
 import { Editor } from './pages/Editor';
-import { Help } from './pages/Help';
+import { Docs } from './pages/Docs';
 import { Moodboards } from './pages/Moodboards';
 import { Personalize } from './pages/Personalize';
 import { StyleCreator } from './pages/StyleCreator';
@@ -147,7 +147,7 @@ export function App() {
           <MoreMenu current={route} />
         </div>
         <div className="nav-bottom">
-          <NavLink route="help" label={t('Ayuda')} Icon={IconHelp} current={route} />
+          <NavLink route="docs" label={t('Ayuda')} Icon={IconHelp} current={route} />
           <ThemeToggle />
           <LangPicker />
           <div className="conn">
@@ -164,7 +164,7 @@ export function App() {
             <span>Lumen</span>
           </a>
           <span className="row">
-            <a className="nav-item" href={routeHref('help')} aria-label={t('Ayuda')} title={t('Ayuda')} onClick={(e) => (e.preventDefault(), navigate('help'))}>
+            <a className="nav-item" href={routeHref('docs')} aria-label={t('Ayuda')} title={t('Ayuda')} onClick={(e) => (e.preventDefault(), navigate('docs'))}>
               <IconHelp size={22} />
               <span>{t('Ayuda')}</span>
             </a>
@@ -188,7 +188,7 @@ export function App() {
         {route === 'moodboards' && <Moodboards />}
         {route === 'style-creator' && <StyleCreator />}
         {route === 'comfyui' && <ComfySettings />}
-        {route === 'help' && <Help />}
+        {route === 'docs' && <Docs />}
         <footer className="foot">
           {t('Lumen · los botones de generación envían tu workflow a ComfyUI ·')}{' '}
           <a href={routeHref('comfyui')} onClick={(e) => (e.preventDefault(), navigate('comfyui'))}>

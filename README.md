@@ -4,6 +4,8 @@ An image studio page for ComfyUI: a prompt bar with Midjourney-style parameters,
 
 Open it from the **Lumen** menu in ComfyUI, or at `http://<comfyui>/lumen/`.
 
+The documentation (English) is under **Help** in the sidebar, or at `/lumen/docs`. Its articles are Markdown files in `app/src/docs/articles/`, with images and videos in `app/public/docs-media/`.
+
 ## Models
 
 | | |

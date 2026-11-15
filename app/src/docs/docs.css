@@ -1,0 +1,295 @@
+/* ------------------------------ docs ------------------------------ */
+.doc-hero {
+  text-align: center;
+  padding: var(--s3) 0 var(--s2);
+}
+.doc-hero h1 {
+  font-size: var(--fs-h1);
+  margin: 0 0 var(--s1);
+}
+.doc-hero p {
+  color: var(--text-soft);
+  margin: 0 0 var(--s2);
+}
+.doc-search {
+  width: 100%;
+  max-width: 560px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.doc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.doc-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s2);
+}
+.doc-card h2 {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.doc-card ul,
+.doc-nav ul,
+.doc-toc ul,
+.doc-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.doc-card li {
+  padding: 3px 0;
+}
+.doc-card a,
+.doc-nav a,
+.doc-toc a,
+.doc-results a,
+.doc-related a,
+.doc-pager a,
+.doc-crumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.doc-card a:hover,
+.doc-nav a:hover,
+.doc-toc a:hover,
+.doc-results a:hover,
+.doc-related a:hover,
+.doc-pager a:hover,
+.doc-crumb a:hover {
+  text-decoration: underline;
+}
+.doc-results li {
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--line);
+}
+.doc-results li > a {
+  font-weight: 600;
+}
+.doc-results p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+}
+.doc-results .doc-crumb {
+  margin-left: var(--s1);
+}
+
+/* An article: the docs nav, the text and its table of contents. */
+.docs {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 760px) 180px;
+  gap: var(--s3);
+  justify-content: center;
+  padding-top: var(--s3);
+}
+.doc-nav,
+.doc-toc {
+  position: sticky;
+  top: var(--s2);
+  align-self: start;
+  max-height: calc(100vh - var(--s3));
+  overflow: auto;
+  font-size: 14px;
+}
+.doc-nav .doc-search {
+  padding: 8px 12px;
+  margin-bottom: var(--s2);
+  font-size: 14px;
+}
+.doc-nav h4,
+.doc-toc h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  margin: var(--s2) 0 4px;
+}
+.doc-nav li {
+  padding: 3px 8px;
+  border-radius: var(--radius-s);
+  color: var(--text-soft);
+}
+.doc-nav li.on {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.doc-toc li {
+  padding: 3px 0;
+  color: var(--text-soft);
+}
+.doc-crumb {
+  color: var(--text-faint);
+  font-size: 13px;
+  margin: 0;
+}
+.doc-article {
+  line-height: 1.6;
+  padding-bottom: var(--s4);
+}
+.doc-article h1 {
+  font-size: 34px;
+  line-height: 1.2;
+  margin: 4px 0 var(--s2);
+}
+.doc-article h2 {
+  font-size: var(--fs-h2);
+  margin: var(--s3) 0 var(--s1);
+  scroll-margin-top: var(--s2);
+}
+.doc-article h3 {
+  font-size: 18px;
+  margin: var(--s2) 0 4px;
+}
+.doc-article code {
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+.doc-article pre {
+  background: var(--surface);
+  border-radius: var(--radius-s);
+  padding: var(--s2);
+  overflow: auto;
+}
+.doc-article pre code {
+  background: none;
+  padding: 0;
+}
+.doc-article a {
+  color: var(--link);
+}
+.doc-table {
+  overflow-x: auto;
+  margin: var(--s2) 0;
+}
+.doc-table table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 15px;
+}
+.doc-table th,
+.doc-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.doc-table th {
+  font-weight: 600;
+  background: var(--surface);
+}
+.doc-callout {
+  border-left: 4px solid var(--text-faint);
+  background: var(--surface);
+  border-radius: var(--radius-s);
+  padding: 12px 16px;
+  margin: var(--s2) 0;
+}
+.doc-callout.tip {
+  border-left-color: var(--ok);
+}
+.doc-prompts {
+  display: grid;
+  gap: var(--s1);
+  margin: var(--s2) 0;
+}
+.doc-prompt {
+  display: flex;
+  gap: var(--s1);
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--surface);
+  border-radius: var(--radius-s);
+  padding: 10px 12px;
+}
+.doc-prompt code {
+  background: none;
+  padding: 0;
+  white-space: pre-wrap;
+}
+.doc-prompt-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.doc-media {
+  display: grid;
+  gap: var(--s1);
+  margin: var(--s2) 0;
+  align-items: start;
+}
+.doc-media.n2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.doc-media.n3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.doc-media.n4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.doc-media figure {
+  margin: 0;
+}
+.doc-media img,
+.doc-media video {
+  width: 100%;
+  border-radius: var(--radius-s);
+  display: block;
+  background: var(--surface);
+}
+.doc-media.n1 img,
+.doc-media.n1 video {
+  max-height: 520px;
+  width: auto;
+  max-width: 100%;
+}
+.doc-media figcaption {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-top: 4px;
+}
+.doc-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line);
+}
+.doc-related ul {
+  padding-left: 18px;
+}
+
+@media (max-width: 1280px) {
+  .docs {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .doc-toc {
+    display: none;
+  }
+}
+@media (max-width: 860px) {
+  .docs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .doc-nav {
+    display: none;
+  }
+  .doc-media.n3,
+  .doc-media.n4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .doc-prompt {
+    flex-direction: column;
+  }
+}
