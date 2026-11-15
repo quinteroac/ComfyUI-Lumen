@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { save, saved as loadFile } from './saved';
 import { getConfig } from './comfy/config';
-import { MAX_VIDEO_REFS, buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
+import { MAX_VIDEO_REFS, buildWorkflow, checkWorkflow, enhanced, simpleRatio } from './comfy/workflows';
 import { askAssistant, isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
 import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
 import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
@@ -464,9 +464,6 @@ export function aspectSize(aspect: string, megapixels: number) {
 
 const megapixelsOf = (w: number, h: number) => (w * h) / PIXELS_PER_MP;
 
-const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-/** "1024x768" → "4:3", as the edit prompt enhancer wants each picture's shape. */
-const reducedRatio = (w: number, h: number) => (w && h ? `${Math.round(w) / gcd(Math.round(w), Math.round(h))}:${Math.round(h) / gcd(Math.round(w), Math.round(h))}` : '');
 
 const MOTION_WORDS: Record<Motion, string> = {
   low: 'subtle motion, slow gentle camera movement',
@@ -823,7 +820,7 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   inputs.images = await Promise.all((refs.images ?? []).map((r, n) => toComfyInput(r, `lumen_ip${n + 1}_${job.id}.png`)));
   inputs.style_images = await Promise.all((refs.style ?? []).map((r, n) => toComfyInput(r, `lumen_sref${n + 1}_${job.id}.png`)));
   inputs.character_images = await Promise.all((refs.character ?? []).map((r, n) => toComfyInput(r, `lumen_cref${n + 1}_${job.id}.png`)));
-  inputs.picture_ratios = [...(refs.images ?? []), ...(refs.character ?? []), ...(refs.style ?? [])].map((r) => reducedRatio(r.w, r.h));
+  inputs.picture_ratios = [...(refs.images ?? []), ...(refs.character ?? []), ...(refs.style ?? [])].map((r) => simpleRatio(r.w, r.h));
   if (!inputs.image) [inputs.image, inputs.image_2] = inputs.images;
   inputs.style_image = inputs.style_images[0];
   if (refs.end && !refs.loop) inputs.end_image = await toComfyInput(refs.end, `lumen_end_${job.id}.png`);
@@ -869,7 +866,7 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   if (job.action === 'describe') {
     if (!texts.length) throw new Error('«Describir» no devolvió texto. Si es un workflow propio, usa un nodo que muestre el texto (ShowText, PreviewAny…).');
     // The prompts keep the picture's shape, as on the original.
-    const ar = srcImg ? reducedRatio(srcImg.w, srcImg.h) : '';
+    const ar = srcImg ? simpleRatio(srcImg.w, srcImg.h) : '';
     return { images: [], texts: splitPrompts(texts).map((t) => (ar && !/--ar\s/.test(t) ? `${t} --ar ${ar}` : t)) };
   }
   return { images };

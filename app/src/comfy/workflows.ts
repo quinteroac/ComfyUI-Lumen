@@ -89,13 +89,30 @@ function fillInstruction(i: JobInputs): string {
   return `<Picture 1> is a picture shrunk to ${size} in the middle of a white canvas. Fill the white border by continuing the scene outward, so the result is the same scene seen from ${far} as far away. ${NEWLY_VISIBLE}`;
 }
 
-const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
-const ratio = (w: number, h: number) => `${w / gcd(w, h)}:${h / gcd(w, h)}`;
+const COMMON_RATIOS = ['1:1', '4:5', '5:4', '3:4', '4:3', '2:3', '3:2', '9:16', '16:9', '1:2', '2:1', '9:21', '21:9'];
+
+/** "2720x1536" → "16:9": the nearest common ratio within 1.5% of the shape (sizes are rounded to multiples of 32),
+    else the simplest ratio within 1%. */
+export function simpleRatio(w: number, h: number): string {
+  if (!w || !h) return '';
+  const off = (r: string) => {
+    const [a, b] = r.split(':').map(Number);
+    return Math.abs((a * h) / (b * w) - 1);
+  };
+  const common = COMMON_RATIOS.reduce((best, r) => (off(r) < off(best) ? r : best));
+  if (off(common) < 0.015) return common;
+  for (let b = 1; b <= 32; b++) {
+    const a = Math.max(1, Math.round((w / h) * b));
+    if (Math.abs((a * h) / (b * w) - 1) < 0.01) return `${a}:${b}`;
+  }
+  return `${Math.round((w / h) * 32)}:32`;
+}
 
 /** The enhancer's user message: the pictures with their ratios, the instruction and the canvas ratio, as its task prompt describes. */
 function peRequest(i: JobInputs, count: number): string {
-  const r = ratio(i.width, i.height);
   const own = ON_SOURCE.includes(i.action);
+  // New images keep the --ar the user chose; edits the shape of the result.
+  const r = !own && i.aspect ? i.aspect : simpleRatio(i.width, i.height);
   // The image being edited has the ratio of the result; reference pictures their own.
   const ratios = own ? [r] : (i.picture_ratios ?? []);
   return [
