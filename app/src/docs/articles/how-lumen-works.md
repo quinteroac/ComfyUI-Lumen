@@ -14,12 +14,13 @@ Lumen is a page served by the ComfyUI-Lumen node pack. Every button builds a Com
 | --- | --- |
 | Images and every edit | MiniMax H3 Image, with LCM and six fixed sigmas |
 | `--anima`, `--moss` | Anima with its turbo LoRA, MOSS Image with its DMD LoRA |
+| `--cref` on Anima | Lumen's SnapRef node with a SnapRef adapter |
 | Prompt enhancer, Describe | Qwen 3.5 9B (through TextGenerateV2) |
 | Videos | MiniMax H3 Video fl2va / ref2va with the Pika Flex LoRAs |
-| Extend | ComfyUI-MiniMaxH3-PrefixStream |
+| Extend | Lumen's continuation nodes (from ComfyUI-MiniMaxH3-PrefixStream) |
 | Upscale video | RelayVSR ×2 |
 | Conversational mode | A GGUF model with llama-cpp-python |
-| Style codes, weights | The Style Code and Concept Slider node packs of each model |
+| Style codes, weights | Lumen's Style Code and Concept Slider nodes (from the H3, MOSS and Anima slider packs) |
 
 All of them can be changed on the [ComfyUI page](#comfyui-settings), and any action can use [your own workflow](#custom-workflows).
 

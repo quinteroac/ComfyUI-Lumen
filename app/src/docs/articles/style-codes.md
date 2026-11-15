@@ -13,7 +13,7 @@ a cozy wooden cabin in a snowy forest at dusk, warm light in the windows --ar 3:
 
 ## How it works
 
-Each code picks a few styles from the style list of the model's Style Code node (MiniMaxH3StyleCode, MOSSStyleCode or AnimaStyleCode), always the same ones for the same code, and mixes them with weights. The styles a code picked are listed under the job's prompt.
+Each code picks a few styles from the model's style list (Lumen's Style Code nodes: LumenH3StyleCode, LumenMOSSStyleCode and LumenAnimaStyleCode), always the same ones for the same code, and mixes them with weights. The styles a code picked are listed under the job's prompt.
 
 - On H3 Image and MOSS Image a code mixes 4 styles; on Anima, 2 styles and 2 artists. Both can be changed on the [ComfyUI page](#comfyui-settings).
 - The same code gives a related but different look on each model.

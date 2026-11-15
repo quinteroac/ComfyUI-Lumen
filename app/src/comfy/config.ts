@@ -50,7 +50,7 @@ export const DEFAULT_CONFIG: ComfyConfig = {
   },
   anima: {
     unet: 'anima/anima-base-v1.0.safetensors',
-    lora: 'anima/anima-turbo-lora-v0.1.safetensors',
+    lora: 'anima/anima-turbo-lora-v0.2.safetensors',
     clip: 'qwen_3_06b_base.safetensors',
     vae: 'qwen_image_vae.safetensors',
     steps: 8,

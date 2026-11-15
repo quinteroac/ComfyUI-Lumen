@@ -593,5 +593,12 @@
  "el prompt actual (modo conversacional)": "当前提示词（对话模式）",
  "alta resolución (true/false)": "高分辨率（true/false）",
  "patrón repetible (--tile)": "可平铺图案（--tile）",
- "; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.": "传入；内置工作流会将这些图像用作风格参考，并把风格词加入提示词。"
+ "; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.": "传入；内置工作流会将这些图像用作风格参考，并把风格词加入提示词。",
+ "Modelos": "模型",
+ "Los modelos que usa Lumen por defecto. Solo se descargan cuando pulsas Descargar, de Hugging Face o Civitai, uno tras otro, y cada archivo se comprueba antes de guardarlo. Cada modelo tiene su propia licencia: revísala en su página.": "Lumen 默认使用的模型。只有点击“下载”时才会从 Hugging Face 或 Civitai 逐个下载，保存前会校验每个文件。每个模型都有自己的许可证，请在其页面上查看。",
+ "Guardar en": "保存到",
+ "Descargar los que faltan ({size})": "下载缺少的模型（{size}）",
+ "Todos instalados": "已全部安装",
+ "Instalado": "已安装",
+ "Falta": "缺少"
 }

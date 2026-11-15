@@ -593,5 +593,12 @@
  "el prompt actual (modo conversacional)": "the current prompt (conversational mode)",
  "alta resolución (true/false)": "high resolution (true/false)",
  "patrón repetible (--tile)": "tileable pattern (--tile)",
- "; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.": "; the built-in workflow uses them as style references and adds the style words to the prompt."
+ "; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.": "; the built-in workflow uses them as style references and adds the style words to the prompt.",
+ "Modelos": "Models",
+ "Los modelos que usa Lumen por defecto. Solo se descargan cuando pulsas Descargar, de Hugging Face o Civitai, uno tras otro, y cada archivo se comprueba antes de guardarlo. Cada modelo tiene su propia licencia: revísala en su página.": "The models Lumen uses by default. They are only downloaded when you press Download, from Hugging Face or Civitai, one after another, and each file is checked before it is saved. Each model has its own license: check it on its page.",
+ "Guardar en": "Save to",
+ "Descargar los que faltan ({size})": "Download the missing ones ({size})",
+ "Todos instalados": "All installed",
+ "Instalado": "Installed",
+ "Falta": "Missing"
 }

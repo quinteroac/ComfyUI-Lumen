@@ -593,5 +593,12 @@
  "el prompt actual (modo conversacional)": "現在のプロンプト（会話モード）",
  "alta resolución (true/false)": "高解像度（true/false）",
  "patrón repetible (--tile)": "繰り返しパターン（--tile）",
- "; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.": "として渡されます。組み込みワークフローは画像をスタイル参照として使い、スタイルの言葉をプロンプトに加えます。"
+ "; el workflow integrado las usa como referencias de estilo y añade sus palabras al prompt.": "として渡されます。組み込みワークフローは画像をスタイル参照として使い、スタイルの言葉をプロンプトに加えます。",
+ "Modelos": "モデル",
+ "Los modelos que usa Lumen por defecto. Solo se descargan cuando pulsas Descargar, de Hugging Face o Civitai, uno tras otro, y cada archivo se comprueba antes de guardarlo. Cada modelo tiene su propia licencia: revísala en su página.": "Lumen が既定で使うモデルです。「ダウンロード」を押したときだけ Hugging Face または Civitai から 1 つずつダウンロードされ、保存前に各ファイルを検証します。各モデルには独自のライセンスがあります。配布ページで確認してください。",
+ "Guardar en": "保存先",
+ "Descargar los que faltan ({size})": "不足分をダウンロード（{size}）",
+ "Todos instalados": "すべてインストール済み",
+ "Instalado": "インストール済み",
+ "Falta": "未インストール"
 }

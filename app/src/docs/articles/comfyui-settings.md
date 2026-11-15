@@ -8,6 +8,7 @@ The top of the page shows the connection: the ComfyUI version and the device it 
 
 | Section | Sets |
 | --- | --- |
+| Models | The default models: which are installed, and downloads on request. See [Installation & Requirements](#installation). |
 | MiniMax H3 Image | Model, text encoder, VAE, the prompt enhancer's model, the six sigmas, LCM noise, and the draft, SD and HD megapixels. |
 | Anima and MOSS Image | Each model with its LoRA, encoder, VAE, steps, CFG, sampler, scheduler, sizes and negative prompt; SnapRef and its mode for `--cref` on Anima. |
 | Styles (--sref) | Styles per code (H3, MOSS), styles and artists per code on Anima, and the preview prompt of Explore › Styles. |

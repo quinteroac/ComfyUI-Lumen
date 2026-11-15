@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { setConfig, type ComfyConfig } from '../comfy/config';
 import { comboOptions, llmModels, nodeDefs, testConnection } from '../comfy/client';
+import { ModelDownloads } from '../components/ModelDownloads';
 import { ACTION_LABELS, type ActionKind, type JobInputs } from '../comfy/types';
 import { ACTION_ORDER, PLACEHOLDERS, buildWorkflow, parseWorkflow } from '../comfy/workflows';
 import { useConfig } from '../useConfig';
@@ -174,6 +175,8 @@ export function ComfySettings() {
         {status ? <p className={status.ok ? 'ok' : 'err'}>{status.text}</p> : <p className="hint">{t('Comprobando…')}</p>}
       </div>
 
+      <ModelDownloads />
+
       <div className="card">
         <h2>{t('MiniMax H3 Image')}</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
@@ -228,7 +231,7 @@ export function ComfySettings() {
           <label className="field">
             {t('Anima · SnapRef (--cref)')}
             <select value={cfg.anima.snapref} onChange={(e) => anima({ snapref: e.target.value })}>
-              {(comboOptions(defs, 'SnapRef', 'adapter').length ? comboOptions(defs, 'SnapRef', 'adapter') : [cfg.anima.snapref]).map((o) => (
+              {(comboOptions(defs, 'LumenSnapRef', 'adapter').length ? comboOptions(defs, 'LumenSnapRef', 'adapter') : [cfg.anima.snapref]).map((o) => (
                 <option key={o}>{o}</option>
               ))}
             </select>

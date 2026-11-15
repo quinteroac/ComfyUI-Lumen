@@ -137,7 +137,7 @@ const FILL: ActionKind[] = ['edit', 'zoom_out', 'pan'];
 /** Edits whose only picture is the image itself, as <Picture 1>. */
 const ON_SOURCE: ActionKind[] = [...FILL, 'retexture'];
 
-const STYLE_NODE = { h3: 'MiniMaxH3StyleCode', moss: 'MOSSStyleCode', anima: 'AnimaStyleCode' } as const;
+const STYLE_NODE = { h3: 'LumenH3StyleCode', moss: 'LumenMOSSStyleCode', anima: 'LumenAnimaStyleCode' } as const;
 const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
 
 /** Built-in H3 jobs whose caption an enhancer writes: videos, the fill edits, and new images with reference pictures. */
@@ -150,33 +150,26 @@ export const enhanced = (i: JobInputs) =>
 function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: ComfyConfig['styleCodes']): Link {
   const codes = (i.sref ?? '').split(/[\s,]+/).filter((t) => /^\d+(::-?\d*\.?\d+)?$/.test(t));
   if (!codes.length || !GENERATION.includes(i.action)) return model;
-  const [first, ...mix] = codes;
   const styled = add(STYLE_NODE[i.engine], {
     model,
     clip,
-    code: Number(first.split('::')[0]),
-    mix: mix.join(', '),
+    codes: codes.join(' '),
     strength: Math.min(4, (1.5 * (i.style_weight ?? 100)) / 100),
-    bypass: false,
-    ...(i.engine === 'anima'
-      ? { styles_per_code: s.animaStyles, artists_per_code: s.animaArtists, artist_pool: 5000 }
-      : { styles_per_code: s.styles }),
-    ...(i.engine === 'h3' ? { max_strength: 4 } : {}),
+    ...(i.engine === 'anima' ? { styles_per_code: s.animaStyles, artists_per_code: s.animaArtists } : { styles_per_code: s.styles }),
   });
   add('PreviewAny', { source: out(styled, 1) }, 'styles');
   return styled;
 }
 
-const SLIDER_NODE = { h3: 'MiniMaxH3ConceptSlider', moss: 'MOSSConceptSlider', anima: 'AnimaTagSlider' } as const;
+const SLIDER_NODE = { h3: 'LumenH3ConceptSlider', moss: 'LumenMOSSConceptSlider', anima: 'LumenAnimaTagSlider' } as const;
 /** MOSS's and Anima's sliders stop at 1.5; H3's range follows max_strength. */
-const SLIDER_MAX = { h3: Infinity, moss: 1.5, anima: 1.5 } as const;
+const SLIDER_MAX = { h3: 100, moss: 1.5, anima: 1.5 } as const;
 
 /** Weighted prompt segments (a::2) as one concept slider each, chained like LoRAs: 1 is the segment as written. */
 function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link, mode: ComfyConfig['conceptMode']): Link {
   for (const { text, weight } of i.concepts) {
     const strength = Math.min(weight, SLIDER_MAX[i.engine]);
-    const words = i.engine === 'anima' ? { tag_low: '', tag_high: text } : { concept_low: '', concept_high: text };
-    model = add(SLIDER_NODE[i.engine], { model, clip, ...words, mode, strength, bypass: false, ...(i.engine === 'h3' ? { max_strength: Math.max(1.5, strength) } : {}) });
+    model = add(SLIDER_NODE[i.engine], { model, clip, [i.engine === 'anima' ? 'tag' : 'concept']: text, mode, strength });
   }
   return model;
 }
@@ -332,7 +325,7 @@ function videoWorkflow(i: JobInputs, c: ComfyConfig): ApiWorkflow {
   const extend = i.action === 'extend';
   // With reference pictures, and to extend (as PrefixStream does): ref2va and its Pika LoRA; otherwise fl2va.
   const r2v = refs.length > 0 || extend;
-  let model = add('MiniMaxH3SigmaShift', {
+  const model = add('MiniMaxH3SigmaShift', {
     model: add('LoraLoaderModelOnly', {
       model: add('UNETLoader', { unet_name: r2v ? v.ref2va : v.fl2va, weight_dtype: 'default' }),
       lora_name: r2v ? v.ref2vaLora : v.fl2vaLora,
@@ -407,19 +400,11 @@ function videoWorkflow(i: JobInputs, c: ComfyConfig): ApiWorkflow {
     });
     latent = out(conditioning, 1);
   }
-  let cacheConfig: Link | undefined;
-  let session: Link | undefined;
+  let prefixFrames: Link | undefined;
   if (extend) {
-    // The previous latent's tail is copied into the new clip's head and protected by the native AV masks.
-    cacheConfig = add('MiniMaxPrefixCacheConfig', { cache_mode: 'Native Masked AV (Recommended)', continuation_frames: String(CONTEXT_FRAMES) });
-    const applied = add('MiniMaxPrefixCacheApplier', {
-      model,
-      conditioning,
-      cache_config: cacheConfig,
-      context_latent: add('MiniMaxLoadLatent', { latent_path: i.latent_path, clip_index: 1 }),
-      target_latent: latent,
-    });
-    [model, conditioning, session, latent] = [applied, out(applied, 1), out(applied, 2), out(applied, 3)];
+    // The previous latent's tail is copied into the new clip's head and kept by the native AV denoise masks.
+    const continued = add('LumenVideoContinuation', { conditioning, latent, latent_path: i.latent_path, context_frames: CONTEXT_FRAMES });
+    [conditioning, latent, prefixFrames] = [continued, out(continued, 1), out(continued, 2)];
   }
   const sampled = add('SamplerCustomAdvanced', {
     noise: add('RandomNoise', { noise_seed: i.seed }),
@@ -428,25 +413,19 @@ function videoWorkflow(i: JobInputs, c: ComfyConfig): ApiWorkflow {
     sigmas: add('ManualSigmas', { sigmas: v.sigmas }),
     latent_image: latent,
   });
-  if (i.latent_name) add('MiniMaxSaveLatent', { latent: sampled, filename_prefix: i.latent_name, clip_index: 1 });
+  if (i.latent_name) add('LumenSaveVideoLatent', { latent: sampled, filename_prefix: i.latent_name });
   const av = add('LTXVSeparateAVLatent', { av_latent: sampled });
   let images: Link = add('VAEDecode', { samples: av, vae });
   let audio: Link = add('VAEDecodeAudio', { samples: out(av, 1), vae: audioVae });
   if (extend) {
     // The new clip, without the head it shares with the video, joins the end of the video.
-    const stitched = add('MiniMaxLongVideoStitcher', {
-      trim_frames: 0,
-      crossfade_frames: 4,
-      luminance_match: true,
-      luminance_fade_frames: 16,
-      crossfade_ms: 15,
+    const stitched = add('LumenStitchVideo', {
+      previous_images: [prev, 0],
+      previous_audio: [prev, 1],
+      images,
+      audio,
+      trim_frames: prefixFrames,
       fps: 24,
-      prev_images: [prev, 0],
-      curr_images: images,
-      prev_audio: [prev, 1],
-      curr_audio: audio,
-      session,
-      cache_config: cacheConfig,
     });
     [images, audio] = [stitched, out(stitched, 1)];
   }
@@ -465,7 +444,7 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   if (engine === 'anima' && i.character_images?.length) {
     // --cref on Anima: SnapRef with up to three pictures of the character; --cw is its fidelity.
     const [first, ...more] = i.character_images.slice(0, 3).map((image) => add('LoadImage', { image }));
-    model = add('SnapRef', {
+    model = add('LumenSnapRef', {
       model,
       clip,
       vae,
@@ -473,19 +452,6 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
       ...Object.fromEntries(more.map((link, n) => [`image_${n + 2}`, link])),
       adapter: c.anima.snapref,
       mode: c.anima.snaprefMode,
-      ref_in_uncond: false,
-      ref_megapixels: 1,
-      strength: 0,
-      ref_caption: '',
-      ref_guidance_on: false,
-      ref_guidance: 4.5,
-      correction: 'apg',
-      ref_end: 1,
-      use_batch: false,
-      multi_layout: 'separate',
-      weight_1: 1,
-      weight_2: 1,
-      weight_3: 1,
       fidelity: (i.character_weight ?? 100) / 100,
     });
   }

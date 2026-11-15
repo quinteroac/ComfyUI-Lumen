@@ -4,7 +4,8 @@ from aiohttp import web
 
 from server import PromptServer
 
-from . import assistant, bridge  # noqa: F401  (register the conversational and MCP routes)
+from . import assistant, bridge, downloads  # noqa: F401  (register the conversational, MCP and model download routes)
+from .nodes import LumenExtension
 
 DIST = Path(__file__).parent / "dist"
 routes = PromptServer.instance.routes
@@ -24,6 +25,9 @@ async def lumen_page(request):
     return web.FileResponse(DIST / "index.html", headers={"Cache-Control": "no-cache"})
 
 
+async def comfy_entrypoint():
+    return LumenExtension()
+
+
 WEB_DIRECTORY = "./web"
-NODE_CLASS_MAPPINGS = {}
-__all__ = ["WEB_DIRECTORY", "NODE_CLASS_MAPPINGS"]
+__all__ = ["WEB_DIRECTORY", "comfy_entrypoint"]

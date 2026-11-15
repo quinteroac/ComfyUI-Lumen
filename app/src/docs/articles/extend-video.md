@@ -22,5 +22,4 @@ Every video Lumen makes saves its latent next to it. Extend loads it and keeps t
 ## Limits
 
 - Only videos made by Lumen (text to video, Animate or Extend) can be extended; upscaled videos and uploaded files cannot.
-- Extending needs the ComfyUI-MiniMaxH3-PrefixStream node pack.
 - Each extension takes about as long as a new video.

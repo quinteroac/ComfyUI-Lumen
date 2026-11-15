@@ -851,8 +851,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   const texts: string[] = [];
   for (let n = 0; n < runs; n++) {
     const runInputs = { ...inputs, batch: job.action === 'describe' ? 4 : 1, seed: (inputs.seed + n) % 2 ** 32 };
-    // Built-in videos keep their AV latent (PrefixStream's node), which Extend continues from.
-    if (video && !custom && job.action !== 'upscale_video' && defs.MiniMaxSaveLatent) runInputs.latent_name = `lumen/latents/${job.id}_${n + 1}`;
+    // Built-in videos keep their AV latent, which Extend continues from.
+    if (video && !custom && job.action !== 'upscale_video') runInputs.latent_name = `lumen/latents/${job.id}_${n + 1}`;
     const { workflow } = buildWorkflow(runInputs, custom);
     checkWorkflow(workflow, defs);
     const label = runs > 1 ? `${n + 1}/${runs} · ` : '';

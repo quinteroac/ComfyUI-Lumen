@@ -15,14 +15,16 @@ The documentation (English) is under **Help** in the sidebar, or at `/lumen/docs
 | MiniMax H3 Video (fl2va / ref2va + Pika Flex) | text → video, Animate, end frame, loop, up to 9 reference images, always with audio |
 | RelayVSR ×2 | Upscale video |
 
-Model files, sizes and sampler settings are set on the **ComfyUI** page of the app. The built-in workflows use core ComfyUI nodes only.
+Model files, sizes and sampler settings are set on the **ComfyUI** page of the app. The **Models** card of that page downloads the default models on request (`downloads.py`: a fixed list of files from Hugging Face and Civitai, each checked against its SHA-256); the docs list them under **Installation & Requirements**.
+
+The built-in workflows use core ComfyUI nodes and the nodes in `nodes/` (style codes, prompt weights, SnapRef for Anima and video extension), so no other node pack is needed. They come from other projects; see `THIRD_PARTY_NOTICES.md`.
 
 - Grid: 1–4 images per creation, made one run after another (bar settings).
 - `--hd` generates at more megapixels (4 MP on H3 Image); Upscale redraws at 16 MP (subtle from sigma 0.53, creative from 0.75).
 - Zoom out, Pan and the Editor flatten the canvas on white and ask H3 Image to fill the white areas.
 - Each action can use your own workflow (ComfyUI *Export (API)* JSON with `{{placeholders}}`).
 
-- Extend continues a Lumen video from its saved AV latent and stitches the new clip on (needs ComfyUI-MiniMaxH3-PrefixStream).
+- Extend continues a Lumen video from its saved AV latent and stitches the new clip on.
 - Describe uses the prompt enhancer's model; the conversational mode runs a local GGUF (llama-cpp-python) that is loaded per message and unloaded after.
 
 The page is in Spanish, English, Japanese and Chinese: the browser's language is used until one is picked in the sidebar.
