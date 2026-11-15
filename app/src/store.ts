@@ -495,12 +495,8 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     batch: s.grid,
     denoise: 1,
     aspect: s.aspect,
-    stylize: s.stylize,
-    weird: s.weird,
     chaos: s.chaos,
-    mode: s.mode,
     speed: s.speed,
-    quality: p.quality,
     hd,
     draft,
     tile: p.tile,
@@ -625,7 +621,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
     const words = moods.map((m) => m.words.trim()).filter(Boolean).join(', ');
     if (words && !isVideoAction(action)) inputs.prompt = [inputs.prompt, words].filter(Boolean).join(', ');
     inputs.moodboard = moods.map((m) => m.code).join(' ');
-    inputs.style_weight = parsed.styleWeight ?? parsed.settings.stylize;
+    inputs.style_weight = parsed.styleWeight ?? 100;
   }
   const motion: Motion = opts.motion ?? parsed.settings.motion ?? 'low';
   // Seeds stay fixed only when --seed is given; repeats/permutations get new ones.

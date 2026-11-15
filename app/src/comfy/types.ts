@@ -45,9 +45,6 @@ export type PanDir = 'left' | 'right' | 'up' | 'down';
 /** Defaults set in the imagine bar's settings panel. */
 export interface CreateSettings {
   aspect: string; // "1:1", "16:9", ...
-  mode: 'standard' | 'raw';
-  stylize: number; // 0..1000
-  weird: number; // 0..3000
   chaos: number; // 0..100
   speed: 'relax' | 'fast' | 'turbo';
   /** SD (base size) or HD (twice the size, second pass). */
@@ -63,9 +60,6 @@ export interface CreateSettings {
 
 export const DEFAULT_SETTINGS: CreateSettings = {
   aspect: '1:1',
-  mode: 'standard',
-  stylize: 100,
-  weird: 0,
   chaos: 0,
   speed: 'fast',
   resolution: 'sd',
@@ -97,12 +91,8 @@ export interface JobInputs {
   /** How much of the image is redrawn (vary, remix, upscale): the built-in H3 workflow starts at the first sigma below it. */
   denoise: number;
   aspect: string;
-  stylize: number;
-  weird: number;
   chaos: number;
-  mode: string;
   speed: string;
-  quality: number;
   hd: boolean;
   draft: boolean;
   tile: boolean;

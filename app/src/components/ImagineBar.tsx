@@ -106,18 +106,13 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
         />
       </div>
       <div>
-        <div className="param-title">Estética</div>
-        <Slider label="Estilización" value={s.stylize} min={0} max={1000} step={10} onChange={(v) => setSettings({ stylize: v })} />
-        <Slider label="Rareza" value={s.weird} min={0} max={3000} step={50} onChange={(v) => setSettings({ weird: v })} />
+        <div className="param-title">Variación</div>
         <Slider label="Variedad" value={s.chaos} min={0} max={100} onChange={(v) => setSettings({ chaos: v })} />
       </div>
       <div className="col-3">
         <div className="param-title">Modelo</div>
         <Row label="Imagen">
           <Seg label="Resolución de imagen" value={s.resolution} onChange={(v) => setSettings({ resolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />
-        </Row>
-        <Row label="Modo">
-          <Seg label="Modo" value={s.mode} onChange={(v) => setSettings({ mode: v })} options={[['standard', 'Estándar'], ['raw', 'Raw']]} />
         </Row>
         <Row label="Imágenes">
           <Seg label="Imágenes por creación" value={s.grid} onChange={(v) => setSettings({ grid: v })} options={[[1, '1'], [2, '2'], [3, '3'], [4, '4']]} />
@@ -135,7 +130,7 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
       </div>
       <div className="params-foot">
         <span>
-          Parámetros en el prompt: --ar 16:9 · --seed 42 · --s 250 · --c 20 · --w 100 · --raw · --q 2 · --r 3 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
+          Parámetros en el prompt: --ar 16:9 · --seed 42 · --c 20 · --r 3 · --hd · --draft · --anima · --moss · --sref código · --iw 1.5 · --video --motion high --bs 2 --loop · {'{rojo, azul}'} · espacio::2 barco
         </span>
         <button className="link-btn" type="button" onClick={() => setSettings({ ...DEFAULT_SETTINGS })}>
           Restablecer

@@ -3,11 +3,7 @@
 const PARAMS: [string, string, string][] = [
   ['--ar 16:9', 'Proporción', 'Ancho y alto del resultado.'],
   ['--seed 42', 'Semilla', 'Repite el mismo punto de partida (0–4294967295).'],
-  ['--s 250', 'Estilización', '0–1000; con H3 Image por ahora solo se pasa a tus workflows como {{stylize}}.'],
   ['--c 20', 'Variedad (chaos)', '0–100; Variar empieza a redibujar antes.'],
-  ['--w 100', 'Rareza (weird)', '0–3000; se pasa a tus workflows como {{weird}}.'],
-  ['--raw', 'Modo raw', 'Se pasa a tus workflows como {{mode}}.'],
-  ['--q 2', 'Calidad', 'Se pasa a tus workflows como {{quality}}.'],
   ['--r 3', 'Repetir', 'Ejecuta el prompt varias veces (hasta 40).'],
   ['{rojo, verde}', 'Permutaciones', 'Un prompt por cada opción (anidables, también en parámetros).'],
   ['espacio::2 barco', 'Multi-prompt y pesos', 'Cada segmento con peso distinto de 1 se aplica con un slider de concepto (modo attention o weight_norm en la página ComfyUI); 1 = tal cual, los pesos ≤ 0 se ignoran. MOSS y Anima llegan hasta 1.5.'],
@@ -24,7 +20,7 @@ const PARAMS: [string, string, string][] = [
   ['--motion low|high', 'Movimiento', 'Cantidad de movimiento del vídeo.'],
   ['--loop', 'Bucle', 'El vídeo termina en su fotograma inicial.'],
   ['--bs 1|2|4', 'Lote de vídeo', 'Vídeos por prompt.'],
-  ['--v / --niji / --p / --stealth / --public', 'Aceptados', 'Se aceptan y se muestran, pero no cambian nada aquí.'],
+  ['--v / --niji / --stealth / --public', 'Aceptados', 'Se aceptan y se muestran, pero no cambian nada aquí.'],
 ];
 
 const DONE = [
@@ -32,7 +28,7 @@ const DONE = [
   'Explorador de estilos: códigos --sref con vista previa real (H3, prompt de vista previa configurable) y la mezcla de estilos de cada uno; descubrir, me gusta, usados, probar y copiar --sref',
   'Atajos al pasar el ratón: usar imagen, usar prompt, buscar parecidas, me gusta',
   'Barra de imaginar: prompt de imagen, referencia de estilo, fotograma inicial y final, bucle, describir, fijar imágenes',
-  'Ajustes: proporción, estilización, rareza, variedad, SD/HD, raw, imágenes por creación (1–4, una tras otra), vídeo SD/HD, lote y movimiento',
+  'Ajustes: proporción, variedad, SD/HD, imágenes por creación (1–4, una tras otra), vídeo SD/HD, lote y movimiento',
   'Modo borrador: imágenes pequeñas y rápidas; «Mejorar», Variar y Remezclar las regeneran a tamaño completo. Ctrl+Enter mantiene el prompt',
   'Modo conversacional: describes tu idea (escrita o por voz) y se escribe y ejecuta el prompt; luego pides cambios o «variación de la imagen 2»',
   'Personalizar: perfil global que se desbloquea eligiendo imágenes, perfiles adicionales, códigos --p, predeterminados; los «me gusta» de Explorar lo afinan',

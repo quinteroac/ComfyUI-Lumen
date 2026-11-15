@@ -371,8 +371,6 @@ export const PLACEHOLDERS: { key: keyof JobInputs; desc: string }[] = [
   { key: 'engine', desc: 'modelo pedido: h3, anima (--anima) o moss (--moss)' },
   { key: 'denoise', desc: 'fuerza de cambio (0–1)' },
   { key: 'image', desc: 'imagen de entrada (vary, upscale, zoom, pan)' },
-  { key: 'stylize', desc: 'estilización 0–1000' },
-  { key: 'weird', desc: 'rareza 0–3000' },
   { key: 'chaos', desc: 'variedad 0–100' },
   { key: 'aspect', desc: 'relación de aspecto' },
   { key: 'pad_left', desc: 'relleno izq. (pan/zoom)' },
@@ -392,7 +390,6 @@ export const PLACEHOLDERS: { key: keyof JobInputs; desc: string }[] = [
   { key: 'moodboard', desc: 'códigos de moodboard / perfil (--p)' },
   { key: 'message', desc: 'tu mensaje (modo conversacional)' },
   { key: 'current_prompt', desc: 'el prompt actual (modo conversacional)' },
-  { key: 'quality', desc: 'calidad (--q)' },
   { key: 'hd', desc: 'alta resolución (true/false)' },
   { key: 'tile', desc: 'patrón repetible (--tile)' },
 ];

@@ -122,8 +122,7 @@ export function assist(message: string, current: string | undefined, hasImages: 
     rest = '';
   }
 
-  if (/\b(raw|realista|realistic|fotorrealista|photorealistic)\b/.test(n) && !/--raw/.test(params)) {
-    params = `${params} --raw`.trim();
+  if (/\b(raw|realista|realistic|fotorrealista|photorealistic)\b/.test(n)) {
     body = `${body}, photorealistic`;
     changes.push('más realista');
     rest = rest.replace(/(^|\s)(m[aá]s\s+|more\s+)?(realista|realistic|fotorrealista|photorealistic)\b/gi, ' ').trim();

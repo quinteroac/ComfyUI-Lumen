@@ -12,7 +12,6 @@ export interface ParsedPrompt {
   plain: string;
   seed?: number;
   settings: CreateSettings;
-  quality: number;
   repeat: number;
   draft: boolean;
   tile: boolean;
@@ -107,7 +106,6 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
     plain: '',
     concepts: [],
     settings: s,
-    quality: 1,
     repeat: 1,
     draft: false,
     tile: false,
@@ -137,27 +135,9 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
         if (Number.isFinite(n)) r.seed = clamp(n, 0, 4294967295);
         break;
       }
-      case 's':
-      case 'stylize':
-        s.stylize = clamp(Number(val), 0, 1000);
-        break;
       case 'c':
       case 'chaos':
         s.chaos = clamp(Number(val), 0, 100);
-        break;
-      case 'w':
-      case 'weird':
-        s.weird = clamp(Number(val), 0, 3000);
-        break;
-      case 'raw':
-        s.mode = 'raw';
-        break;
-      case 'style':
-        if (val === 'raw') s.mode = 'raw';
-        break;
-      case 'q':
-      case 'quality':
-        r.quality = clamp(Number(val) || 1, 0.25, 4);
         break;
       case 'r':
       case 'repeat':

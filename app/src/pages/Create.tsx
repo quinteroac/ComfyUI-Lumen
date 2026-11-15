@@ -22,10 +22,7 @@ export function jobMeta(job: Job) {
     if (job.settings.videoResolution === 'hd') m.push('HD');
   } else {
     m.push(`--ar ${job.settings.aspect}`);
-    if (job.settings.stylize !== 100) m.push(`--s ${job.settings.stylize}`);
     if (job.settings.chaos) m.push(`--c ${job.settings.chaos}`);
-    if (job.settings.weird) m.push(`--w ${job.settings.weird}`);
-    if (job.settings.mode === 'raw') m.push('--raw');
     if (job.inputs.hd) m.push('HD');
     if (job.inputs.draft) m.push('borrador');
     if (job.inputs.tile) m.push('--tile');
