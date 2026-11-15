@@ -119,7 +119,7 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
         </Row>
         <div className="param-title">Más opciones</div>
         <Row label="Vídeo · resolución">
-          <Seg label="Resolución de vídeo" value={s.videoResolution} onChange={(v) => setSettings({ videoResolution: v })} options={[['sd', 'SD 480p'], ['hd', 'HD 720p']]} />
+          <Seg label="Resolución de vídeo" value={s.videoResolution} onChange={(v) => setSettings({ videoResolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />
         </Row>
         <Row label="Vídeo · lote">
           <Seg label="Vídeos por prompt" value={s.videoBatch} onChange={(v) => setSettings({ videoBatch: v })} options={[[1, '1'], [2, '2'], [4, '4']]} />

@@ -25,6 +25,10 @@ export interface ComfyConfig {
   conceptMode: 'attention' | 'weight_norm';
   /** Conversational mode: a GGUF under models/LLM, loaded for each message in its own process and released after it. */
   llm: { model: string; nGpuLayers: number; nCtx: number; maxTokens: number; temperature: number };
+  /** H3 video: the base fl2va (no references) and ref2va (with references) models, each with its Pika Flex LoRA,
+      Pika's sigmas with lcm, and the video and audio VAEs. sd / hd in megapixels, frames at 24 fps.
+      vsr / vsrVae: RelayVSR ×2, which upscales a finished video. */
+  video: { fl2va: string; fl2vaLora: string; ref2va: string; ref2vaLora: string; vae: string; audioVae: string; sigmas: string; sd: number; hd: number; frames: number; vsr: string; vsrVae: string };
   /** Megapixels of Upscale. */
   upscaleMegapixels: number;
   /** Custom workflows (ComfyUI "Export (API)" JSON) per action; empty = built-in. */
@@ -81,6 +85,20 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     previewPrompt: 'A young woman with a bicycle on a city street beside a small flower shop, trees, a cat on a bench, daylight',
   },
   conceptMode: 'attention',
+  video: {
+    fl2va: 'minimax/minimax_h3_fl2va_pruned_int8_convrot.safetensors',
+    fl2vaLora: 'minimax/pika/pika_h3_flex_fl2va_comfy_bf16.safetensors',
+    ref2va: 'minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors',
+    ref2vaLora: 'minimax/pika/pika_h3_flex_ref2va_comfy_bf16.safetensors',
+    vae: 'minimax/minimax_h3_video_vae_int8_convrot.safetensors',
+    audioVae: 'minimax/minimax_h3_audio_vae_fp32.safetensors',
+    sigmas: '1.0, 0.972973, 0.923077, 0.8, 0.571429, 0.333333, 0.0',
+    sd: 0.5,
+    hd: 1,
+    frames: 124,
+    vsr: 'relayvsr/relayvsr_x2_lightx2v_int8_convrot.safetensors',
+    vsrVae: 'relayvsr/relayvsr_flash_vae_x2_fp32.safetensors',
+  },
   llm: { model: 'gemma-4-12b-heretic-Q6_K.gguf', nGpuLayers: -1, nCtx: 8192, maxTokens: 1024, temperature: 0.7 },
   upscaleMegapixels: 16,
   workflows: {},
@@ -100,6 +118,7 @@ function load(): ComfyConfig {
     moss: { ...DEFAULT_CONFIG.moss, ...s.moss },
     styleCodes: { ...DEFAULT_CONFIG.styleCodes, ...s.styleCodes },
     llm: { ...DEFAULT_CONFIG.llm, ...s.llm },
+    video: { ...DEFAULT_CONFIG.video, ...s.video },
   };
 }
 

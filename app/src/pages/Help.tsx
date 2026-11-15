@@ -34,7 +34,7 @@ const DONE = [
   'Personalizar: perfiles que aprenden de muestras de estilos reales (códigos --sref); un perfil es la mezcla de sus mejores códigos; global y adicionales, --p, predeterminados; los «me gusta» de Explorar › Estilos lo afinan',
   'Crear: progreso en directo, atajos (me gusta, variar, animar, papelera), repetir, usar, ejecutar en HD',
   'Acciones: variar, ampliar, remezclar sutil/fuerte, desplazar, alejar, editor, animar (auto, bucle, manual), usar, describir',
-  'Vídeo: texto→vídeo, imagen→vídeo, fotograma final, bucle, alargar (auto/manual, hasta 4 veces)',
+  'Vídeo (MiniMax H3 con Pika Flex, siempre con audio; el mejorador escribe el prompt con la guía oficial): texto→vídeo, imagen→vídeo, fotograma final, bucle, hasta 9 imágenes de referencia (Ref2VA), alargar (auto/manual, hasta 4 veces, PrefixStream) y ampliar ×2 (RelayVSR)',
   'Editor: borrar y restaurar con pincel, mover/escalar, cambiar proporción, deshacer/rehacer, prompt de edición; Retexturizar (misma estructura, otros materiales, luz y estilo)',
   'Organizar: filtros, carpetas (y crear dentro de ellas), papelera, selección múltiple, línea de tiempo, búsquedas guardadas',
   'Carpetas: grupos de carpetas, renombrar, descargar, mover a grupo, borrar, arrastrar imágenes y menú de clic derecho (Añadir a… / Quitar de…)',
@@ -48,7 +48,6 @@ const MISSING = [
   'Selección inteligente y capas del editor',
   'Tareas, perfiles públicos, suscripciones, pagos y Discord',
   'Descargar vídeos como GIF o «para redes»: se descarga el archivo que genere ComfyUI',
-  'Vídeo con los workflows integrados: por ahora necesita un workflow propio',
   '--tile con el workflow integrado: ComfyUI básico no tiene mosaico; usa un workflow propio con {{tile}}',
 ];
 

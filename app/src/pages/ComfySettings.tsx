@@ -292,6 +292,30 @@ export function ComfySettings() {
       </div>
 
       <div className="card">
+        <h2>Vídeo (MiniMax H3)</h2>
+        <p className="hint" style={{ marginBottom: 12 }}>
+          Texto → vídeo, Animar, fotograma final y bucle usan el modelo fl2va con su LoRA Pika Flex; con referencias, ref2va con la suya. Siempre con los sigmas de Pika y lcm, con audio, y el prompt lo escribe el mejorador (la guía oficial de vídeo de MiniMax) una vez por trabajo.
+        </p>
+        <div className="form-grid">
+          <ModelField label="Modelo fl2va" list="unet-list" value={cfg.video.fl2va} onChange={(v) => setConfig({ video: { ...cfg.video, fl2va: v } })} />
+          <ModelField label="LoRA fl2va" list="lora-list" value={cfg.video.fl2vaLora} onChange={(v) => setConfig({ video: { ...cfg.video, fl2vaLora: v } })} />
+          <ModelField label="Modelo ref2va" list="unet-list" value={cfg.video.ref2va} onChange={(v) => setConfig({ video: { ...cfg.video, ref2va: v } })} />
+          <ModelField label="LoRA ref2va" list="lora-list" value={cfg.video.ref2vaLora} onChange={(v) => setConfig({ video: { ...cfg.video, ref2vaLora: v } })} />
+          <ModelField label="VAE de vídeo" list="vae-list" value={cfg.video.vae} onChange={(v) => setConfig({ video: { ...cfg.video, vae: v } })} />
+          <ModelField label="VAE de audio" list="vae-list" value={cfg.video.audioVae} onChange={(v) => setConfig({ video: { ...cfg.video, audioVae: v } })} />
+          <NumberField label="Megapíxeles SD" min={0.1} max={4} step={0.1} value={cfg.video.sd} onChange={(v) => setConfig({ video: { ...cfg.video, sd: v } })} />
+          <NumberField label="Megapíxeles HD" min={0.1} max={4} step={0.1} value={cfg.video.hd} onChange={(v) => setConfig({ video: { ...cfg.video, hd: v } })} />
+          <NumberField label="Fotogramas (24 fps; 124 ≈ 5 s)" min={5} max={362} step={17} value={cfg.video.frames} onChange={(v) => setConfig({ video: { ...cfg.video, frames: v } })} />
+          <ModelField label="RelayVSR ×2 (Ampliar vídeo)" list="unet-list" value={cfg.video.vsr} onChange={(v) => setConfig({ video: { ...cfg.video, vsr: v } })} />
+          <ModelField label="VAE de RelayVSR" list="vae-list" value={cfg.video.vsrVae} onChange={(v) => setConfig({ video: { ...cfg.video, vsrVae: v } })} />
+          <label className="field wide">
+            Sigmas (lcm)
+            <input value={cfg.video.sigmas} onChange={(e) => setConfig({ video: { ...cfg.video, sigmas: e.target.value } })} spellCheck={false} />
+          </label>
+        </div>
+      </div>
+
+      <div className="card">
         <h2>Modo conversacional (GGUF)</h2>
         <p className="hint" style={{ marginBottom: 12 }}>
           Un LLM local escribe y edita el prompt. Para cada mensaje se descargan los modelos de ComfyUI, el GGUF se carga en un proceso aparte y ese proceso termina al responder, así que no queda memoria ocupada. Mientras responde no se lanzan generaciones, y no responde si la cola de ComfyUI está trabajando.

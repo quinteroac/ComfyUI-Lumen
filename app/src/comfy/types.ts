@@ -16,10 +16,11 @@ export type ActionKind =
   | 'video'
   | 'animate'
   | 'extend'
+  | 'upscale_video'
   | 'describe'
   | 'converse';
 
-export const VIDEO_ACTIONS: ActionKind[] = ['video', 'animate', 'extend'];
+export const VIDEO_ACTIONS: ActionKind[] = ['video', 'animate', 'extend', 'upscale_video'];
 export const isVideoAction = (a: ActionKind) => VIDEO_ACTIONS.includes(a);
 
 export const ACTION_LABELS: Record<ActionKind, string> = {
@@ -37,6 +38,7 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
   video: 'Vídeo (texto → vídeo)',
   animate: 'Animar (imagen → vídeo)',
   extend: 'Alargar vídeo',
+  upscale_video: 'Ampliar vídeo ×2 (RelayVSR)',
   describe: 'Describir (imagen → prompts)',
   converse: 'Modo conversacional (workflow propio en lugar del GGUF)',
 };
@@ -130,10 +132,13 @@ export interface JobInputs {
   frames?: number;
   fps?: number;
   motion?: Motion;
-  /** Prompt with the motion description added (what the built-in video workflows encode). */
+  /** How it moves: the low / high motion words or your own description (the video enhancer reads it). */
   motion_prompt?: string;
   end_image?: string;
   loop?: boolean;
+  /** Video: where the run saves its AV latent (under output/), and the latent Extend continues from. */
+  latent_name?: string;
+  latent_path?: string;
 }
 
 export interface JobImage {
@@ -150,6 +155,8 @@ export interface JobImage {
   kind?: 'image' | 'video';
   /** Number of times a video was extended. */
   extended?: number;
+  /** A built-in video's AV latent under ComfyUI's output folder, which Extend continues from. */
+  latent?: string;
 }
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'error' | 'cancelled';

@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { save, saved as loadFile } from './saved';
 import { getConfig } from './comfy/config';
-import { buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
+import { MAX_VIDEO_REFS, buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
 import { askAssistant, isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
 import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
 import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
@@ -423,8 +423,8 @@ export function addRef(slot: RefSlot, img: Omit<RefImage, 'id'>) {
   // SnapRef takes up to three pictures of the character.
   else if (slot === 'character') refs.character = [...refs.character, r].slice(-3);
   else refs[slot] = r;
-  // A start frame means a video; an image prompt or style means a still image.
-  const output = slot === 'start' || slot === 'end' ? 'video' : state.settings.output === 'video' && !refs.start ? 'image' : state.settings.output;
+  // A start or end frame means a video; other pictures keep the current output (in video mode they are video references).
+  const output = slot === 'start' || slot === 'end' ? 'video' : state.settings.output;
   set({ refs, settings: { ...state.settings, output } }, false);
 }
 export function removeRef(slot: RefSlot, id?: string) {
@@ -504,19 +504,20 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
   };
 }
 
-/** Video sizes and lengths for custom video workflows (H3 frames run at 24 fps). */
+/** H3 video size (SD / HD megapixels from the ComfyUI page) and length, at 24 fps; the motion goes to the video enhancer. */
 function applyVideo(inputs: JobInputs, p: ParsedPrompt, motion: Motion, motionPrompt: string | undefined, fromW: number, fromH: number) {
   const s = p.settings;
-  const { w, h } = fitArea(fromW, fromH, s.videoResolution === 'hd' ? 0.9 : 0.4);
+  const v = getConfig().video;
+  const { w, h } = fitArea(fromW, fromH, s.videoResolution === 'hd' ? v.hd : v.sd);
   const describe = motionPrompt?.trim() ? motionPrompt.trim() : MOTION_WORDS[motion];
   Object.assign(inputs, {
     width: w,
     height: h,
     batch: s.videoBatch,
-    frames: 121,
+    frames: v.frames,
     fps: 24,
     motion,
-    motion_prompt: [inputs.prompt, describe].filter(Boolean).join(', '),
+    motion_prompt: describe,
     denoise: 1,
     hd: s.videoResolution === 'hd',
   });
@@ -617,6 +618,8 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   if (pictures && parsed.engine !== 'h3') toast('Las imágenes de referencia solo funcionan con H3 Image (el personaje también con Anima): se usa H3 Image.', 'info');
   const inputs = baseInputs(action, parsed, state.draftMode, pictures);
   inputs.character_weight = parsed.characterWeight ?? 100;
+  const videoRefs = (refs.images?.length ?? 0) + (refs.character?.length ?? 0) + (refs.style?.length ?? 0);
+  if (isVideoAction(action) && videoRefs > MAX_VIDEO_REFS) toast(`Un vídeo lee hasta ${MAX_VIDEO_REFS} imágenes de referencia: se usan las primeras ${MAX_VIDEO_REFS}.`, 'info');
   if (moods.length) {
     // Profiles add their --sref mix to the job's codes.
     inputs.sref = [inputs.sref, ...moods.map((m) => m.sref)].filter(Boolean).join(' ') || undefined;
@@ -629,7 +632,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   // Seeds stay fixed only when --seed is given; repeats/permutations get new ones.
   if (parsed.seed === undefined) inputs.seed = Math.floor(Math.random() * 2 ** 32);
 
-  const needsImage: ActionKind[] = ['vary_subtle', 'vary_strong', 'upscale_subtle', 'upscale_creative', 'remix', 'zoom_out', 'pan', 'edit', 'retexture', 'animate', 'extend', 'describe'];
+  const needsImage: ActionKind[] = ['vary_subtle', 'vary_strong', 'upscale_subtle', 'upscale_creative', 'remix', 'zoom_out', 'pan', 'edit', 'retexture', 'animate', 'extend', 'upscale_video', 'describe'];
   if (needsImage.includes(action) && !srcImg && !opts.mask) {
     toast('Esta acción necesita una imagen de partida.', 'error');
     return;
@@ -705,8 +708,15 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
         toast('Un vídeo se puede alargar como máximo 4 veces.', 'error');
         return;
       }
+      if (!srcImg?.latent && !cfg.workflows.extend) {
+        toast('Este vídeo no guardó su latente: solo se alargan los vídeos hechos con Lumen (texto → vídeo, Animar o Alargar).', 'error');
+        return;
+      }
       applyVideo(inputs, parsed, motion, opts.motionPrompt, w, h);
-      Object.assign(inputs, { width: w, height: h, batch: 1 });
+      Object.assign(inputs, { width: w, height: h, batch: 1, latent_path: srcImg?.latent });
+      break;
+    case 'upscale_video':
+      Object.assign(inputs, { width: w * 2, height: h * 2, batch: 1 });
       break;
     case 'describe':
       inputs.batch = 1;
@@ -831,6 +841,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   const texts: string[] = [];
   for (let n = 0; n < runs; n++) {
     const runInputs = { ...inputs, batch: job.action === 'describe' ? 4 : 1, seed: (inputs.seed + n) % 2 ** 32 };
+    // Built-in videos keep their AV latent, which Extend continues from.
+    if (video && !custom && job.action !== 'upscale_video') runInputs.latent_name = `lumen/latents/${job.id}_${n + 1}`;
     const { workflow } = buildWorkflow(runInputs, custom);
     checkWorkflow(workflow, defs);
     const label = runs > 1 ? `${n + 1}/${runs} · ` : '';
@@ -872,6 +884,7 @@ async function toJobImages(files: ImageRef[], inputs: JobInputs, video: boolean,
     h: sizes[i].h || inputs.height,
     kind: video || isVideoFile(r.filename) ? 'video' : 'image',
     extended,
+    latent: inputs.latent_name && `${inputs.latent_name}_00001.safetensors`,
   }));
 }
 

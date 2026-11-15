@@ -16,7 +16,8 @@ export function jobItems(job: Job): LbItem[] {
 
 export function jobMeta(job: Job) {
   const m: string[] = [];
-  if (isVideoAction(job.action)) {
+  if (job.action === 'upscale_video') m.push('×2 RelayVSR');
+  else if (isVideoAction(job.action)) {
     m.push(`--motion ${job.inputs.motion ?? 'low'}`, `${job.inputs.frames ?? ''} fotogramas`);
     if (job.inputs.loop) m.push('--loop');
     if (job.settings.videoResolution === 'hd') m.push('HD');
@@ -51,9 +52,11 @@ function Tile({ job, i }: { job: Job; i: number }) {
           <IconHeart size={16} filled={img.liked} />
         </button>
         {video ? (
-          <button className="pill" data-action="extend" title="Alargar vídeo (auto)" onClick={() => runAction('extend', { source, prompt: job.rawPrompt, motion: job.inputs.motion })}>
-            Alargar
-          </button>
+          job.action !== 'upscale_video' && (
+            <button className="pill" data-action="extend" title="Alargar vídeo (auto)" onClick={() => runAction('extend', { source, prompt: job.rawPrompt, motion: job.inputs.motion })}>
+              Alargar
+            </button>
+          )
         ) : (
           <>
             {job.inputs.draft && (

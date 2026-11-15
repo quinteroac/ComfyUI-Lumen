@@ -2,6 +2,8 @@
 // fills a workflow — built-in or the person's own — with the job's inputs.
 import type { ActionKind, JobInputs, PanDir } from './types';
 import PE_TASK from './h3_edit_task_prompt.txt?raw';
+import VIDEO_GUIDE from './h3_video_guide.txt?raw';
+import REF_VIDEO_GUIDE from './h3_video_ref_guide.txt?raw';
 import { getConfig, type ComfyConfig } from './config';
 import { comboOptions } from './client';
 
@@ -120,9 +122,10 @@ const ON_SOURCE: ActionKind[] = [...FILL, 'retexture'];
 const STYLE_NODE = { h3: 'MiniMaxH3StyleCode', moss: 'MOSSStyleCode', anima: 'AnimaStyleCode' } as const;
 const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
 
-/** Built-in H3 jobs whose caption the edit prompt enhancer writes: the fill edits, and new images with reference pictures. */
+/** Built-in H3 jobs whose caption an enhancer writes: videos, the fill edits, and new images with reference pictures. */
 export const enhanced = (i: JobInputs) =>
-  i.engine === 'h3' && (ON_SOURCE.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0));
+  i.action === 'video' || i.action === 'animate' || i.action === 'extend' ||
+  (i.engine === 'h3' && (ON_SOURCE.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0)));
 
 /** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
     --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
@@ -243,6 +246,196 @@ function describeWorkflow(i: JobInputs, clipName: string): ApiWorkflow {
   return wf;
 }
 
+/* ------------------------------------------------------------------ */
+/* Video: MiniMax H3 fl2va / ref2va with Pika Flex, its six sigmas and lcm, audio */
+/* ------------------------------------------------------------------ */
+
+/** The video enhancer's instructions: MiniMax's official H3 video prompt guide, then the answer it must give. */
+const VIDEO_SYSTEM = `${VIDEO_GUIDE}
+
+Write the final prompt for the request below following this guide. Output only the final prompt: the instruction line first when the mode has one, then a blank line and the three core fields. No headings, notes or code fences.`;
+
+const REF_VIDEO_SYSTEM = `${REF_VIDEO_GUIDE}
+
+Write the full-reference rewrite for the request below following this guide, with all six sections in order. Output only the rewrite: no headings beyond the section names, no notes or code fences.`;
+
+/** T2VA without frames, I2VA with a first frame, FL2VA with a first and a last frame (a loop ends on its first frame). */
+function videoRequest(i: JobInputs, frames: { first?: boolean; last?: boolean }): string {
+  const seconds = (Math.ceil(((i.frames ?? 124) - 5) / 17) * 17 + 5) / 24;
+  const mode = frames.first && frames.last ? 'FL2VA' : frames.first ? 'I2VA' : 'T2VA';
+  return [
+    i.action === 'extend' && CONTINUATION,
+    `Mode: ${mode}${frames.first ? ' (<Picture 1> is the first frame' + (frames.last ? ', <Picture 2> the last frame' : '') + ')' : ''}${i.loop ? '. The video loops: the last frame is the first frame, so it must end exactly where it starts.' : ''}`,
+    `Duration: ${seconds.toFixed(2)} seconds, one continuous shot unless the request asks for more.`,
+    `Request: ${[i.prompt, ...i.concepts.map((c) => c.text)].filter(Boolean).join(' ') || 'Animate the picture naturally.'}`,
+    i.motion_prompt && `Motion: ${i.motion_prompt}`,
+  ].filter(Boolean).join('\n');
+}
+
+/** Extend keeps the last CONTEXT_FRAMES of the video as the new clip's fixed head (PrefixStream, Native Masked AV). */
+const CONTEXT_FRAMES = 39;
+const CONTINUATION = `This clip continues a video: its first ${(CONTEXT_FRAMES / 24).toFixed(2)} seconds are the end of the previous clip, starting at the frame shown as the first frame. Describe how the scene and its sound go on from there.`;
+
+/** Ref2VA reads at most nine reference pictures. */
+export const MAX_VIDEO_REFS = 9;
+
+/** The video's reference pictures in <Picture n> order, each with the role the enhancer is told. */
+function videoRefs(i: JobInputs): { file: string; role: string }[] {
+  const cw = i.character_weight ?? 100;
+  const kept = cw <= 30 ? 'their face' : cw <= 70 ? 'their face, hair and build' : 'their face, hair, body and outfit';
+  return [
+    ...(i.images ?? []).map((file) => ({ file, role: 'a reference for the subject, objects or setting' })),
+    ...(i.character_images ?? []).map((file) => ({ file, role: `the main character: keep ${kept}` })),
+    ...(i.style_images ?? []).map((file) => ({ file, role: 'the visual style only (rendering, line work, colors), not its content' })),
+  ].slice(0, MAX_VIDEO_REFS);
+}
+
+/** The full-reference request: each picture's role, the fixed first or last frame when there is one, then the request. */
+function refVideoRequest(i: JobInputs, refs: { role: string }[], frames: { first?: boolean; last?: boolean }): string {
+  const seconds = (Math.ceil(((i.frames ?? 124) - 5) / 17) * 17 + 5) / 24;
+  const n = refs.length;
+  return [
+    i.action === 'extend' && CONTINUATION,
+    'Mode: full-reference video generation.',
+    `There ${n === 1 ? 'is exactly 1 reference picture' : `are exactly ${n} reference pictures`}; name no other <Picture n>.`,
+    ...refs.map((r, k) => `<Picture ${k + 1}> is ${r.role}.`),
+    frames.first && `The attached picture after <Picture ${n}> is the fixed first frame of the video (0.00 seconds), not a reference.`,
+    frames.last && `The last attached picture is the fixed final frame of the video (${seconds.toFixed(2)} seconds), not a reference.`,
+    `Duration: ${seconds.toFixed(2)} seconds, one continuous shot unless the request asks for more.`,
+    `Request: ${[i.prompt, ...i.concepts.map((c) => c.text)].filter(Boolean).join(' ') || 'A short scene with the referenced content.'}`,
+    i.motion_prompt && `Motion: ${i.motion_prompt}`,
+  ].filter(Boolean).join('\n');
+}
+
+function videoWorkflow(i: JobInputs, c: ComfyConfig): ApiWorkflow {
+  const { wf, add } = graph();
+  const v = c.video;
+  const refs = videoRefs(i);
+  const extend = i.action === 'extend';
+  // With reference pictures, and to extend (as PrefixStream does): ref2va and its Pika LoRA; otherwise fl2va.
+  const r2v = refs.length > 0 || extend;
+  let model = add('MiniMaxH3SigmaShift', {
+    model: add('LoraLoaderModelOnly', {
+      model: add('UNETLoader', { unet_name: r2v ? v.ref2va : v.fl2va, weight_dtype: 'default' }),
+      lora_name: r2v ? v.ref2vaLora : v.fl2vaLora,
+      strength_model: 1,
+    }),
+    shift_video: 12,
+    shift_audio: 3,
+  });
+  const clip = add('CLIPLoader', { clip_name: c.h3.clip, type: 'minimax', device: 'default' });
+  const vae = add('VAELoader', { vae_name: v.vae });
+  const audioVae = add('VAELoader', { vae_name: v.audioVae });
+  // Extend: the video so far, and the frame where the new clip's fixed head starts (shown to the enhancer only).
+  const [prev] = extend ? add('GetVideoComponents', { video: add('LoadVideo', { file: i.image }) }) : [];
+  const first = extend
+    ? add('ImageFromBatch', { image: [prev, 0], batch_index: -CONTEXT_FRAMES, length: 1 })
+    : i.action === 'animate' && i.image ? add('LoadImage', { image: i.image }) : undefined;
+  const lastFile = i.loop ? i.image : i.end_image;
+  const last = first && lastFile ? (lastFile === i.image ? first : add('LoadImage', { image: lastFile })) : undefined;
+  const refPictures = refs.map(({ file }) => add('LoadImage', { image: file }));
+  let prompt: string | Link = i.caption ?? '';
+  if (!i.caption) {
+    const pictures = [...refPictures, first, last].filter((x): x is Link => !!x);
+    const caption = add('TextGenerateV2', {
+      clip: add('CLIPLoader', { clip_name: c.h3.peClip, type: 'minimax', device: 'default' }),
+      ...Object.fromEntries(pictures.map((link, n) => [`images.image${n + 1}`, link])),
+      system_prompt: refs.length ? REF_VIDEO_SYSTEM : VIDEO_SYSTEM,
+      prompt: refs.length ? refVideoRequest(i, refs, { first: !!first, last: !!last }) : videoRequest(i, { first: !!first, last: !!last }),
+      max_length: 4096,
+      sampling_mode: 'on',
+      'sampling_mode.temperature': 0.7,
+      'sampling_mode.top_k': 20,
+      'sampling_mode.top_p': 0.95,
+      'sampling_mode.min_p': 0,
+      'sampling_mode.repetition_penalty': 1,
+      'sampling_mode.presence_penalty': 1.5,
+      'sampling_mode.seed': i.seed,
+      thinking: false,
+      use_default_template: true,
+      mtp: 'auto',
+    });
+    prompt = caption;
+    add('PreviewAny', { source: caption }, 'caption');
+  }
+  let conditioning: Link;
+  let latent: Link;
+  if (r2v) {
+    const target = add('MiniMaxH3ReferenceToVideo', {
+      clip,
+      vae,
+      prompt,
+      width: i.width,
+      height: i.height,
+      length: i.frames ?? v.frames,
+      ref_image_size: 'match',
+      ...Object.fromEntries(refPictures.map((link, n) => [`ref_images.ref_image_${n + 1}`, link])),
+    });
+    latent = out(target, 1);
+    conditioning = target;
+    // A first or last frame on top of the references is pinned as a keyframe.
+    if (first && !extend) conditioning = add('MiniMaxH3AddGuide', { positive: conditioning, latent, frame_idx: 0, vae, image: first });
+    if (last) conditioning = add('MiniMaxH3AddGuide', { positive: conditioning, latent, frame_idx: -1, vae, image: last });
+  } else {
+    conditioning = add('MiniMaxH3ImageToVideo', {
+      clip,
+      vae,
+      prompt,
+      width: i.width,
+      height: i.height,
+      length: i.frames ?? v.frames,
+      ...(first ? { first_frame: first } : {}),
+      ...(last ? { last_frame: last } : {}),
+    });
+    latent = out(conditioning, 1);
+  }
+  let cacheConfig: Link | undefined;
+  let session: Link | undefined;
+  if (extend) {
+    // The previous latent's tail is copied into the new clip's head and protected by the native AV masks.
+    cacheConfig = add('MiniMaxPrefixCacheConfig', { cache_mode: 'Native Masked AV (Recommended)', continuation_frames: String(CONTEXT_FRAMES) });
+    const applied = add('MiniMaxPrefixCacheApplier', {
+      model,
+      conditioning,
+      cache_config: cacheConfig,
+      context_latent: add('MiniMaxLoadLatent', { latent_path: i.latent_path, clip_index: 1 }),
+      target_latent: latent,
+    });
+    [model, conditioning, session, latent] = [applied, out(applied, 1), out(applied, 2), out(applied, 3)];
+  }
+  const sampled = add('SamplerCustomAdvanced', {
+    noise: add('RandomNoise', { noise_seed: i.seed }),
+    guider: add('BasicGuider', { model, conditioning }),
+    sampler: add('KSamplerSelect', { sampler_name: 'lcm' }),
+    sigmas: add('ManualSigmas', { sigmas: v.sigmas }),
+    latent_image: latent,
+  });
+  if (i.latent_name) add('MiniMaxSaveLatent', { latent: sampled, filename_prefix: i.latent_name, clip_index: 1 });
+  const av = add('LTXVSeparateAVLatent', { av_latent: sampled });
+  let images: Link = add('VAEDecode', { samples: av, vae });
+  let audio: Link = add('VAEDecodeAudio', { samples: out(av, 1), vae: audioVae });
+  if (extend) {
+    // The new clip, without the head it shares with the video, joins the end of the video.
+    const stitched = add('MiniMaxLongVideoStitcher', {
+      trim_frames: 0,
+      crossfade_frames: 4,
+      luminance_match: true,
+      luminance_fade_frames: 16,
+      crossfade_ms: 15,
+      fps: 24,
+      prev_images: [prev, 0],
+      curr_images: images,
+      prev_audio: [prev, 1],
+      curr_audio: audio,
+      session,
+      cache_config: cacheConfig,
+    });
+    [images, audio] = [stitched, out(stitched, 1)];
+  }
+  add('SaveVideo', { video: add('CreateVideo', { images, fps: 24, audio }), filename_prefix: `lumen/${i.action}`, format: 'auto', 'format.codec': 'auto' });
+  return wf;
+}
+
 /** Anima and MOSS Image with their turbo LoRAs: text to image only. */
 function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): ApiWorkflow {
   const { wf, add } = graph();
@@ -296,17 +489,34 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   return wf;
 }
 
+/** RelayVSR ×2: one euler step at the video's own size; VSR Decode rebuilds every frame. The audio and fps are kept. */
+function upscaleVideoWorkflow(i: JobInputs, v: ComfyConfig['video']): ApiWorkflow {
+  const { wf, add } = graph();
+  const [parts] = add('GetVideoComponents', { video: add('LoadVideo', { file: i.image }) });
+  const frames = [parts, 0];
+  const model = add('UNETLoader', { unet_name: v.vsr, weight_dtype: 'default' });
+  const [cond] = add('RelayVSRConditioning', { model, images: frames });
+  const sampled = add('SamplerCustomAdvanced', {
+    noise: add('RandomNoise', { noise_seed: i.seed }),
+    guider: add('BasicGuider', { model, conditioning: [cond, 0] }),
+    sampler: add('KSamplerSelect', { sampler_name: 'euler' }),
+    sigmas: add('BasicScheduler', { model, scheduler: 'simple', steps: 1, denoise: 1 }),
+    latent_image: [cond, 1],
+  });
+  const images = add('VSRDecode', { vae: add('VAELoader', { vae_name: v.vsrVae }), samples: sampled, images: frames, detail: 1 });
+  add('SaveVideo', { video: add('CreateVideo', { images, fps: [parts, 2], audio: [parts, 1] }), filename_prefix: 'lumen/upscale_video', format: 'auto', 'format.codec': 'auto' });
+  return wf;
+}
+
 export function builtInWorkflow(i: JobInputs): ApiWorkflow {
   switch (i.action) {
-    case 'video':
-    case 'animate':
-    case 'extend':
-      throw new Error('Aún no hay workflow de vídeo integrado: añade uno propio en la página ComfyUI.');
     case 'converse':
       throw new Error('El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.');
   }
   const c = getConfig();
   if (i.action === 'describe') return describeWorkflow(i, c.h3.peClip);
+  if (i.action === 'video' || i.action === 'animate' || i.action === 'extend') return videoWorkflow(i, c);
+  if (i.action === 'upscale_video') return upscaleVideoWorkflow(i, c.video);
   return i.engine === 'h3' ? h3Workflow(i, c.h3, c.styleCodes, c.conceptMode) : textToImage(i, i.engine, c);
 }
 
@@ -395,8 +605,9 @@ function autoFill(wf: ApiWorkflow, i: JobInputs) {
       if ('seed' in inp && !Array.isArray(inp.seed)) inp.seed = i.seed;
       if ('noise_seed' in inp && !Array.isArray(inp.noise_seed)) inp.noise_seed = i.seed;
       if (node.class_type === 'KSampler' && i.action !== 'imagine') inp.denoise = i.denoise;
-      setText(findTextNode(wf, inp.positive), i.motion_prompt ?? i.prompt);
-      setText(findTextNode(wf, inp.conditioning), i.motion_prompt ?? i.prompt);
+      const text = [i.prompt, i.motion_prompt].filter(Boolean).join(', ');
+      setText(findTextNode(wf, inp.positive), text);
+      setText(findTextNode(wf, inp.conditioning), text);
     }
     if (node.class_type === 'RandomNoise' && !Array.isArray(inp.noise_seed)) inp.noise_seed = i.seed;
     if (LATENTS.includes(node.class_type) || VIDEO_LATENTS.includes(node.class_type)) {
@@ -454,7 +665,7 @@ export const PLACEHOLDERS: { key: keyof JobInputs; desc: string }[] = [
   { key: 'chaos', desc: 'variedad 0–100' },
   { key: 'aspect', desc: 'relación de aspecto' },
   { key: 'pad_left', desc: 'relleno izq. (pan/zoom)' },
-  { key: 'motion_prompt', desc: 'prompt + descripción del movimiento (vídeo)' },
+  { key: 'motion_prompt', desc: 'descripción del movimiento (vídeo)' },
   { key: 'motion', desc: 'movimiento: low / high (vídeo)' },
   { key: 'frames', desc: 'fotogramas del vídeo' },
   { key: 'fps', desc: 'fotogramas por segundo' },
@@ -489,6 +700,7 @@ export const ACTION_ORDER: ActionKind[] = [
   'video',
   'animate',
   'extend',
+  'upscale_video',
   'describe',
   'converse',
 ];

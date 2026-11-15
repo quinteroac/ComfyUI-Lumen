@@ -252,25 +252,27 @@ function Panel({ item, job }: { item: LbItem; job?: Job }) {
 
       {isVideo ? (
         <>
-          <div className="action-group">
-            <h3>Alargar vídeo</h3>
-            <div className="action-row">
-              <button className="btn" data-action="extend" onClick={() => act('extend', { motion: 'low', prompt: rawPrompt })}>
-                Auto · bajo
-              </button>
-              <button className="btn" data-action="extend" onClick={() => act('extend', { motion: 'high', prompt: rawPrompt })}>
-                Auto · alto
-              </button>
-              <button
-                className="btn"
-                data-action="extend"
-                onClick={() => toBar(() => startPending({ kind: 'extend', source, image: item.img, originalPrompt: rawPrompt }))}
-              >
-                Manual…
-              </button>
+          {job?.action !== 'upscale_video' && (
+            <div className="action-group">
+              <h3>Alargar vídeo</h3>
+              <div className="action-row">
+                <button className="btn" data-action="extend" onClick={() => act('extend', { motion: 'low', prompt: rawPrompt })}>
+                  Auto · bajo
+                </button>
+                <button className="btn" data-action="extend" onClick={() => act('extend', { motion: 'high', prompt: rawPrompt })}>
+                  Auto · alto
+                </button>
+                <button
+                  className="btn"
+                  data-action="extend"
+                  onClick={() => toBar(() => startPending({ kind: 'extend', source, image: item.img, originalPrompt: rawPrompt }))}
+                >
+                  Manual…
+                </button>
+              </div>
+              <p className="hint">Sigue el vídeo desde su último segundo y medio y lo une al final: unos 3,5 s más cada vez, hasta 4 veces.</p>
             </div>
-            <p className="hint">Añade unos segundos partiendo del último fotograma (hasta 4 veces).</p>
-          </div>
+          )}
           <div className="action-group">
             <h3>Vídeo</h3>
             <div className="action-row">
@@ -282,6 +284,11 @@ function Panel({ item, job }: { item: LbItem; job?: Job }) {
               <button className="btn" data-action="video" onClick={() => go(runAction('video', { prompt: videoPrompt }))}>
                 Nuevo vídeo con este prompt
               </button>
+              {job?.action !== 'upscale_video' && (
+                <button className="btn" data-action="upscale_video" onClick={() => act('upscale_video', { prompt: videoPrompt })}>
+                  Ampliar ×2
+                </button>
+              )}
             </div>
           </div>
         </>
