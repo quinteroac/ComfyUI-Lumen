@@ -181,8 +181,9 @@ export function ComfySettings() {
           <ModelField label="Codificador de texto" list="clip-list" value={cfg.h3.clip} onChange={(v) => h3({ clip: v })} />
           <ModelField label="VAE" list="vae-list" value={cfg.h3.vae} onChange={(v) => h3({ vae: v })} />
           <ModelField label="Mejorador de prompt (Alejar, Desplazar, Editor)" list="clip-list" value={cfg.h3.peClip} onChange={(v) => h3({ peClip: v })} />
-          <NumberField label="Megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.h3.sd} onChange={(v) => h3({ sd: v })} />
-          <NumberField label="Megapíxeles HD (--hd)" min={0.25} max={16} step={0.25} value={cfg.h3.hd} onChange={(v) => h3({ hd: v })} />
+          <NumberField label="Megapíxeles borrador (--draft)" min={0.25} max={20} step={0.25} value={cfg.h3.draft} onChange={(v) => h3({ draft: v })} />
+          <NumberField label="Megapíxeles SD" min={0.25} max={20} step={0.25} value={cfg.h3.sd} onChange={(v) => h3({ sd: v })} />
+          <NumberField label="Megapíxeles HD (--hd)" min={0.25} max={20} step={0.25} value={cfg.h3.hd} onChange={(v) => h3({ hd: v })} />
           <NumberField label="LCM s_noise inicio" min={0} max={2} step={0.05} value={cfg.h3.sNoise} onChange={(v) => h3({ sNoise: v })} />
           <NumberField label="LCM s_noise final" min={0} max={2} step={0.05} value={cfg.h3.sNoiseEnd} onChange={(v) => h3({ sNoiseEnd: v })} />
           <label className="field wide">
@@ -218,6 +219,7 @@ export function ComfySettings() {
               ))}
             </select>
           </label>
+          <NumberField label="Anima · megapíxeles borrador" min={0.25} max={20} step={0.25} value={cfg.anima.draft} onChange={(v) => anima({ draft: v })} />
           <NumberField label="Anima · megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.anima.sd} onChange={(v) => anima({ sd: v })} />
           <NumberField label="Anima · megapíxeles HD" min={0.25} max={16} step={0.25} value={cfg.anima.hd} onChange={(v) => anima({ hd: v })} />
           <label className="field wide">
@@ -246,6 +248,7 @@ export function ComfySettings() {
               ))}
             </select>
           </label>
+          <NumberField label="MOSS · megapíxeles borrador" min={0.25} max={20} step={0.25} value={cfg.moss.draft} onChange={(v) => moss({ draft: v })} />
           <NumberField label="MOSS · megapíxeles SD" min={0.25} max={16} step={0.25} value={cfg.moss.sd} onChange={(v) => moss({ sd: v })} />
           <NumberField label="MOSS · megapíxeles HD" min={0.25} max={16} step={0.25} value={cfg.moss.hd} onChange={(v) => moss({ hd: v })} />
           <label className="field wide">
@@ -274,7 +277,6 @@ export function ComfySettings() {
       <div className="card">
         <h2>Tamaños</h2>
         <div className="form-grid">
-          <NumberField label="Megapíxeles en borrador (--draft)" min={0.25} max={4} step={0.25} value={cfg.draftMegapixels} onChange={(v) => setConfig({ draftMegapixels: v })} />
           <NumberField label="Megapíxeles al ampliar" min={1} max={32} step={1} value={cfg.upscaleMegapixels} onChange={(v) => setConfig({ upscaleMegapixels: v })} />
         </div>
         <p className="hint" style={{ marginTop: 12 }}>

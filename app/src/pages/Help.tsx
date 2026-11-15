@@ -12,7 +12,7 @@ const PARAMS: [string, string, string][] = [
   ['--r 3', 'Repetir', 'Ejecuta el prompt varias veces (hasta 40).'],
   ['{rojo, verde}', 'Permutaciones', 'Un prompt por cada opción (anidables, también en parámetros).'],
   ['espacio::2 barco', 'Multi-prompt y pesos', 'Se convierte a la sintaxis (texto:peso) de ComfyUI; pesos negativos van al negativo.'],
-  ['--hd / --sd', 'Resolución', 'HD genera directamente a más megapíxeles (4 MP con H3 Image).'],
+  ['--hd / --sd', 'Resolución', 'HD genera directamente a más megapíxeles: H3 1/4/16 MP (borrador/SD/HD), MOSS 1/2/5, Anima siempre 1.'],
   ['--draft', 'Borrador', 'Imágenes pequeñas y rápidas (o el botón del rayo).'],
   ['--anima / --moss', 'Modelo', 'Imagina con Anima o MOSS Image en vez de H3 Image; todo lo que parte de una imagen sigue en H3 Image.'],
   ['--fast / --relax / --turbo', 'Velocidad', 'Se pasa a tus workflows como {{speed}}.'],

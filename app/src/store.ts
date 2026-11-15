@@ -479,7 +479,7 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
   const hd = s.resolution === 'hd' && !draft;
   // Anima and MOSS Image only make new images; everything made from an image runs on H3 Image.
   const engine = action === 'imagine' && !pictures ? p.engine : 'h3';
-  const { w, h } = aspectSize(s.aspect, draft ? c.draftMegapixels : hd ? c[engine].hd : c[engine].sd);
+  const { w, h } = aspectSize(s.aspect, c[engine][draft ? 'draft' : hd ? 'hd' : 'sd']);
   return {
     action,
     engine,

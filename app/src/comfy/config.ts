@@ -5,7 +5,8 @@ import { save, saved } from '../saved';
 export type Engine = 'h3' | 'anima' | 'moss';
 
 export interface EngineSizes {
-  /** Megapixels of a normal image and of an HD one (--hd). */
+  /** Megapixels of a draft (--draft), a normal and an HD image (--hd). */
+  draft: number;
   sd: number;
   hd: number;
 }
@@ -18,8 +19,7 @@ export interface ComfyConfig {
   moss: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   /** Styles each --sref code mixes (Style Code nodes); Anima mixes styles and artist tags. previewPrompt: what Explore's style previews show. */
   styleCodes: { styles: number; animaStyles: number; animaArtists: number; previewPrompt: string };
-  /** Megapixels of draft images (--draft) and of Upscale. */
-  draftMegapixels: number;
+  /** Megapixels of Upscale. */
   upscaleMegapixels: number;
   /** Custom workflows (ComfyUI "Export (API)" JSON) per action; empty = built-in. */
   workflows: Partial<Record<ActionKind, string>>;
@@ -34,8 +34,9 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     sigmas: '1.0, 0.9675236940383911, 0.8875485062599182, 0.75, 0.5327739119529724, 0.23200887441635132, 0.0',
     sNoise: 0.95,
     sNoiseEnd: 0.9,
-    sd: 1,
-    hd: 4,
+    draft: 1,
+    sd: 4,
+    hd: 16,
   },
   anima: {
     unet: 'anima/anima-base-v1.0.safetensors',
@@ -47,8 +48,9 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     sampler: 'euler',
     scheduler: 'simple',
     negative: 'worst quality, low quality, blurry, jpeg artifacts',
+    draft: 1,
     sd: 1,
-    hd: 2,
+    hd: 1,
   },
   moss: {
     unet: 'moss/moss_image_sft_int8_convrot.safetensors',
@@ -60,8 +62,9 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     sampler: 'er_sde',
     scheduler: 'simple',
     negative: '',
-    sd: 1,
-    hd: 4,
+    draft: 1,
+    sd: 2,
+    hd: 5,
   },
   styleCodes: {
     styles: 4,
@@ -69,7 +72,6 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     animaArtists: 2,
     previewPrompt: 'A young woman with a bicycle on a city street beside a small flower shop, trees, a cat on a bench, daylight',
   },
-  draftMegapixels: 0.5,
   upscaleMegapixels: 16,
   workflows: {},
 };
