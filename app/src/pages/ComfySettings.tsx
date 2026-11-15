@@ -264,6 +264,10 @@ export function ComfySettings() {
           <NumberField label="Estilos por código (H3, MOSS)" min={1} max={8} value={cfg.styleCodes.styles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, styles: v } })} />
           <NumberField label="Anima · estilos por código" min={0} max={8} value={cfg.styleCodes.animaStyles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaStyles: v } })} />
           <NumberField label="Anima · artistas por código" min={0} max={8} value={cfg.styleCodes.animaArtists} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaArtists: v } })} />
+          <label className="field wide">
+            Prompt de las vistas previas (Explorar › Estilos)
+            <input value={cfg.styleCodes.previewPrompt} onChange={(e) => setConfig({ styleCodes: { ...cfg.styleCodes, previewPrompt: e.target.value } })} />
+          </label>
         </div>
       </div>
 

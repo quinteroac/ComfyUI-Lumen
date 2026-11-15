@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { artUrl, hash } from '../demo';
+import { useEffect, useRef, useState } from 'react';
 import { IconHeart, IconClose } from '../icons';
 import { getState, runAction, setDraft, toast, toggleStyleLike, useStore } from '../store';
 import { navigate } from '../router';
-import { ATOMS, ATOM_GROUPS, learnedWords, makeSample, registerStyle, type Sample } from '../styles';
 import { Media } from '../components/Media';
+import { previewKey, randomCode, requestPreview, styleLabels, styleTitle, usePreviews, type StylePreview } from '../stylePreviews';
 
 /* Open the Style Creator with a prompt (from the Create page). */
 let incoming = '';
@@ -13,157 +12,133 @@ export function openStyleCreator(prompt: string) {
   navigate('style-creator');
 }
 
-const BATCH = 12;
+const BATCH = 8;
 const PICKS_PER_ROUND = 4;
+/** A round mixes the codes picked last; more would wash every style out. */
+const MAX_MIX = 8;
 
 interface Round {
   n: number;
-  code: string;
-  words: string;
+  /** The --sref value: the picked codes, mixed. */
+  sref: string;
   jobId?: string;
 }
 
-function rng(seed: number) {
-  let s = seed >>> 0 || 1;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
+const withoutSref = (prompt: string) => prompt.replace(/\s--sref(\s+[^-\s]+)+/g, '').trim();
 
-function SampleCard({ s, picked, onPick, onTry, hotkey }: { s: Sample; picked: boolean; onPick: () => void; onTry: () => void; hotkey?: number }) {
+function SampleCard({ code, p, picked, onPick, onTry, hotkey }: { code: string; p?: StylePreview; picked: boolean; onPick: () => void; onTry: () => void; hotkey?: number }) {
   const liked = useStore((st) => st.likedStyles);
   const [info, setInfo] = useState(false);
-  const url = useMemo(() => artUrl({ key: hash(s.words), layers: [{ seed: hash(s.id), jitter: 1 }], w: 512, h: 512 }), [s]);
+  const ready = p?.status === 'done' && p.image;
   return (
     <div className={`sample${picked ? ' picked' : ''}`}>
-      <button className="sample-img" onClick={onPick} aria-pressed={picked} aria-label={`Elegir estilo: ${s.words}`}>
-        <img src={url} alt="" loading="lazy" />
+      <button className="sample-img" onClick={onPick} aria-pressed={picked} aria-label={`Elegir estilo --sref ${code}`} disabled={!ready}>
+        {ready ? <Media img={p.image!} alt="" /> : <span className="placeholder style-pending">{p?.status === 'error' ? 'Error' : p?.status === 'running' ? 'Generando…' : 'En cola'}</span>}
         {hotkey !== undefined && <span className="hotkey">{hotkey}</span>}
         {picked && <span className="picked-mark">✓</span>}
       </button>
       <div className="sample-actions">
-        <button className="pill" onClick={onTry} title="Probar este estilo con tu prompt">
+        <button className="pill" onClick={onTry} title="Probar este código con tu prompt">
           Probar
         </button>
         <button className="pill" onClick={() => setInfo(!info)} aria-expanded={info}>
           Detalles
         </button>
         <button
-          className="icon-btn"
+          className={`icon-btn${liked.includes(code) ? ' on' : ''}`}
           aria-label="Guardar en estilos que te gustan"
           onClick={() => {
-            const st = registerStyle(s.words, `Estilo ${s.atoms.medium}`);
-            toggleStyleLike(st.code);
-            toast(liked.includes(st.code) ? 'Quitado de tus estilos' : `Guardado en Explorar › Estilos › Me gusta (--sref ${st.code})`);
+            toggleStyleLike(code);
+            toast(liked.includes(code) ? 'Quitado de tus estilos' : `Guardado en Explorar › Estilos › Me gusta (--sref ${code})`);
           }}
         >
-          <IconHeart size={14} />
+          <IconHeart size={14} filled={liked.includes(code)} />
         </button>
       </div>
-      {info && <p className="sample-info">{s.words}</p>}
+      {info && (
+        <p className="sample-info">
+          --sref {code}
+          {styleLabels(p?.styles).map((s) => ` · ${s.label} ${s.weight.toFixed(2)}`)}
+        </p>
+      )}
     </div>
   );
 }
 
+/** Pick the samples whose look you like: each sample is a random --sref code rendered on your prompt;
+    every few picks a round renders your prompt with the picked codes mixed. */
 export function StyleCreator() {
   const jobs = useStore((s) => s.jobs);
-  const [prompt, setPrompt] = useState(() => incoming || getState().draft || '');
-  const [describe, setDescribe] = useState('');
+  const previews = usePreviews();
+  const [prompt, setPrompt] = useState(() => withoutSref(incoming || getState().draft || ''));
   const [started, setStarted] = useState(false);
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [samples, setSamples] = useState<Sample[]>([]);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [codes, setCodes] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [pinned, setPinned] = useState<Round | null>(null);
   const [hotkeys, setHotkeys] = useState(false);
-  const [seed] = useState(() => Date.now() % 1000000);
   const picksSinceRound = useRef(0);
-  const sentinel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     incoming = '';
   }, []);
 
-  const loadBatch = (sc: Record<string, number>, all: Sample[], pickedNow: Set<string>) => {
-    // What you skipped in the last batch counts against its looks (a little).
-    const last = all.slice(-BATCH).filter((s) => !pickedNow.has(s.id));
-    const next = { ...sc };
-    for (const s of last) for (const g of ATOM_GROUPS) next[s.atoms[g]] = (next[s.atoms[g]] ?? 0) - 0.25;
-    const r = rng(seed + all.length * 31);
-    const fresh = Array.from({ length: BATCH }, (_, i) => makeSample(next, r, all.length + i));
-    setScores(next);
-    setSamples([...all, ...fresh]);
-  };
+  const preview = (code: string) => previews[previewKey(code, prompt)];
+  // The next batch waits for this one, so the queue never runs far ahead of what you see.
+  const busy = codes.some((c) => preview(c)?.status === 'queued' || preview(c)?.status === 'running');
 
-  // Infinite scroll: more samples when the end comes into view (at most one batch per second).
-  const lastLoad = useRef(0);
-  useEffect(() => {
-    if (!started || !sentinel.current) return;
-    const io = new IntersectionObserver((e) => {
-      if (!e[0].isIntersecting || Date.now() - lastLoad.current < 1000 || samples.length >= 600) return;
-      lastLoad.current = Date.now();
-      loadBatch(scores, samples, picked);
-    });
-    io.observe(sentinel.current);
-    return () => io.disconnect();
-  });
+  const loadBatch = () => {
+    const fresh = Array.from({ length: BATCH }, randomCode);
+    fresh.forEach((c) => requestPreview(c, prompt));
+    setCodes((all) => [...all, ...fresh]);
+  };
 
   const start = () => {
     if (!prompt.trim()) {
-      toast('Escribe un prompt para ver cómo queda tu estilo.', 'error');
+      toast('Escribe un prompt para ver cómo queda cada estilo.', 'error');
       return;
     }
-    // A style description gives the first rounds a head start.
-    const sc: Record<string, number> = {};
-    const d = describe.toLowerCase();
-    for (const g of ATOM_GROUPS) for (const a of ATOMS[g]) if (d && a.split(' ').some((w) => w.length > 3 && d.includes(w))) sc[a] = 1.5;
     setStarted(true);
     setRounds([]);
-    setPicked(new Set());
-    loadBatch(sc, [], new Set());
+    setPicked([]);
+    setCodes([]);
+    picksSinceRound.current = 0;
+    loadBatch();
   };
 
-  const runRound = (sc: Record<string, number>, fallback: Sample) => {
-    const words = learnedWords(sc) || fallback.words;
+  const runRound = (all: string[]) => {
+    const sref = all.slice(-MAX_MIX).join(' ');
     const n = rounds.length + 1;
-    const st = registerStyle(words, `Mi estilo · ronda ${n}`);
-    // A prompt that already has --sref keeps it: both codes stay active.
-    const base = prompt.trim();
-    const p = /--sref\s/.test(base) ? base.replace(/--sref\s+([^-]+)/, (_m, c: string) => `--sref ${c.trim()} ${st.code} `) : `${base} --sref ${st.code}`;
-    const made = runAction('imagine', { prompt: p });
-    setRounds((r) => [{ n, code: st.code, words, jobId: made[0]?.id }, ...r]);
+    const made = runAction('imagine', { prompt: `${prompt.trim()} --sref ${sref}` });
+    setRounds((r) => [{ n, sref, jobId: made[0]?.id }, ...r]);
   };
 
-  const pick = (s: Sample) => {
-    const next = new Set(picked);
-    const sc = { ...scores };
-    const delta = next.has(s.id) ? -1 : 1;
-    if (delta > 0) next.add(s.id);
-    else next.delete(s.id);
-    for (const g of ATOM_GROUPS) sc[s.atoms[g]] = (sc[s.atoms[g]] ?? 0) + delta;
+  const pick = (code: string) => {
+    if (picked.includes(code)) {
+      setPicked(picked.filter((c) => c !== code));
+      return;
+    }
+    const next = [...picked, code];
     setPicked(next);
-    setScores(sc);
-    if (delta > 0 && ++picksSinceRound.current >= PICKS_PER_ROUND) {
+    if (++picksSinceRound.current >= PICKS_PER_ROUND) {
       picksSinceRound.current = 0;
-      runRound(sc, s);
+      runRound(next);
     }
   };
 
-  const tryOne = (s: Sample) => {
-    const st = registerStyle(s.words, `Estilo ${s.atoms.medium}`);
-    runAction('imagine', { prompt: `${prompt.trim()} --sref ${st.code}` });
-    toast(`Probando --sref ${st.code} (lo verás en Crear)`);
+  const tryOne = (code: string) => {
+    runAction('imagine', { prompt: `${prompt.trim()} --sref ${code}` });
+    toast(`Probando --sref ${code} (lo verás en Crear)`);
   };
 
   // Hotkeys: 1–9 and 0 pick from the newest samples.
-  const lastBatch = samples.slice(-BATCH);
+  const lastBatch = codes.slice(-BATCH);
   useEffect(() => {
     if (!hotkeys) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
       const k = e.key === '0' ? 10 : Number(e.key);
-      if (k >= 1 && k <= 10 && lastBatch[k - 1]) pick(lastBatch[k - 1]);
+      if (k >= 1 && k <= 10 && lastBatch[k - 1] && preview(lastBatch[k - 1])?.status === 'done') pick(lastBatch[k - 1]);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -176,19 +151,15 @@ export function StyleCreator() {
       <div className="page">
         <h1>Creador de estilos</h1>
         <p className="lead">
-          Elige las muestras cuyo estilo te guste (no su contenido). Cada {PICKS_PER_ROUND} elecciones se crea un código <code>--sref</code> nuevo y se genera tu prompt con él; aprende tanto de lo que eliges como de lo que pasas. Suele estabilizarse en 5–10 rondas.
+          Cada muestra es un código <code>--sref</code> al azar generado con tu prompt. Elige las que tengan un estilo que te guste (no por su contenido): cada {PICKS_PER_ROUND} elecciones se genera tu prompt con los códigos elegidos mezclados, y ese <code>--sref</code> es tu estilo.
         </p>
         <div className="card">
           <label className="field wide">
-            Prompt para las vistas previas
+            Prompt para las muestras
             <input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Un prompt sencillo muestra mejor el estilo, p. ej. «un faro junto al mar»" />
           </label>
-          <label className="field wide" style={{ marginTop: 12 }}>
-            Descripción del estilo (opcional)
-            <input value={describe} onChange={(e) => setDescribe(e.target.value)} placeholder="p. ej. acuarela, tonos pastel, luz suave" />
-          </label>
           <p className="hint" style={{ marginTop: 8 }}>
-            Añade --draft al prompt para vistas previas más rápidas. Si el prompt ya tiene --sref, el código nuevo se suma al anterior.
+            Las muestras se generan una a una en tamaño borrador con H3 Image, siempre con la misma semilla; las rondas, con tus ajustes normales.
           </p>
           <button className="btn primary" style={{ marginTop: 12 }} onClick={start}>
             Empezar
@@ -205,7 +176,7 @@ export function StyleCreator() {
           <div>
             <h1 className="creator-title">Creador de estilos</h1>
             <p className="hint">
-              «{prompt}» · {picked.size} elegidas · ronda {rounds.length}
+              «{prompt}» · {picked.length} elegidas · ronda {rounds.length}
               {picksSinceRound.current ? ` · ${PICKS_PER_ROUND - picksSinceRound.current} para la siguiente` : ''}
             </p>
           </div>
@@ -216,7 +187,7 @@ export function StyleCreator() {
             <button
               className="btn small primary"
               onClick={() => {
-                if (rounds.length) toast('Sesión terminada: tus vistas previas y códigos están en Crear.');
+                if (rounds.length) toast('Sesión terminada: tus rondas y sus --sref están en Crear.');
                 setStarted(false);
                 navigate('imagine');
               }}
@@ -226,20 +197,20 @@ export function StyleCreator() {
           </div>
         </div>
         <div className="samples">
-          {samples.map((s, i) => {
-            const inLast = i >= samples.length - BATCH;
-            const hk = hotkeys && inLast ? ((i - (samples.length - BATCH) + 1) % 10) : undefined;
-            return <SampleCard key={s.id} s={s} picked={picked.has(s.id)} onPick={() => pick(s)} onTry={() => tryOne(s)} hotkey={hk} />;
+          {codes.map((code, i) => {
+            const inLast = i >= codes.length - BATCH;
+            const hk = hotkeys && inLast ? (i - (codes.length - BATCH) + 1) % 10 : undefined;
+            return <SampleCard key={code} code={code} p={preview(code)} picked={picked.includes(code)} onPick={() => pick(code)} onTry={() => tryOne(code)} hotkey={hk} />;
           })}
         </div>
-        <div ref={sentinel} className="sentinel">
-          <button className="btn" onClick={() => loadBatch(scores, samples, picked)}>
-            Más muestras
+        <div className="sentinel">
+          <button className="btn" onClick={loadBatch} disabled={busy}>
+            {busy ? 'Generando muestras…' : 'Más muestras'}
           </button>
         </div>
       </div>
-      <aside className="creator-side" aria-label="Vistas previas">
-        <h2 className="day">Vistas previas</h2>
+      <aside className="creator-side" aria-label="Rondas">
+        <h2 className="day">Rondas</h2>
         {pinned && (
           <div className="pinned">
             <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -271,14 +242,13 @@ export function StyleCreator() {
                 <button
                   className="link-btn"
                   onClick={() => {
-                    const d = getState().draft.trim();
-                    setDraft(`${d} --sref ${r.code}`.trim());
-                    toast(`--sref ${r.code} añadido a la barra`);
+                    setDraft(`${withoutSref(getState().draft)} --sref ${r.sref}`.trim());
+                    toast(`--sref ${r.sref} añadido a la barra`);
                   }}
                 >
-                  --sref {r.code}
+                  --sref {r.sref}
                 </button>
-                <span className="hint">{job?.status === 'done' ? r.words : `${Math.round((job?.progress ?? 0) * 100)}%`}</span>
+                <span className="hint">{job?.status === 'done' ? styleTitle(job.styleList) : `${Math.round((job?.progress ?? 0) * 100)}%`}</span>
               </div>
             </div>
           );

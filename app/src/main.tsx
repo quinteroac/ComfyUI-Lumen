@@ -10,7 +10,7 @@ if (theme === 'dark' || theme === 'light') document.documentElement.dataset.them
 
 const root = createRoot(document.getElementById('root')!);
 // The stores read their saved files when their modules load, so the app is imported after them.
-loadSaved(['state', 'config', 'styles', 'searches'])
+loadSaved(['state', 'config', 'stylepreviews', 'searches'])
   .then(() => import('./App'))
   .then(({ App }) => root.render(<App />))
   .catch((e: Error) => root.render(<p style={{ padding: 24 }}>{e.message}</p>));

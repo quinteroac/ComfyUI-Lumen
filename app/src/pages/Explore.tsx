@@ -5,7 +5,9 @@ import { openLightbox, type LbItem } from '../lightbox';
 import { addRef, getState, imageToRef, runAction, setDraft, toast, toggleExploreLike, toggleStyleLike, useStore } from '../store';
 import { Media, VideoBadge } from '../components/Media';
 import { navigate, useQueryParam } from '../router';
-import { STYLE_PRESETS, allStyles, type StylePreset } from '../styles';
+import { previewKey, randomCode, requestPreview, styleLabels, styleTitle, usePreviews, type StylePreview } from '../stylePreviews';
+import { useConfig } from '../useConfig';
+import type { Job } from '../comfy/types';
 
 const SUBJECTS = [
   'un faro solitario bajo una aurora violeta',
@@ -155,96 +157,131 @@ function Tile({ it, items, i }: { it: ExploreItem; items: ExploreItem[]; i: numb
   );
 }
 
-function styleSample(s: StylePreset, n: number) {
-  const key = hash(s.code);
-  return artUrl({ key, layers: [{ seed: n * 7919 + 11, jitter: 1 }], w: 512, h: n % 2 ? 640 : 512 });
+/** Codes in your jobs' --sref, newest first. */
+function usedCodes(jobs: Job[]): string[] {
+  return [...new Set(jobs.flatMap((j) => (j.inputs.sref ?? '').split(/[\s,]+/).map((t) => t.split('::')[0]).filter((t) => /^\d+$/.test(t))))];
 }
 
-/** Style Explorer: style codes you can try, copy (--sref) and like. */
+function StyleThumb({ p, code }: { p?: StylePreview; code: string }) {
+  if (p?.status === 'done' && p.image) return <Media img={p.image} alt={`Estilo --sref ${code}`} />;
+  return <div className="placeholder style-pending">{p?.status === 'error' ? 'Error' : p?.status === 'running' ? 'Generando…' : 'En cola'}</div>;
+}
+
+/** Style Explorer: --sref codes with a real preview (the preview prompt from the ComfyUI page), to try, copy and like. */
 function Styles({ q }: { q: string }) {
   const liked = useStore((s) => s.likedStyles);
-  const [sort, setSort] = useState<'random' | 'popular' | 'likes'>('popular');
-  const [open, setOpen] = useState<StylePreset | null>(null);
-  const [seed] = useState(() => Date.now() % 100000);
-  const list = useMemo(() => {
-    // Your own styles (Style Creator) only show under "Me gusta" once liked.
-    let l = sort === 'likes' ? allStyles() : STYLE_PRESETS;
-    if (sort === 'random') l = shuffle(l, seed);
-    if (sort === 'popular') l = [...l].sort((a, b) => (hash(b.code) % 997) - (hash(a.code) % 997));
-    if (sort === 'likes') l = l.filter((s) => liked.includes(s.code));
-    const t = q.trim().toLowerCase();
-    if (t) l = l.filter((s) => (s.name + ' ' + s.words + ' ' + s.tags.join(' ')).toLowerCase().includes(t));
-    return l;
-  }, [sort, seed, q, liked]);
+  const jobs = useStore((s) => s.jobs);
+  const previews = usePreviews();
+  const prompt = useConfig().styleCodes.previewPrompt;
+  const [tab, setTab] = useState<'discover' | 'likes' | 'used'>('discover');
+  const [open, setOpen] = useState<string | null>(null);
+  const preview = (code: string) => previews[previewKey(code, prompt)];
 
-  const tryStyle = (s: StylePreset) => {
+  const codes = useMemo(() => {
+    let l =
+      tab === 'likes'
+        ? [...liked].reverse()
+        : tab === 'used'
+          ? usedCodes(jobs)
+          : Object.values(previews)
+              .filter((p) => p.prompt === prompt)
+              .sort((a, b) => b.createdAt - a.createdAt)
+              .map((p) => p.code);
+    const t = q.trim().toLowerCase();
+    if (t) l = l.filter((c) => c.includes(t) || (preview(c)?.styles ?? '').toLowerCase().includes(t));
+    return l;
+  }, [tab, liked, jobs, previews, prompt, q]);
+
+  // Liked and used codes get their preview when they are shown.
+  useEffect(() => {
+    if (tab !== 'discover') codes.forEach((c) => requestPreview(c, prompt));
+  }, [tab, codes, prompt]);
+
+  const discover = () => Array.from({ length: 8 }, randomCode).forEach((c) => requestPreview(c, prompt));
+  const tryStyle = (code: string) => {
     const st = getState();
-    const base = st.draft.trim() || st.jobs.find((j) => j.action === 'imagine')?.rawPrompt.replace(/\s--sref\s+\S+/g, '') || 'un paisaje sereno';
-    const jobs = runAction('imagine', { prompt: `${base} --sref ${s.code}` });
+    const base = st.draft.trim() || st.jobs.find((j) => j.action === 'imagine')?.rawPrompt || prompt;
+    const jobs = runAction('imagine', { prompt: `${base.replace(/\s--sref(\s+[^-\s]+)+/g, '')} --sref ${code}` });
     if (jobs.length) navigate('imagine');
   };
-  const copy = (s: StylePreset) => {
-    const d = getState().draft.replace(/\s--sref\s+\S+/g, '').trim();
-    setDraft(`${d} --sref ${s.code}`.trim());
-    toast(`--sref ${s.code} añadido a la barra`);
+  const copy = (code: string) => {
+    const d = getState().draft.replace(/\s--sref(\s+[^-\s]+)+/g, '').trim();
+    setDraft(`${d} --sref ${code}`.trim());
+    toast(`--sref ${code} añadido a la barra`);
   };
+  const shown = open ? preview(open) : undefined;
 
   return (
     <>
       <div className="tabs" style={{ marginBottom: 12 }}>
         {(
           [
-            ['popular', 'Populares'],
-            ['random', 'Aleatorios'],
+            ['discover', 'Descubrir'],
             ['likes', 'Me gusta'],
+            ['used', 'Usados'],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} className={`tab${sort === k ? ' on' : ''}`} onClick={() => setSort(k)}>
+          <button key={k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>
             {l}
           </button>
         ))}
+        {tab === 'discover' && (
+          <button className="btn small primary" onClick={discover} title="Genera vistas previas de 8 códigos al azar">
+            Descubrir 8 estilos
+          </button>
+        )}
       </div>
-      {list.length === 0 ? (
+      {codes.length === 0 ? (
         <div className="empty">
           <h2>Sin estilos</h2>
-          <p>{sort === 'likes' ? 'Pulsa el corazón en un estilo para guardarlo aquí.' : 'Prueba otra búsqueda.'}</p>
+          <p>
+            {tab === 'likes'
+              ? 'Pulsa el corazón en un estilo para guardarlo aquí.'
+              : tab === 'used'
+                ? 'Los códigos --sref de tus creaciones aparecerán aquí.'
+                : q
+                  ? 'Prueba otra búsqueda.'
+                  : 'Pulsa «Descubrir 8 estilos»: cada código se genera con el prompt de vista previa (página ComfyUI).'}
+          </p>
         </div>
       ) : (
         <div className="styles-grid">
-          {list.map((s) => (
-            <div key={s.code} className="style-card" role="button" tabIndex={0} onClick={() => setOpen(s)} onKeyDown={(e) => e.key === 'Enter' && setOpen(s)}>
-              <div className="style-thumbs">
-                {[0, 1, 2].map((n) => (
-                  <img key={n} src={styleSample(s, n)} alt="" loading="lazy" />
-                ))}
+          {codes.map((code) => (
+            <div key={code} className="style-card" role="button" tabIndex={0} onClick={() => setOpen(code)} onKeyDown={(e) => e.key === 'Enter' && setOpen(code)}>
+              <div className="style-thumbs single">
+                <StyleThumb p={preview(code)} code={code} />
               </div>
               <div className="style-name">
-                <strong>{s.name}</strong>
-                <span>--sref {s.code}</span>
+                <strong>{styleTitle(preview(code)?.styles) || 'Estilo'}</strong>
+                <span>--sref {code}</span>
               </div>
             </div>
           ))}
         </div>
       )}
       {open && (
-        <div className="lightbox style-modal" role="dialog" aria-modal="true" aria-label={`Estilo ${open.name}`} onClick={(e) => e.target === e.currentTarget && setOpen(null)}>
+        <div className="lightbox style-modal" role="dialog" aria-modal="true" aria-label={`Estilo --sref ${open}`} onClick={(e) => e.target === e.currentTarget && setOpen(null)}>
           <div className="style-detail">
             <div className="lb-top">
               <div>
-                <h2>{open.name}</h2>
-                <p className="hint">
-                  --sref {open.code} · {open.words}
-                </p>
+                <h2>{styleTitle(shown?.styles) || `--sref ${open}`}</h2>
+                <p className="hint">--sref {open}</p>
               </div>
               <button className="icon-btn" aria-label="Cerrar" onClick={() => setOpen(null)}>
                 ✕
               </button>
             </div>
-            <div className="style-gallery">
-              {[0, 1, 2, 3, 4, 5].map((n) => (
-                <img key={n} src={styleSample(open, n)} alt={`Ejemplo ${n + 1} del estilo ${open.name}`} />
-              ))}
+            <div className="style-preview">
+              <StyleThumb p={shown} code={open} />
             </div>
+            {shown?.error && <p className="err">{shown.error}</p>}
+            <ul className="style-mix">
+              {styleLabels(shown?.styles).map((s) => (
+                <li key={s.label}>
+                  {s.label} <span className="hint">{s.weight.toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
             <div className="row">
               <button className="btn primary" data-action="imagine" onClick={() => tryStyle(open)}>
                 Probar estilo
@@ -252,9 +289,14 @@ function Styles({ q }: { q: string }) {
               <button className="btn" onClick={() => copy(open)}>
                 Copiar --sref
               </button>
-              <button className={`btn${liked.includes(open.code) ? ' primary' : ''}`} onClick={() => toggleStyleLike(open.code)}>
-                <IconHeart size={15} filled={liked.includes(open.code)} /> Me gusta
+              <button className={`btn${liked.includes(open) ? ' primary' : ''}`} onClick={() => toggleStyleLike(open)}>
+                <IconHeart size={15} filled={liked.includes(open)} /> Me gusta
               </button>
+              {shown?.status === 'error' && (
+                <button className="btn" onClick={() => requestPreview(open, prompt)}>
+                  Reintentar
+                </button>
+              )}
             </div>
           </div>
         </div>

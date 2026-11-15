@@ -30,7 +30,7 @@ const PARAMS: [string, string, string][] = [
 
 const DONE = [
   'Explorar: Para ti, Aleatorio, En tendencia, Top (hoy/semana/mes), Me gusta, búsqueda, imágenes y vídeos',
-  'Explorador de estilos: populares, aleatorios, me gusta, probar estilo y copiar --sref',
+  'Explorador de estilos: códigos --sref con vista previa real (H3, prompt de vista previa configurable) y la mezcla de estilos de cada uno; descubrir, me gusta, usados, probar y copiar --sref',
   'Atajos al pasar el ratón: usar imagen, usar prompt, buscar parecidas, me gusta',
   'Barra de imaginar: prompt de imagen, referencia de estilo, fotograma inicial y final, bucle, describir, fijar imágenes',
   'Ajustes: proporción, estilización, rareza, variedad, SD/HD, raw, imágenes por creación (1–4, una tras otra), vídeo SD/HD, lote y movimiento',
@@ -44,7 +44,7 @@ const DONE = [
   'Organizar: filtros, carpetas (y crear dentro de ellas), papelera, selección múltiple, línea de tiempo, búsquedas guardadas',
   'Carpetas: grupos de carpetas, renombrar, descargar, mover a grupo, borrar, arrastrar imágenes y menú de clic derecho (Añadir a… / Quitar de…)',
   'Moodboards: crear, añadir imágenes (subir, URL o de tus creaciones), renombrar, borrar, usar con --p, predeterminados y botón de personalización',
-  'Creador de estilos: elegir muestras, rondas que crean códigos --sref, vistas previas, atajos de teclado, probar y guardar estilos',
+  'Creador de estilos: muestras de códigos al azar generadas con tu prompt; cada 4 elegidas, una ronda con los códigos mezclados (--sref a b c d); atajos de teclado, probar y guardar estilos',
   'Más opciones: copiar prompt/semilla/ID/URL, descargar, buscar parecidas, repetir en HD',
 ];
 
