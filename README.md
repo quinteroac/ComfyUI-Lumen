@@ -56,3 +56,7 @@ The built page is in `dist/`. After changing `app/src`:
 ```bash
 cd app && npm install && npm run build
 ```
+
+## License
+
+MIT, see `LICENSE`. Parts taken from other projects keep their own licenses, listed in `THIRD_PARTY_NOTICES.md`.
