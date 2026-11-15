@@ -606,15 +606,16 @@ export function runAction(action: ActionKind, opts: ActionOptions = {}): Job[] {
   let text = opts.prompt ?? src?.rawPrompt ?? '';
   if (opts.extraParams) text = `${text} ${opts.extraParams}`;
   if (action !== 'describe' && action !== 'extend') text = resolvePersonalization(text);
-  // --sref random becomes a code, so Repeat and Use keep the same styles (as on the original).
-  text = text.replace(/(--sref\s+(?:[^-\s]+\s+)*?)random\b/gi, (_m, head: string) => `${head}${1 + Math.floor(Math.random() * 4294967295)}`);
   const prompts = expandPermutations(text);
   if (prompts.length > 1) toast(t('{prompts} prompts por permutación.', { prompts: prompts.length }));
   const jobs: Job[] = [];
   for (const one of prompts) {
-    const parsed = parsePrompt(one, { ...(src?.settings ?? state.settings), ...opts.settings });
-    for (let r = 0; r < parsed.repeat; r++) {
-      const job = createJob(action, one, parsed, opts, src);
+    const base = { ...(src?.settings ?? state.settings), ...opts.settings };
+    const { repeat } = parsePrompt(one, base);
+    for (let r = 0; r < repeat; r++) {
+      // --sref random becomes a new code for each job, kept in its prompt so Repeat and Use keep that job's styles.
+      const own = one.replace(/(--sref\s+(?:[^-\s]+\s+)*?)random\b/gi, (_m, head: string) => `${head}${1 + Math.floor(Math.random() * 4294967295)}`);
+      const job = createJob(action, own, parsePrompt(own, base), opts, src);
       if (!job) return jobs;
       jobs.push(job);
     }
