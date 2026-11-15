@@ -162,11 +162,18 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
 }
 
 const SLIDER_NODE = { h3: 'LumenH3ConceptSlider', moss: 'LumenMOSSConceptSlider', anima: 'LumenAnimaTagSlider' } as const;
+/** --w per model: --w 1000 is where each one starts to multiply and rearrange the subject; Anima only stays clean in weight_norm. */
+const WEIRD = { h3: { mode: 'attention', scale: 0.02 }, moss: { mode: 'attention', scale: 0.01 }, anima: { mode: 'weight_norm', scale: 0.004 } } as const;
 
 /** Weighted prompt segments (a::2) as one concept slider each, chained like LoRAs: 1 is the segment as written. */
 function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link, mode: ComfyConfig['conceptMode']): Link {
   for (const { text, weight } of i.concepts) {
     model = add(SLIDER_NODE[i.engine], { model, clip, [i.engine === 'anima' ? 'tag' : 'concept']: text, mode, strength: weight });
+  }
+  // --w: the whole prompt again as one more slider, only on new images.
+  if (i.weird && i.prompt && GENERATION.includes(i.action)) {
+    const { mode, scale } = WEIRD[i.engine];
+    model = add(SLIDER_NODE[i.engine], { model, clip, [i.engine === 'anima' ? 'tag' : 'concept']: i.prompt, mode, strength: 1 + i.weird * scale });
   }
   return model;
 }

@@ -19,6 +19,8 @@ export interface ParsedPrompt {
   loop: boolean;
   imageWeight?: number;
   styleWeight?: number;
+  /** --w: how weird the image gets, 0 or more. */
+  weird?: number;
   /** --cw 0–100: how much of the character reference to keep (100 face, hair and outfit; 0 the face). */
   characterWeight?: number;
   sref?: string;
@@ -181,6 +183,10 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
         break;
       case 'sw':
         r.styleWeight = Math.max(0, Number(val) || 0);
+        break;
+      case 'w':
+      case 'weird':
+        r.weird = Math.max(0, Number(val) || 0);
         break;
       case 'sref':
         r.sref = val;

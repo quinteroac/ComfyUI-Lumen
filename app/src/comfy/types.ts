@@ -114,6 +114,8 @@ export interface JobInputs {
   /** First style reference. */
   style_image?: string;
   style_weight?: number;
+  /** --w: the prompt again as a concept slider; each model has its own scale. */
+  weird?: number;
   sref?: string;
   /** Moodboard / profile codes used (--p). */
   moodboard?: string;

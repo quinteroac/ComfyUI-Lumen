@@ -498,6 +498,7 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     tile: p.tile,
     image_weight: p.imageWeight,
     style_weight: p.styleWeight ?? 100,
+    weird: p.weird,
     sref: p.sref,
   };
 }
