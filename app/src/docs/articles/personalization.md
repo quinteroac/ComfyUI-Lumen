@@ -17,6 +17,12 @@ Liking a style in [Explore › Styles](#style-explorer) teaches your global prof
 
 A profile is the mix of its 4 best codes, added to the job's `--sref`, so `--sw` controls how strongly it applies. When you use it, Lumen writes the current version into the prompt as a code, so a job keeps its look even after the profile learns more.
 
+## LoRAs
+
+Each profile can also load one LoRA per model (H3 Image, Anima and MOSS Image), chosen from the files in your ComfyUI `models/loras` folder under **LoRAs** on the profile card. When the profile personalizes a job, the LoRA for that job's model is loaded after any [`--lora`](#lora) in the prompt; the other models' LoRAs are left out.
+
+A profile with a LoRA can be used before it is unlocked; until then it applies only the LoRA. Changing a LoRA or its weight gives the profile a new version code.
+
 ## More profiles
 
 Create extra profiles for different tastes (for example one for illustration and one for photography), rename them, or mark them as defaults. Deleting a profile does not break the codes you already used.

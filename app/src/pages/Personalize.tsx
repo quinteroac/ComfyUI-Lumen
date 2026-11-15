@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IconCopy, IconEdit, IconPlus, IconTrash } from '../icons';
 import {
   UNLOCK_PICKS,
   createProfile,
   deleteProfile,
   getState,
+  isReady,
   isUnlocked,
   profileCode,
   profileSref,
   profileTopCodes,
   recordProfilePicks,
   renameProfile,
+  setProfileLora,
   setDraft,
   toast,
   toggleProfileDefault,
@@ -18,6 +20,8 @@ import {
   useStore,
 } from '../store';
 import type { Profile } from '../comfy/types';
+import type { Engine } from '../comfy/config';
+import { comboOptions, nodeDefs } from '../comfy/client';
 import { navigate } from '../router';
 import { Media } from '../components/Media';
 import { useConfig } from '../useConfig';
@@ -103,7 +107,48 @@ function Rater({ p, onClose }: { p: Profile; onClose: () => void }) {
   );
 }
 
-function ProfileCard({ p, onRate }: { p: Profile; onRate: () => void }) {
+const MODELS: [Engine, string, string][] = [
+  ['h3', 'H3 Image', 'minimax/'],
+  ['anima', 'Anima', 'anima/'],
+  ['moss', 'MOSS Image', 'moss/'],
+];
+
+/** The profile's LoRA for each model, from the files ComfyUI lists; the model's own folder comes first. */
+function ProfileLoras({ p, files }: { p: Profile; files: string[] }) {
+  const count = Object.keys(p.loras ?? {}).length;
+  return (
+    <details className="profile-loras" open={count > 0}>
+      <summary>{count ? t('LoRAs ({count})', { count }) : t('LoRAs')}</summary>
+      {MODELS.map(([engine, label, folder]) => {
+        const cur = p.loras?.[engine];
+        const options = [...files.filter((f) => f.startsWith(folder)), ...files.filter((f) => !f.startsWith(folder))];
+        if (cur && !options.includes(cur.name)) options.unshift(cur.name);
+        return (
+          <div key={engine} className="profile-lora">
+            <label className="field">
+              {t('LoRA de {model}', { model: label })}
+              <select value={cur?.name ?? ''} onChange={(e) => setProfileLora(p.id, engine, e.target.value ? { name: e.target.value, weight: cur?.weight ?? 1 } : undefined)}>
+                <option value="">{t('Ninguno')}</option>
+                {options.map((f) => (
+                  <option key={f} value={f}>
+                    {f.replace(/\.safetensors$/i, '')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              {t('Peso')}
+              <input type="number" step={0.05} value={cur?.weight ?? 1} disabled={!cur} onChange={(e) => cur && setProfileLora(p.id, engine, { ...cur, weight: Number(e.target.value) })} />
+            </label>
+          </div>
+        );
+      })}
+      <p className="hint">{t('Se cargan en las imágenes que este perfil personaliza, cada uno solo con su modelo. Con un LoRA, el perfil se puede usar aunque esté bloqueado: entonces solo aplica el LoRA.')}</p>
+    </details>
+  );
+}
+
+function ProfileCard({ p, files, onRate }: { p: Profile; files: string[]; onRate: () => void }) {
   const [renaming, setRenaming] = useState(false);
   const unlocked = isUnlocked(p);
   const previews = usePreviews();
@@ -168,13 +213,14 @@ function ProfileCard({ p, onRate }: { p: Profile; onRate: () => void }) {
           <button className="btn small primary" onClick={onRate}>
             {unlocked ? t('Seguir eligiendo') : t('Desbloquear')}
           </button>
-          <button className="btn small" onClick={use} disabled={!unlocked}>
+          <button className="btn small" onClick={use} disabled={!isReady(p)}>
             <IconCopy size={14} /> {t('Usar')}
           </button>
           <label className="switch small" title={t('Usar por defecto cuando la personalización está activada')}>
             <input type="checkbox" checked={p.isDefault} onChange={() => toggleProfileDefault(p.id)} /> {t('Predeterminado')}
           </label>
         </div>
+        <ProfileLoras p={p} files={files} />
       </div>
     </section>
   );
@@ -185,6 +231,10 @@ export function Personalize() {
   const on = useStore((s) => s.personalization);
   const [rating, setRating] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [files, setFiles] = useState<string[]>([]);
+  useEffect(() => {
+    nodeDefs().then((defs) => setFiles(comboOptions(defs, 'LoraLoaderModelOnly', 'lora_name')), () => {});
+  }, []);
   const current = profiles.find((p) => p.id === rating);
   if (current) return <div className="page">{<Rater p={current} onClose={() => setRating(null)} />}</div>;
   const global = profiles.find((p) => p.id === 'global');
@@ -212,14 +262,14 @@ export function Personalize() {
           </button>
         </form>
         <button className={`btn${on ? ' primary' : ''}`} onClick={togglePersonalization}>
-          {t('Personalización')} {on ? 'activada' : 'desactivada'}
+          {on ? t('Personalización activada') : t('Personalización desactivada')}
         </button>
         <button className="btn" onClick={() => navigate('moodboards')}>
           {t('Moodboards')}
         </button>
       </div>
       {profiles.map((p) => (
-        <ProfileCard key={p.id} p={p} onRate={() => setRating(p.id)} />
+        <ProfileCard key={p.id} p={p} files={files} onRate={() => setRating(p.id)} />
       ))}
       <p className="hint">
         {t('Con los workflows integrados, un perfil añade su mezcla al --sref del trabajo (nodos Style Code de H3, MOSS y Anima); con tu propio workflow también recibes su código como')} {'{{moodboard}}'}.

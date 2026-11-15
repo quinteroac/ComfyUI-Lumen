@@ -15,7 +15,7 @@ import {
   toggleMoodboardDefault,
   togglePersonalization,
   toggleProfileDefault,
-  isUnlocked,
+  isReady,
   UNLOCK_PICKS,
   sendToAssistant,
   toggleConversational,
@@ -281,7 +281,7 @@ function PersonalizeButton() {
   const boards = useStore((s) => s.moodboards);
   const profiles = useStore((s) => s.profiles);
   const [open, setOpen] = useState(false);
-  const defaults = [...profiles.filter((p) => p.isDefault && isUnlocked(p)), ...boards.filter((b) => b.isDefault)];
+  const defaults = [...profiles.filter((p) => p.isDefault && isReady(p)), ...boards.filter((b) => b.isDefault)];
   return (
     <div className="menu-wrap personalize">
       <span className="split">
@@ -303,8 +303,8 @@ function PersonalizeButton() {
         <div className="menu up" role="menu">
           <span className="menu-label">{t('Perfiles predeterminados')}</span>
           {profiles.map((p) => (
-            <button key={p.id} role="menuitemcheckbox" aria-checked={p.isDefault} onClick={() => toggleProfileDefault(p.id)} disabled={!isUnlocked(p)} title={isUnlocked(p) ? '' : t('Aún bloqueado')}>
-              {p.isDefault ? '✓' : '○'} {p.name} <span className="count">{isUnlocked(p) ? '' : `🔒 ${p.picks}/${UNLOCK_PICKS}`}</span>
+            <button key={p.id} role="menuitemcheckbox" aria-checked={p.isDefault} onClick={() => toggleProfileDefault(p.id)} disabled={!isReady(p)} title={isReady(p) ? '' : t('Aún bloqueado')}>
+              {p.isDefault ? '✓' : '○'} {p.name} <span className="count">{isReady(p) ? '' : `🔒 ${p.picks}/${UNLOCK_PICKS}`}</span>
             </button>
           ))}
           <button

@@ -17,4 +17,6 @@ The LoRA is loaded on the image model of every image job: Imagine, Image prompt,
 
 A LoRA only works on the model it was trained for. Edits always run on H3 Image, so an Anima or MOSS Image LoRA does nothing there.
 
+To load a LoRA on every personalized job, set it on a [profile](#personalization) instead.
+
 > **Note:** The list of files is read when Lumen opens. Reload the page after adding LoRAs to the folder.

@@ -603,5 +603,12 @@
  "Falta": "未インストール",
  "Abrir vídeo {n}": "動画 {n} を開く",
  "Abrir imagen {n}": "画像 {n} を開く",
- "Sugerencias de LoRA": "LoRA の候補"
+ "Sugerencias de LoRA": "LoRA の候補",
+ "LoRAs": "LoRA",
+ "LoRAs ({count})": "LoRA（{count}）",
+ "LoRA de {model}": "{model} の LoRA",
+ "Ninguno": "なし",
+ "Peso": "重み",
+ "Se cargan en las imágenes que este perfil personaliza, cada uno solo con su modelo. Con un LoRA, el perfil se puede usar aunque esté bloqueado: entonces solo aplica el LoRA.": "このプロフィールでパーソナライズする画像に読み込まれ、それぞれ自分のモデルでのみ使われます。LoRA があれば、ロック中でもプロフィールを使えます。その場合は LoRA だけが適用されます。",
+ "Personalización activada": "パーソナライズ オン"
 }

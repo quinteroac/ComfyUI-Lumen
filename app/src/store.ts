@@ -3,10 +3,10 @@
 // ComfyUI workflow run.
 import { useSyncExternalStore } from 'react';
 import { save, saved as loadFile } from './saved';
-import { getConfig } from './comfy/config';
+import { getConfig, type Engine } from './comfy/config';
 import { MAX_VIDEO_REFS, buildWorkflow, checkWorkflow, enhanced, simpleRatio } from './comfy/workflows';
 import { askAssistant, isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
-import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
+import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, LoraRef, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
 import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
 import { hash, toPngBlob } from './images';
 import { expandPermutations, parsePrompt, type ParsedPrompt } from './prompt';
@@ -320,6 +320,8 @@ export const togglePersonalization = () => {
 /* ------------------------------ personalization profiles ------------------------------ */
 
 export const isUnlocked = (p?: Profile) => !!p && p.picks >= UNLOCK_PICKS;
+/** A profile applies once unlocked, or right away when it has a LoRA (then only the LoRA). */
+export const isReady = (p?: Profile) => isUnlocked(p) || !!Object.keys(p?.loras ?? {}).length;
 const globalUnlocked = () => isUnlocked(state.profiles.find((p) => p.id === 'global'));
 
 export function createProfile(name: string): Profile | undefined {
@@ -333,6 +335,13 @@ export function createProfile(name: string): Profile | undefined {
 }
 const updateProfile = (id: string, fn: (p: Profile) => Profile) => set({ profiles: state.profiles.map((p) => (p.id === id ? fn(p) : p)) });
 export const renameProfile = (id: string, name: string) => updateProfile(id, (p) => ({ ...p, name: name.trim() || p.name }));
+export const setProfileLora = (id: string, engine: Engine, lora?: LoraRef) =>
+  updateProfile(id, (p) => {
+    const loras = { ...p.loras };
+    if (lora) loras[engine] = lora;
+    else delete loras[engine];
+    return { ...p, loras: Object.keys(loras).length ? loras : undefined };
+  });
 export const toggleProfileDefault = (id: string) => updateProfile(id, (p) => ({ ...p, isDefault: !p.isDefault }));
 /** The Global Profile can't be deleted; codes from deleted profiles keep working. */
 export const deleteProfile = (id: string) => id !== 'global' && set({ profiles: state.profiles.filter((p) => p.id !== id) });
@@ -359,17 +368,18 @@ export function profileSref(p: Profile): string {
   return top.map(([code, s], k) => (k === 0 ? code : `${code}::${Math.round((s / top[0][1]) * 100) / 100}`)).join(' ');
 }
 export function profileCode(p: Profile): string {
-  return `p${(hash(p.id + '|' + profileSref(p)) % 2176782336).toString(36).padStart(6, '0')}`;
+  const loras = p.loras ? '|' + JSON.stringify(p.loras) : '';
+  return `p${(hash(p.id + '|' + profileSref(p) + loras) % 2176782336).toString(36).padStart(6, '0')}`;
 }
 
 function profileSnapshot(p: Profile): MoodSnapshot {
-  return { code: profileCode(p), boardId: p.id, name: p.name, words: '', sref: profileSref(p), images: [], kind: 'profile' };
+  return { code: profileCode(p), boardId: p.id, name: p.name, words: '', sref: isUnlocked(p) ? profileSref(p) : '', images: [], kind: 'profile', loras: p.loras };
 }
 
 /** Snapshots for "--p" with no ID: default moodboards (with images) and unlocked default profiles. */
 function defaultSnapshots(): MoodSnapshot[] {
   return [
-    ...state.profiles.filter((p) => p.isDefault && isUnlocked(p)).map(profileSnapshot),
+    ...state.profiles.filter((p) => p.isDefault && isReady(p)).map(profileSnapshot),
     ...state.moodboards.filter((b) => b.isDefault && b.images.length).map(snapshot),
   ];
 }
@@ -399,7 +409,7 @@ export function resolvePersonalization(text: string): string {
     const profile = state.profiles.find((p) => p.id === tok);
     const board = state.moodboards.find((b) => b.id === tok);
     const found: MoodSnapshot[] =
-      tok === 'default' ? defaultSnapshots() : profile && isUnlocked(profile) ? [profileSnapshot(profile)] : board?.images.length ? [snapshot(board)] : [];
+      tok === 'default' ? defaultSnapshots() : profile && isReady(profile) ? [profileSnapshot(profile)] : board?.images.length ? [snapshot(board)] : [];
     if (found.length) {
       for (const s of found) {
         snaps[s.code] = s;
@@ -635,6 +645,9 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
     if (words && !isVideoAction(action)) inputs.prompt = [inputs.prompt, words].filter(Boolean).join(', ');
     inputs.moodboard = moods.map((m) => m.code).join(' ');
     inputs.style_weight = parsed.styleWeight ?? 100;
+    // Profile LoRAs for the job's model, after the prompt's own --lora.
+    const loras = moods.flatMap((m) => m.loras?.[inputs.engine] ?? []);
+    if (loras.length) inputs.loras = [...(inputs.loras ?? []), ...loras];
   }
   const motion: Motion = opts.motion ?? parsed.settings.motion ?? 'low';
   // Seeds stay fixed only when --seed is given; repeats/permutations get new ones.

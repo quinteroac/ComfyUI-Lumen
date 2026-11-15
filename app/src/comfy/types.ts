@@ -262,7 +262,12 @@ export interface MoodSnapshot {
   kind?: 'moodboard' | 'profile';
   /** A profile's --sref mix: its best codes, weighted by score. */
   sref?: string;
+  /** A profile's LoRA for each model. */
+  loras?: ProfileLoras;
 }
+
+/** One LoRA per model, loaded on the jobs that model makes. */
+export type ProfileLoras = Partial<Record<Engine, LoraRef>>;
 
 /** Personalization profile: learns your taste from the style samples you pick. */
 export interface Profile {
@@ -274,6 +279,7 @@ export interface Profile {
   picks: number;
   isDefault: boolean;
   createdAt: number;
+  loras?: ProfileLoras;
 }
 
 export interface ChatTurn {
