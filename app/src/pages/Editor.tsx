@@ -94,6 +94,8 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
   const [aspect, setAspect] = useState(iw / ih);
   const [off, setOff] = useState({ x: 0, y: 0 });
   const [prompt, setPrompt] = useState(target.prompt);
+  // Edit regenerates the erased areas; Retexture keeps the whole structure and changes the look.
+  const [mode, setMode] = useState<'edit' | 'retexture'>('edit');
   const [hist, setHist] = useState<{ stack: Snap[]; at: number }>({ stack: [], at: -1 });
   const [, force] = useState(0);
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
@@ -208,6 +210,16 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
   };
 
   const submit = () => {
+    const image: JobImage = { url: target.image.url, w: iw, h: ih };
+    if (mode === 'retexture') {
+      if (!prompt.trim()) {
+        toast('Describe el nuevo aspecto: materiales, colores, luz o estilo.', 'error');
+        return;
+      }
+      const jobs = runAction('retexture', { prompt, source: target.source, image: target.source ? undefined : image });
+      if (jobs.length) navigate('imagine');
+      return;
+    }
     let out;
     try {
       out = exportPng();
@@ -219,13 +231,21 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
       toast('Escribe qué quieres ver en la imagen editada.', 'error');
       return;
     }
-    const image: JobImage = { url: target.image.url, w: iw, h: ih };
     const jobs = runAction('edit', { prompt, mask: out.url, maskSize: { w: out.w, h: out.h }, source: target.source, image: target.source ? undefined : image });
     if (jobs.length) navigate('imagine');
   };
 
   return (
     <div className="editor">
+      <div className="tabs" role="tablist" aria-label="Modo del editor" style={{ marginBottom: 8 }}>
+        <button role="tab" aria-selected={mode === 'edit'} className={`tab${mode === 'edit' ? ' on' : ''}`} onClick={() => setMode('edit')}>
+          Editar
+        </button>
+        <button role="tab" aria-selected={mode === 'retexture'} className={`tab${mode === 'retexture' ? ' on' : ''}`} onClick={() => setMode('retexture')}>
+          Retexturizar
+        </button>
+      </div>
+      {mode === 'edit' && (
       <div className="editor-tools" role="toolbar" aria-label="Herramientas del editor">
         <div className="seg">
           <button className={tool === 'move' ? 'on' : ''} onClick={() => setTool('move')} title="Mover / escalar">
@@ -261,7 +281,8 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
           </button>
         </div>
       </div>
-      {tool === 'move' && (
+      )}
+      {mode === 'edit' && tool === 'move' && (
         <div className="tabs" style={{ marginBottom: 8 }}>
           {PRESETS.map(([label, a]) => {
             const val = a ?? iw / ih;
@@ -302,15 +323,23 @@ function Canvas({ target, img }: { target: EditorTarget; img: HTMLImageElement }
         />
       </div>
       <p className="hint">
-        Lienzo {cw}×{ch}px · las zonas a cuadros (borradas o vacías) se generarán de nuevo.
+        {mode === 'edit'
+          ? `Lienzo ${cw}×${ch}px · las zonas a cuadros (borradas o vacías) se generarán de nuevo.`
+          : 'Retexturizar mantiene la composición, la cámara y la forma y el sitio de cada elemento, y cambia materiales, colores, luz y estilo según el prompt. Usa la imagen completa (sin borrar ni mover).'}
       </p>
       <div className="field wide" style={{ marginTop: 12 }}>
-        <label htmlFor="edit-prompt">Editar prompt</label>
-        <textarea id="edit-prompt" className="edit-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Describe la imagen completa que quieres ver" />
+        <label htmlFor="edit-prompt">{mode === 'edit' ? 'Editar prompt' : 'Nuevo aspecto'}</label>
+        <textarea
+          id="edit-prompt"
+          className="edit-prompt"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder={mode === 'edit' ? 'Describe la imagen completa que quieres ver' : 'p. ej. «hecho de cristal bajo luz de neón» o «pintura al óleo de los años 50»'}
+        />
       </div>
       <div className="row" style={{ marginTop: 12 }}>
-        <button className="btn primary" data-action="edit" onClick={submit}>
-          Enviar edición
+        <button className="btn primary" data-action={mode} onClick={submit}>
+          {mode === 'edit' ? 'Enviar edición' : 'Retexturizar'}
         </button>
         <button
           className="btn"

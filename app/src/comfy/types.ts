@@ -12,6 +12,7 @@ export type ActionKind =
   | 'zoom_out'
   | 'pan'
   | 'edit'
+  | 'retexture'
   | 'video'
   | 'animate'
   | 'extend'
@@ -32,6 +33,7 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
   zoom_out: 'Alejar (zoom out)',
   pan: 'Desplazar (pan)',
   edit: 'Editor (borrar zonas / ampliar lienzo)',
+  retexture: 'Retexturizar (misma estructura, otro estilo)',
   video: 'Vídeo (texto → vídeo)',
   animate: 'Animar (imagen → vídeo)',
   extend: 'Alargar vídeo',

@@ -65,6 +65,11 @@ const NEWLY_VISIBLE = 'Describe concretely what newly becomes visible around it 
 const SIDE: Record<PanDir, string> = { left: 'left', right: 'right', up: 'top', down: 'bottom' };
 
 function fillInstruction(i: JobInputs): string {
+  if (i.action === 'retexture') {
+    // Keeps the structure, as with the 3D blockout tests: H3 Image keeps camera and places when told to.
+    const look = [i.prompt, ...i.concepts.map((c) => c.text)].filter(Boolean).join(' ');
+    return `Retexture <Picture 1>: keep its composition, camera angle, perspective and the shape, size and place of every person and object exactly as they are, and redraw all of its surfaces, materials, colors, lighting and rendering so that the whole image becomes: ${look}. Describe concretely the new look of each element.`;
+  }
   if (i.action === 'edit') {
     // The Editor's canvas was flattened on white: H3 Image reads transparency as black.
     return [
@@ -88,13 +93,13 @@ const ratio = (w: number, h: number) => `${w / gcd(w, h)}:${h / gcd(w, h)}`;
 /** The enhancer's user message: the pictures with their ratios, the instruction and the canvas ratio, as its task prompt describes. */
 function peRequest(i: JobInputs, count: number): string {
   const r = ratio(i.width, i.height);
-  const fill = FILL.includes(i.action);
-  // The Zoom out / Pan / Editor canvas has the ratio of the result; reference pictures their own.
-  const ratios = fill ? [r] : (i.picture_ratios ?? []);
+  const own = ON_SOURCE.includes(i.action);
+  // The image being edited has the ratio of the result; reference pictures their own.
+  const ratios = own ? [r] : (i.picture_ratios ?? []);
   return [
     `Reference Image Count: ${count} input image(s), labeled <Picture 1> through <Picture ${count}>.`,
     `Reference Media:\n${Array.from({ length: count }, (_, n) => `- <Picture ${n + 1}> [${ratios[n] ? `aspect_ratio ${ratios[n]}` : 'aspect_ratio unavailable'}]`).join('\n')}`,
-    `User Editing Instruction (JSON string): ${JSON.stringify(fill ? fillInstruction(i) : h3Prompt(i))}`,
+    `User Editing Instruction (JSON string): ${JSON.stringify(own ? fillInstruction(i) : h3Prompt(i))}`,
     `User Aspect Ratio Selection: ${r}`,
     'Apply the instructions above to the supplied inputs and reference images. Output only the required two-field JSON object.',
   ].join('\n');
@@ -109,13 +114,15 @@ function startStep(sigmas: string, denoise: number) {
 
 const IMG2IMG: ActionKind[] = ['vary_subtle', 'vary_strong', 'remix', 'upscale_subtle', 'upscale_creative'];
 const FILL: ActionKind[] = ['edit', 'zoom_out', 'pan'];
+/** Edits whose only picture is the image itself, as <Picture 1>. */
+const ON_SOURCE: ActionKind[] = [...FILL, 'retexture'];
 
 const STYLE_NODE = { h3: 'MiniMaxH3StyleCode', moss: 'MOSSStyleCode', anima: 'AnimaStyleCode' } as const;
 const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
 
 /** Built-in H3 jobs whose caption the edit prompt enhancer writes: the fill edits, and new images with reference pictures. */
 export const enhanced = (i: JobInputs) =>
-  i.engine === 'h3' && (FILL.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0));
+  i.engine === 'h3' && (ON_SOURCE.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0));
 
 /** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
     --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
@@ -158,7 +165,7 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
   const model = conceptSliders(add, i, styleCode(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' }), clip, styles), clip, mode);
   const vae = add('VAELoader', { vae_name: c.vae });
-  const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.character_images ?? []), ...(i.style_images ?? [])];
+  const files = ON_SOURCE.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.character_images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
   let prompt: string | Link = i.caption ?? h3Prompt(i);
   if (enhanced(i) && !i.caption) {
@@ -478,6 +485,7 @@ export const ACTION_ORDER: ActionKind[] = [
   'zoom_out',
   'pan',
   'edit',
+  'retexture',
   'video',
   'animate',
   'extend',

@@ -54,7 +54,7 @@ export function Organize() {
         if (filter === 'images' && img.kind === 'video') return;
         if (filter === 'videos' && img.kind !== 'video') return;
         if (filter === 'upscaled' && !job.action.startsWith('upscale')) return;
-        if (filter === 'edited' && !['edit', 'pan', 'zoom_out', 'remix'].includes(job.action)) return;
+        if (filter === 'edited' && !['edit', 'retexture', 'pan', 'zoom_out', 'remix'].includes(job.action)) return;
         if (folderId && !inFolder(job, img, folderId)) return;
         items.push({ img, prompt: job.prompt, jobId: job.id, index, day, dayKey, key: `${job.id}:${index}`, job, meta: jobMeta(job) });
       });

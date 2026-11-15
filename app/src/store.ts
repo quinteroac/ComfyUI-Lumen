@@ -631,7 +631,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   // Seeds stay fixed only when --seed is given; repeats/permutations get new ones.
   if (parsed.seed === undefined) inputs.seed = Math.floor(Math.random() * 2 ** 32);
 
-  const needsImage: ActionKind[] = ['vary_subtle', 'vary_strong', 'upscale_subtle', 'upscale_creative', 'remix', 'zoom_out', 'pan', 'edit', 'animate', 'extend', 'describe'];
+  const needsImage: ActionKind[] = ['vary_subtle', 'vary_strong', 'upscale_subtle', 'upscale_creative', 'remix', 'zoom_out', 'pan', 'edit', 'retexture', 'animate', 'extend', 'describe'];
   if (needsImage.includes(action) && !srcImg && !opts.mask) {
     toast('Esta acción necesita una imagen de partida.', 'error');
     return;
@@ -684,6 +684,9 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       });
       break;
     }
+    case 'retexture':
+      Object.assign(inputs, { width: same.w, height: same.h });
+      break;
     case 'edit': {
       const mw = opts.maskSize?.w ?? w, mh = opts.maskSize?.h ?? h;
       const out = fitArea(mw, mh, megapixelsOf(mw, mh));
