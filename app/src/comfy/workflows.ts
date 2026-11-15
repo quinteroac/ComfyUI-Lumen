@@ -154,7 +154,7 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
     model,
     clip,
     codes: codes.join(' '),
-    strength: Math.min(4, (1.5 * (i.style_weight ?? 100)) / 100),
+    strength: (1.5 * (i.style_weight ?? 100)) / 100,
     ...(i.engine === 'anima' ? { styles_per_code: s.animaStyles, artists_per_code: s.animaArtists } : { styles_per_code: s.styles }),
   });
   add('PreviewAny', { source: out(styled, 1) }, 'styles');
@@ -162,14 +162,11 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
 }
 
 const SLIDER_NODE = { h3: 'LumenH3ConceptSlider', moss: 'LumenMOSSConceptSlider', anima: 'LumenAnimaTagSlider' } as const;
-/** MOSS's and Anima's sliders stop at 1.5; H3's range follows max_strength. */
-const SLIDER_MAX = { h3: 100, moss: 1.5, anima: 1.5 } as const;
 
 /** Weighted prompt segments (a::2) as one concept slider each, chained like LoRAs: 1 is the segment as written. */
 function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link, mode: ComfyConfig['conceptMode']): Link {
   for (const { text, weight } of i.concepts) {
-    const strength = Math.min(weight, SLIDER_MAX[i.engine]);
-    model = add(SLIDER_NODE[i.engine], { model, clip, [i.engine === 'anima' ? 'tag' : 'concept']: text, mode, strength });
+    model = add(SLIDER_NODE[i.engine], { model, clip, [i.engine === 'anima' ? 'tag' : 'concept']: text, mode, strength: weight });
   }
   return model;
 }

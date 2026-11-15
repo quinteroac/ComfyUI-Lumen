@@ -116,7 +116,7 @@ class LumenH3ConceptSlider(io.ComfyNode):
                 io.Clip.Input("clip", tooltip="The MiniMax H3 CLIP that encodes the prompts."),
                 io.String.Input("concept", default=""),
                 io.Combo.Input("mode", options=["attention", "weight_norm"], tooltip="attention scales how much the image attends to the concept, weight_norm scales the concept's attention values and keeps each output at its magnitude as written."),
-                io.Float.Input("strength", default=1.0, min=0.0, max=100.0, step=0.05),
+                io.Float.Input("strength", default=1.0, min=0.0, step=0.05),
             ],
             outputs=[io.Model.Output()],
         )
@@ -141,7 +141,7 @@ class LumenH3StyleCode(io.ComfyNode):
                 io.Clip.Input("clip", tooltip="The MiniMax H3 CLIP that encodes the prompts."),
                 io.String.Input("codes", default="", tooltip="Style codes with an optional ::weight, like 123 456::0.5."),
                 io.Int.Input("styles_per_code", default=4, min=1, max=8),
-                io.Float.Input("strength", default=1.5, min=0.0, max=4.0, step=0.05, tooltip="How much the image attends to the styles, like --sw; 1 is as written."),
+                io.Float.Input("strength", default=1.5, min=0.0, step=0.05, tooltip="How much the image attends to the styles, like --sw; 1 is as written."),
             ],
             outputs=[io.Model.Output(), io.String.Output(display_name="styles", tooltip="The styles the codes picked, with their weights.")],
         )

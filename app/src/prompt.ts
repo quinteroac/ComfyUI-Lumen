@@ -180,7 +180,7 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
         r.characterWeight = clamp(Number(val), 0, 100);
         break;
       case 'sw':
-        r.styleWeight = clamp(Number(val), 0, 1000);
+        r.styleWeight = Math.max(0, Number(val) || 0);
         break;
       case 'sref':
         r.sref = val;

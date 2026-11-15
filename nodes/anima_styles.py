@@ -125,7 +125,7 @@ class LumenAnimaTagSlider(io.ComfyNode):
                 io.Clip.Input("clip"),
                 io.String.Input("tag", default=""),
                 io.Combo.Input("mode", options=["attention", "weight_norm", "weight"], tooltip="attention biases how much the image attends to the tag, weight scales its contribution, weight_norm does the same but keeps each cross-attention output at the magnitude of the tag as written."),
-                io.Float.Input("strength", default=1.0, min=0.0, max=1.5, step=0.05),
+                io.Float.Input("strength", default=1.0, min=0.0, step=0.05),
             ],
             outputs=[io.Model.Output()],
         )
@@ -151,7 +151,7 @@ class LumenAnimaStyleCode(io.ComfyNode):
                 io.String.Input("codes", default="", tooltip="Style codes with an optional ::weight, like 123 456::0.5."),
                 io.Int.Input("styles_per_code", default=2, min=0, max=8),
                 io.Int.Input("artists_per_code", default=2, min=0, max=8),
-                io.Float.Input("strength", default=1.5, min=0.0, max=4.0, step=0.05, tooltip="How much the image attends to the styles, like --sw; 1 is as written."),
+                io.Float.Input("strength", default=1.5, min=0.0, step=0.05, tooltip="How much the image attends to the styles, like --sw; 1 is as written."),
             ],
             outputs=[io.Model.Output(), io.String.Output(display_name="styles", tooltip="The styles and artists the codes picked, with their weights.")],
         )

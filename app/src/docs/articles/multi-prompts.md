@@ -14,7 +14,7 @@ a red fox sitting in a snowy forest at sunrise:: watercolor painting::2 neon::0.
 
 - A part without a number, or with `::1`, stays in the prompt as normal text.
 - A part with any other weight leaves the prompt and is applied with the model's concept slider (LumenH3ConceptSlider, LumenMOSSConceptSlider or LumenAnimaTagSlider), chained after any [style code](#style-codes).
-- The weight is the slider strength. Weights of 0 or less are ignored. MOSS Image and Anima go up to 1.5.
+- The weight is the slider strength. Weights of 0 or less are ignored. There is no upper limit: very high weights can break the image.
 
 ## Mode
 

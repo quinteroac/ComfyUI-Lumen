@@ -24,7 +24,7 @@ a lighthouse under the aurora --ar 16:9 --c 20 --seed 42
 | Parameter | Values | What it does |
 | --- | --- | --- |
 | [--sref](#style-codes) | code, `code::weight`, `random` | Mixes the styles of a style code. |
-| [--sw](#style-codes) | 0–1000 (default 100) | Strength of `--sref`. |
+| [--sw](#style-codes) | 0 or more (default 100) | Strength of `--sref`. |
 | [--iw](#image-prompts) | 0–3 (default 1) | How closely the image prompt is followed. |
 | [--cw](#character-reference) | 0–100 (default 100) | What a character reference keeps. |
 | [--p](#personalization) | nothing, or profile and moodboard codes | Applies your personalization. |
