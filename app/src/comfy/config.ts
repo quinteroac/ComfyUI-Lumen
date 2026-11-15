@@ -13,8 +13,8 @@ export interface EngineSizes {
 export interface ComfyConfig {
   /** MiniMax H3 Image: every action; the distilled model samples 6 steps of LCM. */
   h3: EngineSizes & { unet: string; clip: string; vae: string; sigmas: string; sNoise: number; sNoiseEnd: number };
-  /** Anima (--anima) and MOSS Image (--moss): Imagine only, every edit runs on H3 Image. */
-  anima: EngineSizes & { unet: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
+  /** Anima (--anima) and MOSS Image (--moss), each with its turbo LoRA: Imagine only, every edit runs on H3 Image. */
+  anima: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   moss: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   /** Megapixels of draft images (--draft) and of Upscale. */
   draftMegapixels: number;
@@ -36,11 +36,12 @@ export const DEFAULT_CONFIG: ComfyConfig = {
   },
   anima: {
     unet: 'anima/anima-base-v1.0.safetensors',
+    lora: 'anima/anima-turbo-lora-v0.1.safetensors',
     clip: 'qwen_3_06b_base.safetensors',
     vae: 'qwen_image_vae.safetensors',
-    steps: 30,
-    cfg: 4,
-    sampler: 'er_sde',
+    steps: 8,
+    cfg: 1,
+    sampler: 'euler',
     scheduler: 'simple',
     negative: 'worst quality, low quality, blurry, jpeg artifacts',
     sd: 1,

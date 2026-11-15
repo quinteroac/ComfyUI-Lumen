@@ -81,12 +81,12 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3']): ApiWorkflow {
   return wf;
 }
 
-/** Anima and MOSS Image: text to image only. */
+/** Anima and MOSS Image with their turbo LoRAs: text to image only. */
 function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): ApiWorkflow {
   const { wf, add } = graph();
   const e = c[engine];
   let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
-  if (engine === 'moss' && c.moss.lora) model = add('LoraLoaderModelOnly', { model, lora_name: c.moss.lora, strength_model: 1 });
+  if (e.lora) model = add('LoraLoaderModelOnly', { model, lora_name: e.lora, strength_model: 1 });
   const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });
   const vae = add('VAELoader', { vae_name: e.vae });
   const latent = add(engine === 'anima' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: i.width, height: i.height, batch_size: 1 });

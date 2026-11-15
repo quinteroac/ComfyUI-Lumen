@@ -193,9 +193,10 @@ export function ComfySettings() {
 
       <div className="card">
         <h2>Anima (--anima) y MOSS Image (--moss)</h2>
-        <p className="hint" style={{ marginBottom: 12 }}>Solo para Imaginar sin imágenes de referencia; todo lo que parte de una imagen se hace con H3 Image.</p>
+        <p className="hint" style={{ marginBottom: 12 }}>Con sus LoRAs rápidas (Anima turbo, 8 pasos; MOSS DMD, 8 pasos). Solo para Imaginar sin imágenes de referencia; todo lo que parte de una imagen se hace con H3 Image.</p>
         <div className="form-grid">
           <ModelField label="Anima · modelo" list="unet-list" value={cfg.anima.unet} onChange={(v) => anima({ unet: v })} />
+          <ModelField label="Anima · LoRA turbo (vacío = ninguna)" list="lora-list" value={cfg.anima.lora} onChange={(v) => anima({ lora: v })} />
           <ModelField label="Anima · codificador" list="clip-list" value={cfg.anima.clip} onChange={(v) => anima({ clip: v })} />
           <ModelField label="Anima · VAE" list="vae-list" value={cfg.anima.vae} onChange={(v) => anima({ vae: v })} />
           <NumberField label="Anima · pasos" min={1} max={100} value={cfg.anima.steps} onChange={(v) => anima({ steps: v })} />
@@ -223,7 +224,7 @@ export function ComfySettings() {
             <input value={cfg.anima.negative} onChange={(e) => anima({ negative: e.target.value })} />
           </label>
           <ModelField label="MOSS · modelo" list="unet-list" value={cfg.moss.unet} onChange={(v) => moss({ unet: v })} />
-          <ModelField label="MOSS · LoRA (vacío = ninguna)" list="lora-list" value={cfg.moss.lora} onChange={(v) => moss({ lora: v })} />
+          <ModelField label="MOSS · LoRA DMD (vacío = ninguna)" list="lora-list" value={cfg.moss.lora} onChange={(v) => moss({ lora: v })} />
           <ModelField label="MOSS · codificador" list="clip-list" value={cfg.moss.clip} onChange={(v) => moss({ clip: v })} />
           <ModelField label="MOSS · VAE" list="vae-list" value={cfg.moss.vae} onChange={(v) => moss({ vae: v })} />
           <NumberField label="MOSS · pasos" min={1} max={100} value={cfg.moss.steps} onChange={(v) => moss({ steps: v })} />
