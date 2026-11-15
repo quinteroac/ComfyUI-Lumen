@@ -256,6 +256,18 @@ export function ComfySettings() {
       </div>
 
       <div className="card">
+        <h2>Estilos (--sref)</h2>
+        <p className="hint" style={{ marginBottom: 12 }}>
+          Cada código --sref elige al azar (siempre los mismos para el mismo código) estilos de la lista del pack Style Code de cada modelo y los mezcla con pesos; varios códigos se mezclan entre sí (--sref 123 456::0.5) y --sref random elige uno. --sw 100 es la fuerza 1.5 del nodo. Solo se aplica al Imaginar y al Prompt de imagen, no a las ediciones.
+        </p>
+        <div className="form-grid">
+          <NumberField label="Estilos por código (H3, MOSS)" min={1} max={8} value={cfg.styleCodes.styles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, styles: v } })} />
+          <NumberField label="Anima · estilos por código" min={0} max={8} value={cfg.styleCodes.animaStyles} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaStyles: v } })} />
+          <NumberField label="Anima · artistas por código" min={0} max={8} value={cfg.styleCodes.animaArtists} onChange={(v) => setConfig({ styleCodes: { ...cfg.styleCodes, animaArtists: v } })} />
+        </div>
+      </div>
+
+      <div className="card">
         <h2>Tamaños</h2>
         <div className="form-grid">
           <NumberField label="Megapíxeles en borrador (--draft)" min={0.25} max={4} step={0.25} value={cfg.draftMegapixels} onChange={(v) => setConfig({ draftMegapixels: v })} />

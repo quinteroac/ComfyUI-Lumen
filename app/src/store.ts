@@ -588,6 +588,8 @@ export function runAction(action: ActionKind, opts: ActionOptions = {}): Job[] {
   let text = opts.prompt ?? src?.rawPrompt ?? '';
   if (opts.extraParams) text = `${text} ${opts.extraParams}`;
   if (action !== 'describe' && action !== 'extend') text = resolvePersonalization(text);
+  // --sref random becomes a code, so Repeat and Use keep the same styles (as on the original).
+  text = text.replace(/(--sref\s+(?:[^-\s]+\s+)*?)random\b/gi, (_m, head: string) => `${head}${1 + Math.floor(Math.random() * 4294967295)}`);
   const prompts = expandPermutations(text);
   if (prompts.length > 1) toast(`${prompts.length} prompts por permutación.`);
   const jobs: Job[] = [];
@@ -835,6 +837,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
     );
     texts.push(...out.texts);
     if (job.action === 'describe') continue;
+    // The only text of a built-in generation is the list of styles its --sref codes mixed.
+    if (!enhanced && !custom && out.texts.length && n === 0) updateJob(job.id, { styleList: out.texts[0] }, false);
     if (enhanced && !inputs.caption) {
       if (!out.texts.length) throw new Error('El mejorador de prompt no escribió la descripción (H3 solo habría copiado el lienzo). Vuelve a intentarlo.');
       inputs.caption = out.texts[0];

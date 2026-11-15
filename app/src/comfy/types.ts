@@ -192,6 +192,8 @@ export interface Job {
   images: JobImage[];
   /** Describe results. */
   texts?: string[];
+  /** Styles the --sref codes mixed, one per line with its weight. */
+  styleList?: string;
   folderId?: string;
   /** Job + image index this one came from (vary/upscale/...). */
   parent?: { jobId: string; index: number };

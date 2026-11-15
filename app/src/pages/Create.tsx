@@ -132,6 +132,7 @@ function JobRow({ job }: { job: Job }) {
       )}
       <div className="job-side">
         <p className="job-prompt">{job.rawPrompt || job.prompt}</p>
+        {job.styleList && <p className="hint job-styles">Estilos: {job.styleList.split('\n').join(' · ')}</p>}
         {!!job.refs?.length && (
           <div className="job-refs">
             {job.refs.map((r, k) => (

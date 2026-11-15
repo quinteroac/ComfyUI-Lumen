@@ -2,7 +2,6 @@
 // ({a, b}), repeat (--r) and multi-prompt weights (a::2 b).
 import type { CreateSettings, Motion } from './comfy/types';
 import type { Engine } from './comfy/config';
-import { styleByCode } from './styles';
 
 export interface ParsedPrompt {
   /** Text without parameters, with multi-prompt weights turned into ComfyUI (text:weight) syntax. */
@@ -23,8 +22,6 @@ export interface ParsedPrompt {
   sref?: string;
   /** --p: moodboard IDs / codes ("default" for a bare --p). */
   profiles?: string[];
-  /** Style words added by --sref codes. */
-  styleWords: string;
   /** --anima / --moss: Imagine with Anima or MOSS Image instead of H3 Image. */
   engine: Engine;
   /** Parameters as written, for display. */
@@ -116,7 +113,6 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
     tile: false,
     video: false,
     loop: false,
-    styleWords: '',
     engine: 'h3',
     params: [],
   };
@@ -210,15 +206,9 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
       case 'sw':
         r.styleWeight = clamp(Number(val), 0, 1000);
         break;
-      case 'sref': {
+      case 'sref':
         r.sref = val;
-        const words = val
-          .split(/\s+/)
-          .map((c) => styleByCode(c)?.words)
-          .filter(Boolean);
-        r.styleWords = words.join(', ');
         break;
-      }
       case 'p':
       case 'profile':
       case 'personalize':
@@ -234,7 +224,7 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
   const plain = body.replace(/\s+/g, ' ').trim();
   const w = applyWeights(plain);
   r.plain = plain;
-  r.prompt = [w.positive, r.styleWords].filter(Boolean).join(', ');
+  r.prompt = w.positive;
   r.negative = [...negatives, w.negative].filter(Boolean).join(', ');
   return r;
 }

@@ -16,6 +16,8 @@ export interface ComfyConfig {
   /** Anima (--anima) and MOSS Image (--moss), each with its turbo LoRA: Imagine only, every edit runs on H3 Image. */
   anima: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
   moss: EngineSizes & { unet: string; lora: string; clip: string; vae: string; steps: number; cfg: number; sampler: string; scheduler: string; negative: string };
+  /** Styles each --sref code mixes (Style Code nodes); Anima mixes styles and artist tags. */
+  styleCodes: { styles: number; animaStyles: number; animaArtists: number };
   /** Megapixels of draft images (--draft) and of Upscale. */
   draftMegapixels: number;
   upscaleMegapixels: number;
@@ -61,6 +63,7 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     sd: 1,
     hd: 4,
   },
+  styleCodes: { styles: 4, animaStyles: 2, animaArtists: 2 },
   draftMegapixels: 0.5,
   upscaleMegapixels: 16,
   workflows: {},
@@ -78,6 +81,7 @@ function load(): ComfyConfig {
     h3: { ...DEFAULT_CONFIG.h3, ...s.h3 },
     anima: { ...DEFAULT_CONFIG.anima, ...s.anima },
     moss: { ...DEFAULT_CONFIG.moss, ...s.moss },
+    styleCodes: { ...DEFAULT_CONFIG.styleCodes, ...s.styleCodes },
   };
 }
 

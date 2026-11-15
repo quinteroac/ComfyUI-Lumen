@@ -13,6 +13,8 @@ export type ApiWorkflow = Record<string, { class_type: string; inputs: Record<st
 
 type Link = [string, number];
 
+type Graph = ReturnType<typeof graph>;
+
 function graph() {
   const wf: ApiWorkflow = {};
   const add = (class_type: string, inputs: Record<string, unknown>): Link => {
@@ -88,10 +90,35 @@ function startStep(sigmas: string, denoise: number) {
 const IMG2IMG: ActionKind[] = ['vary_subtle', 'vary_strong', 'remix', 'upscale_subtle', 'upscale_creative'];
 const FILL: ActionKind[] = ['edit', 'zoom_out', 'pan'];
 
-function h3Workflow(i: JobInputs, c: ComfyConfig['h3']): ApiWorkflow {
+const STYLE_NODE = { h3: 'MiniMaxH3StyleCode', moss: 'MOSSStyleCode', anima: 'AnimaStyleCode' } as const;
+const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
+
+/** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
+    --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
+function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: ComfyConfig['styleCodes']): Link {
+  const codes = (i.sref ?? '').split(/[\s,]+/).filter((t) => /^\d+(::-?\d*\.?\d+)?$/.test(t));
+  if (!codes.length || !GENERATION.includes(i.action)) return model;
+  const [first, ...mix] = codes;
+  const styled = add(STYLE_NODE[i.engine], {
+    model,
+    clip,
+    code: Number(first.split('::')[0]),
+    mix: mix.join(', '),
+    strength: Math.min(4, (1.5 * (i.style_weight ?? 100)) / 100),
+    bypass: false,
+    ...(i.engine === 'anima'
+      ? { styles_per_code: s.animaStyles, artists_per_code: s.animaArtists, artist_pool: 5000 }
+      : { styles_per_code: s.styles }),
+    ...(i.engine === 'h3' ? { max_strength: 4 } : {}),
+  });
+  add('PreviewAny', { source: out(styled, 1) });
+  return styled;
+}
+
+function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['styleCodes']): ApiWorkflow {
   const { wf, add } = graph();
-  const model = add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' });
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
+  const model = styleCode(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' }), clip, styles);
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
@@ -147,6 +174,7 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
   if (e.lora) model = add('LoraLoaderModelOnly', { model, lora_name: e.lora, strength_model: 1 });
   const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });
+  model = styleCode(add, i, model, clip, c.styleCodes);
   const vae = add('VAELoader', { vae_name: e.vae });
   const latent = add(engine === 'anima' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: i.width, height: i.height, batch_size: 1 });
   const sampled = add('KSampler', {
@@ -177,7 +205,7 @@ export function builtInWorkflow(i: JobInputs): ApiWorkflow {
       throw new Error('«Describir» necesita un workflow propio que devuelva texto (por ejemplo con Florence2 o JoyCaption). Añádelo en la página ComfyUI.');
   }
   const c = getConfig();
-  return i.engine === 'h3' ? h3Workflow(i, c.h3) : textToImage(i, i.engine, c);
+  return i.engine === 'h3' ? h3Workflow(i, c.h3, c.styleCodes) : textToImage(i, i.engine, c);
 }
 
 /** Loader inputs whose files must be on the server; ComfyUI's own error lists every file it has. */
