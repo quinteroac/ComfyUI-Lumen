@@ -9,7 +9,7 @@ a fox in a snowy forest --anima --lora anima/ink_00004_1000_steps::0.8
 - Write the file as ComfyUI lists it, with its subfolder. `.safetensors` can be left out.
 - `::weight` sets the strength; the default is 1, and 0 leaves the LoRA out. There is no upper limit.
 - Use `--lora` once for each LoRA: `--lora a::0.6 --lora b`.
-- While you type after `--lora`, the bar lists every matching file, with the current model's folder first (`minimax/` for H3 Image, `anima/`, `moss/`). Use the arrow keys and Tab or Enter to pick one, Esc to close the list.
+- After `--lora`, the bar lists every LoRA in the folder; what you type jumps to the first file that matches. Use the arrow keys and Tab or Enter to pick one, Esc to close the list.
 
 ## Which jobs use it
 

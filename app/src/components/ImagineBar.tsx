@@ -38,15 +38,17 @@ function loraQuery(text: string, caret: number): { from: number; q: string } | n
   return { from: caret - m[1].length, q: m[1] };
 }
 
-/** LoRA files matching every word typed, the current model's folder first; none once a whole name is written. */
-function loraMatches(loras: string[], q: string, text: string): string[] {
+/** Every LoRA file, by path; none once a whole name is written. */
+function loraList(loras: string[], q: string): string[] {
   const typed = q.trim().toLowerCase();
   if (loras.some((name) => name.toLowerCase().replace(/\.safetensors$/, '') === typed)) return [];
-  const words = typed.split(/\s+/).filter(Boolean);
-  const folder = /(^|\s)--anima\b/.test(text) ? 'anima/' : /(^|\s)--moss\b/.test(text) ? 'moss/' : 'minimax/';
-  return loras
-    .filter((name) => words.every((w) => name.toLowerCase().includes(w)))
-    .sort((a, b) => Number(b.startsWith(folder)) - Number(a.startsWith(folder)) || a.localeCompare(b));
+  return [...loras].sort((a, b) => a.localeCompare(b));
+}
+
+/** The first file with every word typed: the list opens there. */
+function firstMatch(list: string[], q: string): number {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  return Math.max(0, list.findIndex((name) => words.every((w) => name.toLowerCase().includes(w))));
 }
 
 const ASPECTS = ['1:2', '9:16', '2:3', '3:4', '4:5', '1:1', '5:4', '4:3', '3:2', '16:9', '2:1'];
@@ -445,13 +447,13 @@ export function ImagineBar() {
   const caretAfter = useRef<number | null>(null);
   const pointer = useRef('');
   const lora = loraQuery(draft, caret);
-  const suggestions = lora && hidden !== draft ? loraMatches(loras, lora.q, draft) : [];
+  const suggestions = lora && hidden !== draft ? loraList(loras, lora.q) : [];
 
   useEffect(() => {
     if (lora && !loras.length) nodeDefs().then((defs) => setLoras(comboOptions(defs, 'LoraLoaderModelOnly', 'lora_name')), () => {});
   }, [!!lora, loras.length]);
 
-  useEffect(() => setPick(0), [lora?.q]);
+  useEffect(() => setPick(firstMatch(suggestions, lora?.q ?? '')), [lora?.q, suggestions.length]);
 
   useEffect(() => {
     if (suggestions.length) document.getElementById(`lora-${pick}`)?.scrollIntoView({ block: 'nearest' });
