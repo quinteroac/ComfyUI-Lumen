@@ -17,9 +17,9 @@ type Graph = ReturnType<typeof graph>;
 
 function graph() {
   const wf: ApiWorkflow = {};
-  const add = (class_type: string, inputs: Record<string, unknown>): Link => {
+  const add = (class_type: string, inputs: Record<string, unknown>, title?: string): Link => {
     const id = String(Object.keys(wf).length + 1);
-    wf[id] = { class_type, inputs };
+    wf[id] = title ? { class_type, inputs, _meta: { title } } : { class_type, inputs };
     return [id, 0];
   };
   return { wf, add };
@@ -39,9 +39,10 @@ function h3Prompt(i: JobInputs): string {
   ].filter(Boolean).join('\n\n');
 }
 
-/* Zoom out, Pan and the Editor go through MiniMax's edit prompt enhancer (the task prompt of MiniMax-H3-Image-PE, as in ComfyUI's
-   H3 Image edit template): H3 Image only redraws the framing when the caption says how small the picture now is and
-   what newly appears around it, which a plain "fill the white border" instruction does not. */
+/* Zoom out, Pan, the Editor and new images with reference pictures go through MiniMax's edit prompt enhancer (the task
+   prompt of MiniMax-H3-Image-PE, as in ComfyUI's H3 Image edit template): H3 Image was trained on its captions. It only
+   redraws the framing when the caption says how small the picture now is and what newly appears around it, and it takes
+   the role of each reference (subject, style) from the caption rather than from a fixed sentence. */
 const PE_SYSTEM =
   'Reason in the thinking section first. The visible final content must be exactly one JSON object with exactly two keys: expanded_caption and aspect_ratio. Every ASCII double quotation mark used as caption content inside expanded_caption must be serialized as the JSON escape sequence \\". Do not output text outside that object.';
 const NEWLY_VISIBLE = 'Describe concretely what newly becomes visible around it on every side (for a person: the rest of the head, the neck, shoulders, body and clothing; for a place: more of the ground, sky, walls and surroundings), and state how small the main subject now is in the frame.';
@@ -68,13 +69,16 @@ function fillInstruction(i: JobInputs): string {
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 const ratio = (w: number, h: number) => `${w / gcd(w, h)}:${h / gcd(w, h)}`;
 
-/** The enhancer's user message: the picture with its ratio, the instruction and the canvas ratio, as its task prompt describes. */
-function peRequest(i: JobInputs): string {
+/** The enhancer's user message: the pictures with their ratios, the instruction and the canvas ratio, as its task prompt describes. */
+function peRequest(i: JobInputs, count: number): string {
   const r = ratio(i.width, i.height);
+  const fill = FILL.includes(i.action);
+  // The Zoom out / Pan / Editor canvas has the ratio of the result; reference pictures their own.
+  const ratios = fill ? [r] : (i.picture_ratios ?? []);
   return [
-    'Reference Image Count: 1 input image(s), labeled <Picture 1> through <Picture 1>.',
-    `Reference Media:\n- <Picture 1> [aspect_ratio ${r}]`,
-    `User Editing Instruction (JSON string): ${JSON.stringify(fillInstruction(i))}`,
+    `Reference Image Count: ${count} input image(s), labeled <Picture 1> through <Picture ${count}>.`,
+    `Reference Media:\n${Array.from({ length: count }, (_, n) => `- <Picture ${n + 1}> [${ratios[n] ? `aspect_ratio ${ratios[n]}` : 'aspect_ratio unavailable'}]`).join('\n')}`,
+    `User Editing Instruction (JSON string): ${JSON.stringify(fill ? fillInstruction(i) : h3Prompt(i))}`,
     `User Aspect Ratio Selection: ${r}`,
     'Apply the instructions above to the supplied inputs and reference images. Output only the required two-field JSON object.',
   ].join('\n');
@@ -92,6 +96,10 @@ const FILL: ActionKind[] = ['edit', 'zoom_out', 'pan'];
 
 const STYLE_NODE = { h3: 'MiniMaxH3StyleCode', moss: 'MOSSStyleCode', anima: 'AnimaStyleCode' } as const;
 const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
+
+/** Built-in H3 jobs whose caption the edit prompt enhancer writes: the fill edits, and new images with reference pictures. */
+export const enhanced = (i: JobInputs) =>
+  i.engine === 'h3' && (FILL.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.style_images?.length ?? 0) > 0));
 
 /** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
     --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
@@ -111,7 +119,7 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
       : { styles_per_code: s.styles }),
     ...(i.engine === 'h3' ? { max_strength: 4 } : {}),
   });
-  add('PreviewAny', { source: out(styled, 1) });
+  add('PreviewAny', { source: out(styled, 1) }, 'styles');
   return styled;
 }
 
@@ -137,12 +145,12 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
   const files = FILL.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
   let prompt: string | Link = i.caption ?? h3Prompt(i);
-  if (FILL.includes(i.action) && !i.caption) {
+  if (enhanced(i) && !i.caption) {
     const caption = add('TextGenerateV2', {
       clip: add('CLIPLoader', { clip_name: c.peClip, type: 'minimax', device: 'default' }),
-      'images.image1': pictures['images.image_1'],
+      ...Object.fromEntries(Object.values(pictures).map((link, n) => [`images.image${n + 1}`, link])),
       system_prompt: `${PE_TASK}\n${PE_SYSTEM}`,
-      prompt: peRequest(i),
+      prompt: peRequest(i, files.length),
       max_length: 8196,
       sampling_mode: 'on',
       'sampling_mode.temperature': 1,
@@ -159,7 +167,7 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
     });
     prompt = add('JsonExtractString', { json_string: caption, key: 'expanded_caption' });
     // The caption comes back as the run's text, so an empty one can be reported instead of shown as a copy of the canvas.
-    add('PreviewAny', { source: prompt });
+    add('PreviewAny', { source: prompt }, 'caption');
   }
   const conditioning = add('MiniMaxH3ImageConditioning', { clip, vae, prompt, width: i.width, height: i.height, ...pictures });
   let sigmas = add('ManualSigmas', { sigmas: c.sigmas });

@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { save, saved as loadFile } from './saved';
 import { getConfig } from './comfy/config';
-import { buildWorkflow, checkWorkflow } from './comfy/workflows';
+import { buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
 import { isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
 import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
 import { ATOM_GROUPS, atomsFromText, learnedWords, type Sample } from './styles';
@@ -466,6 +466,10 @@ export function aspectSize(aspect: string, megapixels: number) {
 
 const megapixelsOf = (w: number, h: number) => (w * h) / PIXELS_PER_MP;
 
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+/** "1024x768" → "4:3", as the edit prompt enhancer wants each picture's shape. */
+const reducedRatio = (w: number, h: number) => (w && h ? `${Math.round(w) / gcd(Math.round(w), Math.round(h))}:${Math.round(h) / gcd(Math.round(w), Math.round(h))}` : '');
+
 const MOTION_WORDS: Record<Motion, string> = {
   low: 'subtle motion, slow gentle camera movement',
   high: 'dynamic motion, fast camera movement, lots of action',
@@ -619,8 +623,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   const inputs = baseInputs(action, parsed, state.draftMode, pictures);
   if (moods.length) {
     const words = moods.map((m) => m.words.trim()).filter(Boolean).join(', ');
-    const w = Math.round((0.6 + (parsed.settings.stylize / 1000) * 0.9) * 100) / 100;
-    if (words && !isVideoAction(action)) inputs.prompt = `${inputs.prompt}, (${words}:${w})`;
+    if (words && !isVideoAction(action)) inputs.prompt = [inputs.prompt, words].filter(Boolean).join(', ');
     inputs.moodboard = moods.map((m) => m.code).join(' ');
     inputs.style_weight = parsed.styleWeight ?? parsed.settings.stylize;
   }
@@ -807,6 +810,7 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
   } else if (srcImg) inputs.image = await toComfyInput(srcImg, `lumen_${job.id}.png`);
   inputs.images = await Promise.all((refs.images ?? []).map((r, n) => toComfyInput(r, `lumen_ip${n + 1}_${job.id}.png`)));
   inputs.style_images = await Promise.all((refs.style ?? []).map((r, n) => toComfyInput(r, `lumen_sref${n + 1}_${job.id}.png`)));
+  inputs.picture_ratios = [...(refs.images ?? []), ...(refs.style ?? [])].map((r) => reducedRatio(r.w, r.h));
   if (!inputs.image) [inputs.image, inputs.image_2] = inputs.images;
   inputs.style_image = inputs.style_images[0];
   if (refs.end && !refs.loop) inputs.end_image = await toComfyInput(refs.end, `lumen_end_${job.id}.png`);
@@ -817,8 +821,8 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
 
   // The grid (and each video) is one ComfyUI run after another, seeds counting up from the job's seed;
   // each result shows as soon as it is ready.
-  // Zoom out, Pan and the Editor: the enhancer writes the caption in the first run; the others reuse it, so the grid differs only by seed.
-  const enhanced = FILL_ACTIONS.includes(job.action) && !custom;
+  // The enhancer writes the caption in the first run; the others reuse it, so the grid differs only by seed.
+  const withCaption = !custom && enhanced(inputs);
   const runs = job.action === 'describe' ? 1 : inputs.batch;
   const images: JobImage[] = [];
   const texts: string[] = [];
@@ -837,11 +841,10 @@ async function runComfy(job: Job, srcImg: JobImage | undefined, refs: JobRefs, s
     );
     texts.push(...out.texts);
     if (job.action === 'describe') continue;
-    // The only text of a built-in generation is the list of styles its --sref codes mixed.
-    if (!enhanced && !custom && out.texts.length && n === 0) updateJob(job.id, { styleList: out.texts[0] }, false);
-    if (enhanced && !inputs.caption) {
-      if (!out.texts.length) throw new Error('El mejorador de prompt no escribió la descripción (H3 solo habría copiado el lienzo). Vuelve a intentarlo.');
-      inputs.caption = out.texts[0];
+    if (n === 0 && out.titled.styles) updateJob(job.id, { styleList: out.titled.styles }, false);
+    if (withCaption && !inputs.caption) {
+      if (!out.titled.caption) throw new Error('El mejorador de prompt no escribió la descripción. Vuelve a intentarlo.');
+      inputs.caption = out.titled.caption;
       updateJob(job.id, { inputs: { ...inputs } }, false);
     }
     if (!out.files.length) throw new Error(`El workflow terminó sin ${video ? 'vídeo' : 'imágenes'}. ¿Tiene un nodo que guarde el resultado (SaveImage, SaveAnimatedWEBP, SaveVideo…)?`);

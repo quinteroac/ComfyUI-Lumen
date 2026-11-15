@@ -116,17 +116,29 @@ export interface RunResult {
   files: ImageRef[];
   /** Text outputs (e.g. captions from a Describe workflow: ShowText / PreviewAny nodes). */
   texts: string[];
+  /** Text of the nodes the workflow titled (_meta.title), e.g. the built-in "caption" and "styles". */
+  titled: Record<string, string>;
 }
 
-function textsFrom(entry: History[string]): string[] {
+function nodeTexts(node: NodeOutput): string[] {
   const out: string[] = [];
   const add = (v: unknown) => {
     if (typeof v === 'string' && v.trim()) out.push(v.trim());
     else if (Array.isArray(v)) v.forEach(add);
   };
-  for (const node of Object.values(entry.outputs ?? {})) {
-    add(node.text);
-    add(node.string);
+  add(node.text);
+  add(node.string);
+  return out;
+}
+
+const textsFrom = (entry: History[string]) => Object.values(entry.outputs ?? {}).flatMap(nodeTexts);
+
+function titledFrom(entry: History[string], workflow: ApiWorkflow): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [id, node] of Object.entries(entry.outputs ?? {})) {
+    const title = workflow[id]?._meta?.title;
+    const text = nodeTexts(node)[0];
+    if (title && text) out[title] = text;
   }
   return out;
 }
@@ -178,7 +190,7 @@ export async function runWorkflow(workflow: ApiWorkflow, cb: RunCallbacks = {}, 
       window.clearInterval(poll);
       ws?.close();
       if (err) reject(err);
-      else resolve(result ?? { files: [], texts: [] });
+      else resolve(result ?? { files: [], texts: [], titled: {} });
     };
 
     const checkHistory = async () => {
@@ -190,7 +202,7 @@ export async function runWorkflow(workflow: ApiWorkflow, cb: RunCallbacks = {}, 
           const msg = entry.status.messages?.find((m) => m[0] === 'execution_error')?.[1]?.exception_message;
           finish(new Error(msg ? `Error en ComfyUI: ${msg}` : 'ComfyUI falló al ejecutar el workflow.'));
         } else if (entry.status?.completed || entry.outputs) {
-          finish(undefined, { files: imagesFrom(entry), texts: textsFrom(entry) });
+          finish(undefined, { files: imagesFrom(entry), texts: textsFrom(entry), titled: titledFrom(entry, workflow) });
         }
       } catch {
         /* keep trying */

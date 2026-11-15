@@ -113,6 +113,8 @@ export interface JobInputs {
   /** Every image prompt and every style reference, in the order they were added. */
   images?: string[];
   style_images?: string[];
+  /** W:H of each of those pictures, in the same order (image prompts, then style references). */
+  picture_ratios?: string[];
   image_weight?: number;
   /** First style reference. */
   style_image?: string;
