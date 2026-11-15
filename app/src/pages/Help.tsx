@@ -24,7 +24,7 @@ const PARAMS: [string, string, string][] = [
 ];
 
 const DONE = [
-  'Explorar: Para ti, Aleatorio, En tendencia, Top (hoy/semana/mes), Me gusta, búsqueda, imágenes y vídeos',
+  'Explorar: tu galería de imágenes y vídeos (recientes, aleatorio, me gusta, búsqueda por prompt) y estilos --sref',
   'Explorador de estilos: códigos --sref con vista previa real (H3, prompt de vista previa configurable) y la mezcla de estilos de cada uno; descubrir, me gusta, usados, probar y copiar --sref',
   'Atajos al pasar el ratón: usar imagen, usar prompt, buscar parecidas, me gusta',
   'Barra de imaginar: prompt de imagen, referencia de estilo, fotograma inicial y final, bucle, describir, fijar imágenes',

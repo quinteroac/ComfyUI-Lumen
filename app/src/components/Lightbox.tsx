@@ -15,7 +15,6 @@ import {
   setTrashed,
   startPending,
   toast,
-  toggleExploreLike,
   toggleLike,
   useStore,
   type ActionOptions,
@@ -186,7 +185,7 @@ function FolderMenu({ item, onClose }: { item: LbItem; onClose: () => void }) {
 function Panel({ item, job }: { item: LbItem; job?: Job }) {
   const [menu, setMenu] = useState<'more' | 'folder' | null>(null);
   const isVideo = item.img.kind === 'video';
-  const liked = useStore((s) => (item.exploreId ? s.likedExplore.includes(item.exploreId) : !!s.jobs.find((j) => j.id === item.jobId)?.images[item.index ?? 0]?.liked));
+  const liked = useStore((s) => !!s.jobs.find((j) => j.id === item.jobId)?.images[item.index ?? 0]?.liked);
   const source = item.jobId !== undefined ? { jobId: item.jobId, index: item.index ?? 0 } : undefined;
   const opts = (): ActionOptions => (source ? { source } : { image: item.img, prompt: item.prompt });
   const act = (action: ActionKind, extra: Partial<ActionOptions> = {}) => go(runAction(action, { ...opts(), ...extra }));
@@ -216,7 +215,7 @@ function Panel({ item, job }: { item: LbItem; job?: Job }) {
         <div className="lb-top">
           <p className="lb-prompt">{rawPrompt}</p>
           <div className="lb-tools">
-            <button className={`icon-btn${liked ? ' on' : ''}`} aria-label="Me gusta" aria-pressed={liked} onClick={() => (item.exploreId ? toggleExploreLike(item.exploreId) : item.jobId && toggleLike(item.jobId, item.index ?? 0))}>
+            <button className={`icon-btn${liked ? ' on' : ''}`} aria-label="Me gusta" aria-pressed={liked} onClick={() => item.jobId && toggleLike(item.jobId, item.index ?? 0)}>
               <IconHeart size={18} filled={liked} />
             </button>
             <button className="icon-btn" aria-label="Descargar" onClick={download}>

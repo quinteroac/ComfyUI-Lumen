@@ -15,7 +15,7 @@ import {
   togglePersonalization,
   useStore,
 } from '../store';
-import { thumbDataUrl } from '../demo';
+import { thumbDataUrl } from '../images';
 import type { BoardImage, Moodboard } from '../comfy/types';
 import { navigate } from '../router';
 
@@ -98,7 +98,7 @@ function GalleryPicker({ onPick, onClose }: { onPick: (imgs: NewImage[]) => void
                 } catch {
                   /* cross-origin: keep the link */
                 }
-                out.push({ ...small, ref: img.ref, demo: img.demo });
+                out.push({ ...small, ref: img.ref });
               }
               onPick(out);
               onClose();

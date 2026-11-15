@@ -137,7 +137,7 @@ export interface JobInputs {
 }
 
 export interface JobImage {
-  /** URL that shows the image (ComfyUI /view, or a data URL for Explore samples). */
+  /** URL that shows the image (ComfyUI /view, or a data URL for uploads and moodboard copies). */
   url: string;
   /** ComfyUI file reference, so later actions can reuse it. */
   ref?: { filename: string; subfolder: string; type: string };
@@ -150,8 +150,6 @@ export interface JobImage {
   kind?: 'image' | 'video';
   /** Number of times a video was extended. */
   extended?: number;
-  /** Drawing recipe of the Explore, Style Creator and Personalize samples. */
-  demo?: { key: number; layers: { seed: number; jitter: number }[]; frame?: { l: number; r: number; t: number; b: number }; motion?: Motion };
 }
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'error' | 'cancelled';
@@ -165,7 +163,6 @@ export interface RefImage {
   name: string;
   blob?: Blob;
   ref?: JobImage['ref'];
-  demo?: JobImage['demo'];
 }
 
 export interface JobRefs {
@@ -224,7 +221,6 @@ export interface BoardImage {
   w: number;
   h: number;
   ref?: JobImage['ref'];
-  demo?: JobImage['demo'];
 }
 
 export interface Moodboard {

@@ -446,7 +446,7 @@ export function ImagineBar() {
   };
 
   const describe = (img: Omit<RefImage, 'id'>) => {
-    const jobs = runAction('describe', { image: { url: img.url, w: img.w, h: img.h, ref: img.ref, demo: img.demo } });
+    const jobs = runAction('describe', { image: { url: img.url, w: img.w, h: img.h, ref: img.ref } });
     if (jobs.length && route !== 'imagine') navigate('imagine');
   };
 

@@ -8,7 +8,7 @@ import { buildWorkflow, checkWorkflow, enhanced } from './comfy/workflows';
 import { isVideoFile, nodeDefs, reuseOutputAsInput, runWorkflow, uploadImage, viewUrl, type ImageRef } from './comfy/client';
 import type { ActionKind, BoardImage, ChatTurn, CreateSettings, Folder, FolderGroup, Job, JobImage, JobInputs, JobRefs, Moodboard, MoodSnapshot, Motion, PanDir, Profile, RefImage } from './comfy/types';
 import { DEFAULT_SETTINGS, isVideoAction } from './comfy/types';
-import { hash, toPngBlob } from './demo';
+import { hash, toPngBlob } from './images';
 import { expandPermutations, parsePrompt, type ParsedPrompt } from './prompt';
 import { navigate } from './router';
 import { assist, type AssistantResult } from './assistant';
@@ -57,7 +57,6 @@ interface State {
   chat: ChatTurn[];
   editor?: EditorTarget;
   toasts: { id: number; text: string; kind: 'info' | 'error' }[];
-  likedExplore: string[];
   likedStyles: string[];
 }
 
@@ -85,7 +84,6 @@ function load(): State {
     conversational: false,
     chat: [],
     toasts: [],
-    likedExplore: [],
     likedStyles: [],
   };
   const saved = loadFile<SavedState>('state');
@@ -98,7 +96,6 @@ function load(): State {
     ...fresh,
     jobs,
     settings: { ...DEFAULT_SETTINGS, ...saved.settings },
-    likedExplore: saved.likedExplore ?? [],
     likedStyles: saved.likedStyles ?? [],
     folders: saved.folders ?? [],
     folderGroups: saved.folderGroups ?? [],
@@ -111,13 +108,12 @@ function load(): State {
   };
 }
 
-type SavedState = Partial<Pick<State, 'jobs' | 'settings' | 'likedExplore' | 'likedStyles' | 'folders' | 'folderGroups' | 'moodboards' | 'moodCodes' | 'personalization' | 'profiles' | 'conversational' | 'draftMode'>>;
+type SavedState = Partial<Pick<State, 'jobs' | 'settings' | 'likedStyles' | 'folders' | 'folderGroups' | 'moodboards' | 'moodCodes' | 'personalization' | 'profiles' | 'conversational' | 'draftMode'>>;
 
 function persist() {
   const data: SavedState = {
     jobs: state.jobs,
     settings: state.settings,
-    likedExplore: state.likedExplore,
     likedStyles: state.likedStyles,
     folders: state.folders,
     folderGroups: state.folderGroups,
@@ -173,8 +169,6 @@ const uid = (p: string) => `${p}${Date.now().toString(36)}${Math.random().toStri
 export const setDraft = (draft: string) => set({ draft }, false);
 export const setSettings = (p: Partial<CreateSettings>) => set({ settings: { ...state.settings, ...p } });
 export const toggleDraftMode = () => set({ draftMode: !state.draftMode });
-export const toggleExploreLike = (id: string) =>
-  set({ likedExplore: state.likedExplore.includes(id) ? state.likedExplore.filter((x) => x !== id) : [...state.likedExplore, id] });
 /** Liking a style code also teaches your Global Profile (as on the original). */
 export const toggleStyleLike = (code: string) => {
   const liking = !state.likedStyles.includes(code);
@@ -443,7 +437,7 @@ export function removeRef(slot: RefSlot, id?: string) {
 export const clearRefs = () => set({ refs: EMPTY_REFS, pending: undefined }, false);
 export const setLoop = (loop: boolean) => set({ refs: { ...state.refs, loop } }, false);
 export const toggleRefsLock = () => set({ refsLocked: !state.refsLocked }, false);
-export const imageToRef = (img: JobImage, name = `img_${Date.now()}.png`): Omit<RefImage, 'id'> => ({ url: img.url, w: img.w, h: img.h, name, ref: img.ref, demo: img.demo });
+export const imageToRef = (img: JobImage, name = `img_${Date.now()}.png`): Omit<RefImage, 'id'> => ({ url: img.url, w: img.w, h: img.h, name, ref: img.ref });
 
 /** Remix / Extend manual: put the image in the bar with its prompt, ready to edit. */
 export function startPending(p: Pending) {
@@ -581,7 +575,7 @@ export function submitBar(keepPrompt = false): Job[] {
 }
 
 function refToImage(r: RefImage): JobImage {
-  return { url: r.url, w: r.w, h: r.h, ref: r.ref, demo: r.demo };
+  return { url: r.url, w: r.w, h: r.h, ref: r.ref };
 }
 
 /**
@@ -617,7 +611,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
   const moods = (parsed.profiles ?? []).map((c) => state.moodCodes[c]).filter(Boolean);
   if (moods.length && !refs.style?.length) {
     const imgs = moods.flatMap((m) => m.images).slice(0, 4);
-    refs = { ...refs, style: imgs.map((b) => ({ id: b.id, url: b.url, w: b.w, h: b.h, name: `${b.id}.png`, ref: b.ref, demo: b.demo })) };
+    refs = { ...refs, style: imgs.map((b) => ({ id: b.id, url: b.url, w: b.w, h: b.h, name: `${b.id}.png`, ref: b.ref })) };
   }
   // Pictures need H3 Image, except a character on Anima, which SnapRef takes.
   const pictures = !!(refs.images?.length || refs.style?.length || (refs.character?.length && parsed.engine !== 'anima'));

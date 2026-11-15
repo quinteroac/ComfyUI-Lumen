@@ -7,8 +7,6 @@ export interface LbItem {
   /** Present when the image is one of your jobs. */
   jobId?: string;
   index?: number;
-  /** Present for gallery (Explore) images. */
-  exploreId?: string;
   meta?: string[];
 }
 

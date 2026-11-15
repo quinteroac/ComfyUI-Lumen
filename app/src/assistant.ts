@@ -3,7 +3,7 @@
 // vertical", "cambia el gato por un perro", "variación de la imagen 2").
 // Runs in the browser with simple language rules; a ComfyUI workflow with an
 // LLM can replace it (Ajustes de ComfyUI → «Modo conversacional»).
-import { hash } from './demo';
+import { hash } from './images';
 
 export type ImageAction = 'vary_subtle' | 'vary_strong' | 'upscale_subtle' | 'animate';
 

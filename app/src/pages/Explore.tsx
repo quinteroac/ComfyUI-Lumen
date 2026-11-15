@@ -1,107 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { artUrl, hash } from '../demo';
 import { IconCopy, IconHeart, IconImage, IconSearch } from '../icons';
 import { openLightbox, type LbItem } from '../lightbox';
-import { addRef, getState, imageToRef, runAction, setDraft, toast, toggleExploreLike, toggleStyleLike, useStore } from '../store';
+import { addRef, getState, imageToRef, runAction, setDraft, toast, toggleLike, toggleStyleLike, useStore } from '../store';
+import { jobItems } from './Create';
 import { Media, VideoBadge } from '../components/Media';
 import { navigate, useQueryParam } from '../router';
 import { previewKey, randomCode, requestPreview, styleLabels, styleTitle, usePreviews, type StylePreview } from '../stylePreviews';
 import { useConfig } from '../useConfig';
 import type { Job } from '../comfy/types';
 
-const SUBJECTS = [
-  'un faro solitario bajo una aurora violeta',
-  'retrato de una astronauta con flores en el casco',
-  'ciudad flotante entre nubes al atardecer',
-  'bosque de cristal iluminado por luciérnagas',
-  'zorro de papel origami en la nieve',
-  'mercado nocturno con farolillos de neón',
-  'ballena volando sobre un desierto rosa',
-  'biblioteca infinita con escaleras en espiral',
-  'jardín japonés en miniatura dentro de una botella',
-  'tren de vapor cruzando montañas de colores',
-  'cafetería acogedora en un día de lluvia',
-  'templo antiguo cubierto de musgo',
-  'gato samurái meditando bajo cerezos',
-  'arrecife de coral con medusas brillantes',
-  'casa en un árbol gigante al amanecer',
-  'paisaje lunar con dos soles',
-  'bailarina hecha de humo y luz',
-  'isla flotante con cascadas',
-  'robot jardinero cuidando girasoles',
-  'catedral gótica de hielo',
-];
-const STYLES = [
-  'pintura al óleo, luz dorada',
-  'fotografía analógica, grano de película',
-  'ilustración minimalista, colores planos',
-  'acuarela suave',
-  'render cinematográfico, niebla volumétrica',
-  'estilo grabado vintage',
-  'arte digital, alto contraste',
-  'pastel, luz difusa',
-];
-const RATIOS: [number, number][] = [
-  [1, 1],
-  [2, 3],
-  [3, 2],
-  [4, 5],
-  [9, 16],
-  [16, 9],
-  [3, 4],
-];
-
-interface ExploreItem extends LbItem {
-  exploreId: string;
-  /** Days ago. */
-  age: number;
-  likes: number;
-}
-
-function buildVideos(): ExploreItem[] {
-  return Array.from({ length: 16 }, (_, i) => {
-    const subject = SUBJECTS[(i * 11 + 3) % SUBJECTS.length];
-    const style = STYLES[(i * 5 + 1) % STYLES.length];
-    const [a, b] = ([[16, 9], [9, 16], [1, 1], [4, 5]] as [number, number][])[i % 4];
-    const w = Math.round((576 * Math.sqrt(a / b)) / 16) * 16;
-    const h = Math.round((576 * Math.sqrt(b / a)) / 16) * 16;
-    const motion = i % 3 === 0 ? 'high' : 'low';
-    const key = hash(subject + style + 'v');
-    const layers = [{ seed: i * 977 + 3, jitter: 1 }];
-    return {
-      exploreId: `v${i}`,
-      prompt: `${subject}, ${style} --motion ${motion}`,
-      age: (i * 5) % 31,
-      likes: (hash(`v${i}`) % 900) + 20,
-      meta: [`${a}:${b}`, 'vídeo', motion === 'high' ? 'movimiento alto' : 'movimiento bajo'],
-      img: { url: artUrl({ key, layers, w, h, motion }), w, h, kind: 'video' as const, demo: { key, layers, motion } },
-    };
-  });
-}
-
-function buildGallery(): ExploreItem[] {
-  return Array.from({ length: 40 }, (_, i) => {
-    const subject = SUBJECTS[(i * 7) % SUBJECTS.length];
-    const style = STYLES[(i * 3) % STYLES.length];
-    const [a, b] = RATIOS[(i * 5 + 2) % RATIOS.length];
-    const w = Math.round((1024 * Math.sqrt(a / b)) / 64) * 64;
-    const h = Math.round((1024 * Math.sqrt(b / a)) / 64) * 64;
-    const key = hash(subject + style);
-    const layers = [{ seed: i * 131 + 7, jitter: 1 }];
-    return {
-      exploreId: `e${i}`,
-      prompt: `${subject}, ${style} --ar ${a}:${b}`,
-      age: (i * 3) % 31,
-      likes: (hash(`e${i}`) % 2000) + 10,
-      meta: [`${a}:${b}`, 'galería'],
-      img: { url: artUrl({ key, layers, w, h }), w, h, demo: { key, layers } },
-    };
-  });
-}
-
-type View = 'foryou' | 'random' | 'hot' | 'top' | 'likes';
+type View = 'recent' | 'random' | 'likes';
 type Kind = 'images' | 'videos' | 'styles';
-type Period = 'day' | 'week' | 'month';
 
 const words = (t: string) => t.toLowerCase().replace(/--\S+(\s+\S+)?/g, ' ').split(/[^a-záéíóúñü]+/).filter((w) => w.length > 3);
 
@@ -116,8 +25,15 @@ function shuffle<T>(arr: T[], seed: number): T[] {
   return a;
 }
 
-function Tile({ it, items, i }: { it: ExploreItem; items: ExploreItem[]; i: number }) {
-  const liked = useStore((s) => s.likedExplore.includes(it.exploreId));
+/** Every finished image or video of yours, newest first, with what the lightbox needs to act on it. */
+function myItems(jobs: Job[]): (LbItem & { key: string; createdAt: number })[] {
+  return jobs
+    .filter((j) => j.status === 'done' && j.action !== 'describe')
+    .flatMap((job) => jobItems(job).map((it) => ({ ...it, prompt: job.rawPrompt || job.prompt, key: `${job.id}:${it.index}`, createdAt: job.createdAt })));
+}
+
+function Tile({ it, items, i }: { it: LbItem; items: LbItem[]; i: number }) {
+  const liked = !!it.img.liked;
   return (
     <div className="tile" role="button" tabIndex={0} onClick={() => openLightbox(items, i)} onKeyDown={(e) => e.key === 'Enter' && openLightbox(items, i)}>
       <Media img={it.img} alt={it.prompt} />
@@ -149,7 +65,7 @@ function Tile({ it, items, i }: { it: ExploreItem; items: ExploreItem[]; i: numb
         <button className="icon-btn" aria-label="Buscar parecidas" title="Buscar parecidas" onClick={() => navigate('explore', { q: words(it.prompt).slice(0, 2).join(' ') })}>
           <IconSearch size={16} />
         </button>
-        <button className={`icon-btn${liked ? ' on' : ''}`} aria-label={liked ? 'Quitar me gusta' : 'Me gusta'} onClick={() => toggleExploreLike(it.exploreId)}>
+        <button className={`icon-btn${liked ? ' on' : ''}`} aria-label={liked ? 'Quitar me gusta' : 'Me gusta'} onClick={() => it.jobId && toggleLike(it.jobId, it.index ?? 0)}>
           <IconHeart size={16} filled={liked} />
         </button>
       </div>
@@ -306,33 +222,21 @@ function Styles({ q }: { q: string }) {
 }
 
 export function Explore() {
-  const gallery = useMemo(buildGallery, []);
-  const videos = useMemo(buildVideos, []);
-  const liked = useStore((s) => s.likedExplore);
-  const myJobs = useStore((s) => s.jobs);
+  const jobs = useStore((s) => s.jobs);
   const urlQ = useQueryParam('q');
-  const [view, setView] = useState<View>('foryou');
+  const [view, setView] = useState<View>('recent');
   const [kind, setKind] = useState<Kind>('images');
-  const [period, setPeriod] = useState<Period>('week');
   const [q, setQ] = useState(urlQ);
   const [seed, setSeed] = useState(() => Date.now() % 100000);
   useEffect(() => setQ(urlQ), [urlQ]);
 
   const items = useMemo(() => {
-    const pool = kind === 'videos' ? videos : gallery;
-    let list = pool;
-    if (view === 'foryou') {
-      // Based on what you like and create.
-      const taste = new Set([...pool.filter((g) => liked.includes(g.exploreId)).flatMap((g) => words(g.prompt)), ...myJobs.slice(0, 30).flatMap((j) => words(j.prompt))]);
-      list = [...pool].sort((a, b) => words(b.prompt).filter((w) => taste.has(w)).length - words(a.prompt).filter((w) => taste.has(w)).length || b.likes - a.likes);
-    } else if (view === 'random') list = shuffle(pool, seed);
-    else if (view === 'hot') list = [...pool].sort((a, b) => b.likes / (b.age + 2) - a.likes / (a.age + 2));
-    else if (view === 'top') list = pool.filter((g) => g.age <= { day: 1, week: 7, month: 31 }[period]).sort((a, b) => b.likes - a.likes);
-    else if (view === 'likes') list = [...gallery, ...videos].filter((g) => liked.includes(g.exploreId));
+    const pool = myItems(jobs).filter((it) => (kind === 'videos') === (it.img.kind === 'video'));
+    let list = view === 'random' ? shuffle(pool, seed) : view === 'likes' ? pool.filter((it) => it.img.liked) : pool;
     const t = q.trim().toLowerCase();
     if (t) list = list.filter((g) => t.split(/\s+/).every((w) => g.prompt.toLowerCase().includes(w)));
     return list;
-  }, [gallery, videos, kind, view, period, seed, q, liked, myJobs]);
+  }, [jobs, kind, view, seed, q]);
 
   return (
     <section aria-label="Explorar">
@@ -341,10 +245,8 @@ export function Explore() {
           {kind !== 'styles' &&
             (
               [
-                ['foryou', 'Para ti'],
+                ['recent', 'Recientes'],
                 ['random', 'Aleatorio'],
-                ['hot', 'En tendencia'],
-                ['top', 'Top'],
                 ['likes', 'Me gusta'],
               ] as [View, string][]
             ).map(([k, label]) => (
@@ -361,13 +263,6 @@ export function Explore() {
                 {label}
               </button>
             ))}
-          {kind !== 'styles' && view === 'top' && (
-            <select className="select-small" value={period} onChange={(e) => setPeriod(e.target.value as Period)} aria-label="Periodo">
-              <option value="day">Hoy</option>
-              <option value="week">Esta semana</option>
-              <option value="month">Este mes</option>
-            </select>
-          )}
         </div>
         <div className="row">
           <label className="search">
@@ -393,13 +288,13 @@ export function Explore() {
         <Styles q={q} />
       ) : items.length === 0 ? (
         <div className="empty">
-          <h2>{view === 'likes' ? 'Aún no te gusta nada' : 'Sin resultados'}</h2>
-          <p>{view === 'likes' ? 'Pulsa el corazón en cualquier imagen o vídeo para guardarlo aquí.' : 'Prueba con otras palabras u otro periodo.'}</p>
+          <h2>{q ? 'Sin resultados' : view === 'likes' ? 'Aún no te gusta nada' : kind === 'videos' ? 'Aún no hay vídeos' : 'Aún no has creado nada'}</h2>
+          <p>{q ? 'Prueba con otras palabras.' : view === 'likes' ? 'Pulsa el corazón en tus imágenes o vídeos para verlos aquí.' : 'Escribe una idea en la barra de arriba: todo lo que crees aparece aquí.'}</p>
         </div>
       ) : (
         <div className="masonry">
           {items.map((it, i) => (
-            <Tile key={it.exploreId} it={it} items={items} i={i} />
+            <Tile key={it.key} it={it} items={items} i={i} />
           ))}
         </div>
       )}
