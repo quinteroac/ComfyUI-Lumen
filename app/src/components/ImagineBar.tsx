@@ -30,19 +30,26 @@ import { navigate, useRoute } from '../router';
 import { locale, t } from '../i18n';
 import { comboOptions, nodeDefs } from '../comfy/client';
 
-/** The --lora name being typed at the caret: where it starts and what is written so far. */
-function loraQuery(text: string, caret: number): { from: number; q: string } | null {
+/** Parameters that name a model file, and where the bar lists their files from. */
+const FILE_PARAMS = {
+  lora: { node: 'LoraLoaderModelOnly', input: 'lora_name' },
+  ck: { node: 'UNETLoader', input: 'unet_name' },
+} as const;
+type FileParam = keyof typeof FILE_PARAMS;
+
+/** The --lora or --ck file name being typed at the caret: where it starts and what is written so far. */
+function fileQuery(text: string, caret: number): { param: FileParam; from: number; q: string } | null {
   const before = text.slice(0, caret);
-  const m = before.match(/(?:^|\s)--lora\s+([^]*)$/);
-  if (!m || /(^|\s)--|::/.test(m[1])) return null;
-  return { from: caret - m[1].length, q: m[1] };
+  const m = before.match(/(?:^|\s)--(lora|ck)\s+([^]*)$/);
+  if (!m || /(^|\s)--|::/.test(m[2])) return null;
+  return { param: m[1] as FileParam, from: caret - m[2].length, q: m[2] };
 }
 
-/** Every LoRA file, by path; none once a whole name is written. */
-function loraList(loras: string[], q: string): string[] {
+/** Every file, by path; none once a whole name is written. */
+function fileList(files: string[], q: string): string[] {
   const typed = q.trim().toLowerCase();
-  if (loras.some((name) => name.toLowerCase().replace(/\.safetensors$/, '') === typed)) return [];
-  return [...loras].sort((a, b) => a.localeCompare(b));
+  if (files.some((name) => name.toLowerCase().replace(/\.safetensors$/, '') === typed)) return [];
+  return [...files].sort((a, b) => a.localeCompare(b));
 }
 
 /** The first file with every word typed: the list opens there. */
@@ -441,37 +448,41 @@ export function ImagineBar() {
   const ta = useRef<HTMLTextAreaElement>(null);
   const route = useRoute();
   const [caret, setCaret] = useState(0);
-  const [loras, setLoras] = useState<string[]>([]);
+  const [files, setFiles] = useState<Partial<Record<FileParam, string[]>>>({});
   const [pick, setPick] = useState(0);
   const [hidden, setHidden] = useState('');
   const caretAfter = useRef<number | null>(null);
   const pointer = useRef('');
-  const lora = loraQuery(draft, caret);
-  const suggestions = lora && hidden !== draft ? loraList(loras, lora.q) : [];
+  const query = fileQuery(draft, caret);
+  const suggestions = query && hidden !== draft ? fileList(files[query.param] ?? [], query.q) : [];
 
   useEffect(() => {
-    if (lora && !loras.length) nodeDefs().then((defs) => setLoras(comboOptions(defs, 'LoraLoaderModelOnly', 'lora_name')), () => {});
-  }, [!!lora, loras.length]);
+    if (!query || files[query.param]) return;
+    const { param } = query;
+    const { node, input } = FILE_PARAMS[param];
+    // --ck lists only the .safetensors diffusion models.
+    nodeDefs().then((defs) => setFiles((f) => ({ ...f, [param]: comboOptions(defs, node, input).filter((name) => param === 'lora' || name.endsWith('.safetensors')) })), () => {});
+  }, [query?.param, files]);
 
-  useEffect(() => setPick(firstMatch(suggestions, lora?.q ?? '')), [lora?.q, suggestions.length]);
+  useEffect(() => setPick(firstMatch(suggestions, query?.q ?? '')), [query?.q, suggestions.length]);
 
   useEffect(() => {
     if (suggestions.length) document.getElementById(`lora-${pick}`)?.scrollIntoView({ block: 'nearest' });
   }, [pick, suggestions.length]);
 
-  // After a picked LoRA the caret goes right after it, before the next key lands.
+  // After a picked file the caret goes right after it, before the next key lands.
   useLayoutEffect(() => {
     if (caretAfter.current === null) return;
     ta.current?.setSelectionRange(caretAfter.current, caretAfter.current);
     caretAfter.current = null;
   }, [draft]);
 
-  const acceptLora = (name: string) => {
-    if (!lora) return;
+  const acceptFile = (name: string) => {
+    if (!query) return;
     const end = caret + (draft.slice(caret).match(/^[^\s:]*/)?.[0].length ?? 0);
     const insert = name.replace(/\.safetensors$/i, '');
-    setDraft(draft.slice(0, lora.from) + insert + draft.slice(end));
-    const at = lora.from + insert.length;
+    setDraft(draft.slice(0, query.from) + insert + draft.slice(end));
+    const at = query.from + insert.length;
     setCaret(at);
     caretAfter.current = at;
   };
@@ -650,7 +661,7 @@ export function ImagineBar() {
                 }
                 if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
                   e.preventDefault();
-                  acceptLora(suggestions[pick] ?? suggestions[0]);
+                  acceptFile(suggestions[pick] ?? suggestions[0]);
                   return;
                 }
                 if (e.key === 'Escape') {
@@ -715,7 +726,7 @@ export function ImagineBar() {
           </button>
         </div>
         {suggestions.length > 0 && (
-          <ul id="lora-suggest" className="lora-suggest" role="listbox" aria-label={t('Sugerencias de LoRA')}>
+          <ul id="lora-suggest" className="lora-suggest" role="listbox" aria-label={query?.param === 'ck' ? t('Sugerencias de modelo') : t('Sugerencias de LoRA')}>
             {suggestions.map((name, n) => (
               <li
                 key={name}
@@ -725,7 +736,7 @@ export function ImagineBar() {
                 className={n === pick ? 'on' : ''}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  acceptLora(name);
+                  acceptFile(name);
                 }}
                 onMouseMove={(e) => {
                   // Chrome also sends mousemove when the list scrolls under a still pointer; only a real move picks.

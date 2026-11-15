@@ -510,6 +510,7 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     style_weight: p.styleWeight ?? 100,
     weird: p.weird,
     loras: p.loras,
+    checkpoint: p.checkpoint,
     sref: p.sref,
   };
 }

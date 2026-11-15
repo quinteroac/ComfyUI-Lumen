@@ -23,6 +23,8 @@ export interface ParsedPrompt {
   weird?: number;
   /** --lora name::weight, once per LoRA. */
   loras: LoraRef[];
+  /** --ck: a diffusion model file in place of the engine's own. */
+  checkpoint?: string;
   /** --cw 0–100: how much of the character reference to keep (100 face, hair and outfit; 0 the face). */
   characterWeight?: number;
   sref?: string;
@@ -198,6 +200,9 @@ export function parsePrompt(text: string, base: CreateSettings): ParsedPrompt {
         if (lora?.[1].trim() && weight !== 0) r.loras.push({ name: lora[1].trim(), weight });
         break;
       }
+      case 'ck':
+        if (val) r.checkpoint = val;
+        break;
       case 'sref':
         r.sref = val;
         break;

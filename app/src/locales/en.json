@@ -610,5 +610,6 @@
  "Ninguno": "None",
  "Peso": "Weight",
  "Se cargan en las imágenes que este perfil personaliza, cada uno solo con su modelo. Con un LoRA, el perfil se puede usar aunque esté bloqueado: entonces solo aplica el LoRA.": "They load on the images this profile personalizes, each only with its own model. With a LoRA, the profile can be used while still locked: then only the LoRA applies.",
- "Personalización activada": "Personalization on"
+ "Personalización activada": "Personalization on",
+ "Sugerencias de modelo": "Model suggestions"
 }

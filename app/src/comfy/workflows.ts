@@ -161,11 +161,15 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
   return styled;
 }
 
-/** --lora on the image model, before style codes and sliders; a name without an extension is a .safetensors file. */
+/** A model file as the user wrote it: a name without an extension is a .safetensors file. */
+const modelFile = (name: string) => (/\.(safetensors|sft|ckpt|pt|pth|bin|gguf)$/i.test(name) ? name : `${name}.safetensors`);
+
+/** The engine's diffusion model, or the --ck file; ComfyUI reports a file that doesn't fit the workflow. */
+const unetName = (i: JobInputs, own: string) => (i.checkpoint ? modelFile(i.checkpoint) : own);
+
+/** --lora on the image model, before style codes and sliders. */
 function userLoras(add: Graph['add'], i: JobInputs, model: Link): Link {
-  for (const { name, weight } of i.loras ?? []) {
-    model = add('LoraLoaderModelOnly', { model, lora_name: /\.(safetensors|ckpt|pt|pth|bin)$/i.test(name) ? name : `${name}.safetensors`, strength_model: weight });
-  }
+  for (const { name, weight } of i.loras ?? []) model = add('LoraLoaderModelOnly', { model, lora_name: modelFile(name), strength_model: weight });
   return model;
 }
 
@@ -189,7 +193,7 @@ function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link
 function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['styleCodes'], mode: ComfyConfig['conceptMode']): ApiWorkflow {
   const { wf, add } = graph();
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
-  const model = conceptSliders(add, i, styleCode(add, i, userLoras(add, i, add('UNETLoader', { unet_name: c.unet, weight_dtype: 'default' })), clip, styles), clip, mode);
+  const model = conceptSliders(add, i, styleCode(add, i, userLoras(add, i, add('UNETLoader', { unet_name: unetName(i, c.unet), weight_dtype: 'default' })), clip, styles), clip, mode);
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = ON_SOURCE.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.character_images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
@@ -339,7 +343,7 @@ function videoWorkflow(i: JobInputs, c: ComfyConfig): ApiWorkflow {
   const r2v = refs.length > 0 || extend;
   const model = add('MiniMaxH3SigmaShift', {
     model: add('LoraLoaderModelOnly', {
-      model: add('UNETLoader', { unet_name: r2v ? v.ref2va : v.fl2va, weight_dtype: 'default' }),
+      model: add('UNETLoader', { unet_name: unetName(i, r2v ? v.ref2va : v.fl2va), weight_dtype: 'default' }),
       lora_name: r2v ? v.ref2vaLora : v.fl2vaLora,
       strength_model: 1,
     }),
@@ -449,7 +453,7 @@ function videoWorkflow(i: JobInputs, c: ComfyConfig): ApiWorkflow {
 function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): ApiWorkflow {
   const { wf, add } = graph();
   const e = c[engine];
-  let model = add('UNETLoader', { unet_name: e.unet, weight_dtype: 'default' });
+  let model = add('UNETLoader', { unet_name: unetName(i, e.unet), weight_dtype: 'default' });
   if (e.lora) model = add('LoraLoaderModelOnly', { model, lora_name: e.lora, strength_model: 1 });
   model = userLoras(add, i, model);
   const clip = add('CLIPLoader', { clip_name: e.clip, type: engine === 'anima' ? 'stable_diffusion' : 'moss_image', device: 'default' });

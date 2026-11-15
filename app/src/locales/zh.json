@@ -610,5 +610,6 @@
  "Ninguno": "无",
  "Peso": "权重",
  "Se cargan en las imágenes que este perfil personaliza, cada uno solo con su modelo. Con un LoRA, el perfil se puede usar aunque esté bloqueado: entonces solo aplica el LoRA.": "它们会加载到此配置文件个性化的图像上，每个只用于自己的模型。设置了 LoRA 后，即使配置文件仍处于锁定状态也可使用：此时只应用 LoRA。",
- "Personalización activada": "个性化已开启"
+ "Personalización activada": "个性化已开启",
+ "Sugerencias de modelo": "模型建议"
 }

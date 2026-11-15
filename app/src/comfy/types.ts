@@ -120,6 +120,8 @@ export interface JobInputs {
   /** First style reference. */
   style_image?: string;
   style_weight?: number;
+  /** --ck: the diffusion model file to load instead of the engine's own, .safetensors optional. */
+  checkpoint?: string;
   /** --lora: the user's LoRAs on the image model, in the order written. */
   loras?: LoraRef[];
   /** --w: the prompt again as a concept slider; each model has its own scale. */
