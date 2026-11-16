@@ -1,8 +1,28 @@
 # ComfyUI-Lumen
 
-An image studio page for ComfyUI: a prompt bar with Midjourney-style parameters, a grid of results and one-click actions, all run on this ComfyUI server.
+An image and video studio for ComfyUI: a prompt bar with Midjourney-style parameters, a grid of results and one-click actions.
 
-Open it from the **Lumen** menu in ComfyUI, or at `http://<comfyui>/lumen/`.
+Lumen is a ComfyUI plugin (a custom node pack), not a separate app. ComfyUI serves its page at `/lumen/` and runs every job on its own queue, with the nodes Lumen brings and the models in ComfyUI's `models/` folder.
+
+## Installation
+
+Requires a recent ComfyUI, with the MiniMax H3 Image and Video, RelayVSR and TextGenerateV2 nodes. Video needs a GPU with 16 GB of VRAM or more; images run with less.
+
+1. Clone the pack into ComfyUI's `custom_nodes` folder:
+
+   ```bash
+   cd ComfyUI/custom_nodes
+   git clone https://github.com/quinteroac/ComfyUI-Lumen
+   ```
+
+   Or, in ComfyUI-Manager, use **Install via Git URL** with the same address.
+2. Restart ComfyUI.
+3. Open **Lumen** from ComfyUI's menu or sidebar, or go to `http://<comfyui>/lumen/`.
+4. On Lumen's **ComfyUI** page, under **Models**, download the models you're missing.
+
+The page comes built in `dist/`, so Node.js isn't needed and there are no Python requirements to install. Optional: `llama-cpp-python` in ComfyUI's Python for the conversational mode, and Node.js 22+ for the MCP server.
+
+To update, run `git pull` in `custom_nodes/ComfyUI-Lumen` and restart ComfyUI.
 
 The documentation (English) is under **Help** in the sidebar, or at `/lumen/docs`. Its articles are Markdown files in `app/src/docs/articles/`, with images and videos in `app/public/docs-media/`.
 
