@@ -60,6 +60,8 @@ export interface CreateSettings {
   videoBatch: 1 | 2 | 4;
   /** Images per creation, made one after another. */
   grid: 1 | 2 | 3 | 4;
+  /** New H3 images without pictures go through the text-to-image prompt enhancer too. */
+  enhance: boolean;
 }
 
 export const DEFAULT_SETTINGS: CreateSettings = {
@@ -71,6 +73,7 @@ export const DEFAULT_SETTINGS: CreateSettings = {
   videoResolution: 'sd',
   videoBatch: 2,
   grid: 4,
+  enhance: false,
 };
 
 /** A multi-prompt segment and its weight (a::2). */
@@ -88,6 +91,8 @@ export interface LoraRef {
 /** Everything a workflow can receive. Each key is also a {{placeholder}} name. */
 export interface JobInputs {
   action: ActionKind;
+  /** The bar's prompt enhancer option, for new H3 images without pictures. */
+  enhance?: boolean;
   /** Model of the built-in workflows: --anima and --moss pick Anima or MOSS Image for Imagine. */
   engine: Engine;
   prompt: string;

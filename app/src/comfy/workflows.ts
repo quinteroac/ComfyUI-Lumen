@@ -2,6 +2,7 @@
 // fills a workflow — built-in or the person's own — with the job's inputs.
 import type { ActionKind, JobInputs, PanDir } from './types';
 import PE_TASK from './h3_edit_task_prompt.txt?raw';
+import PE_T2I_TASK from './h3_t2i_task_prompt.txt?raw';
 import VIDEO_GUIDE from './h3_video_guide.txt?raw';
 import REF_VIDEO_GUIDE from './h3_video_ref_guide.txt?raw';
 import { getConfig, type ComfyConfig } from './config';
@@ -140,10 +141,10 @@ const ON_SOURCE: ActionKind[] = [...FILL, 'retexture'];
 const STYLE_NODE = { h3: 'LumenH3StyleCode', moss: 'LumenMOSSStyleCode', anima: 'LumenAnimaStyleCode' } as const;
 const GENERATION: ActionKind[] = ['imagine', 'image_prompt'];
 
-/** Built-in H3 jobs whose caption an enhancer writes: videos, the fill edits, and new images with reference pictures. */
+/** Built-in H3 jobs whose caption an enhancer writes: videos, the fill edits, new images with reference pictures, and the others when the bar's option is on. */
 export const enhanced = (i: JobInputs) =>
   i.action === 'video' || i.action === 'animate' || i.action === 'extend' ||
-  (i.engine === 'h3' && (ON_SOURCE.includes(i.action) || (GENERATION.includes(i.action) && (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0)));
+  (i.engine === 'h3' && (ON_SOURCE.includes(i.action) || (GENERATION.includes(i.action) && (!!i.enhance || (i.images?.length ?? 0) + (i.character_images?.length ?? 0) + (i.style_images?.length ?? 0) > 0))));
 
 /** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
     --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
@@ -202,8 +203,10 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
     const caption = add('TextGenerateV2', {
       clip: add('CLIPLoader', { clip_name: c.peClip, type: 'minimax', device: 'default' }),
       ...Object.fromEntries(Object.values(pictures).map((link, n) => [`images.image${n + 1}`, link])),
-      system_prompt: `${PE_TASK}\n${PE_SYSTEM}`,
-      prompt: peRequest(i, files.length),
+      // Without pictures, the text-to-image task prompt of ComfyUI's H3 Image template, which keeps the ratio it is told.
+      ...(files.length
+        ? { system_prompt: `${PE_TASK}\n${PE_SYSTEM}`, prompt: peRequest(i, files.length) }
+        : { system_prompt: PE_SYSTEM, prompt: PE_T2I_TASK.replace('{input text}', `${h3Prompt(i)} (aspect ratio ${i.aspect || simpleRatio(i.width, i.height)})`) }),
       max_length: 8196,
       sampling_mode: 'on',
       'sampling_mode.temperature': 1,

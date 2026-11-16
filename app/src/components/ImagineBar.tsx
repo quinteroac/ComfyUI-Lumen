@@ -147,6 +147,9 @@ export function ParamsPanel({ s }: { s: CreateSettings }) {
         <Row label={t('Imágenes')}>
           <Seg label={t('Imágenes por creación')} value={s.grid} onChange={(v) => setSettings({ grid: v })} options={[[1, '1'], [2, '2'], [3, '3'], [4, '4']]} />
         </Row>
+        <Row label={t('Mejorar prompt')}>
+          <Seg label={t('Mejorar el prompt de H3 Image')} value={s.enhance ? 'on' : 'off'} onChange={(v) => setSettings({ enhance: v === 'on' })} options={[['off', t('No')], ['on', t('Sí')]]} />
+        </Row>
         <div className="param-title">{t('Más opciones')}</div>
         <Row label={t('Vídeo · resolución')}>
           <Seg label={t('Resolución de vídeo')} value={s.videoResolution} onChange={(v) => setSettings({ videoResolution: v })} options={[['sd', 'SD'], ['hd', 'HD']]} />

@@ -611,5 +611,9 @@
  "Peso": "重み",
  "Se cargan en las imágenes que este perfil personaliza, cada uno solo con su modelo. Con un LoRA, el perfil se puede usar aunque esté bloqueado: entonces solo aplica el LoRA.": "このプロフィールでパーソナライズする画像に読み込まれ、それぞれ自分のモデルでのみ使われます。LoRA があれば、ロック中でもプロフィールを使えます。その場合は LoRA だけが適用されます。",
  "Personalización activada": "パーソナライズ オン",
- "Sugerencias de modelo": "モデルの候補"
+ "Sugerencias de modelo": "モデルの候補",
+ "No": "オフ",
+ "Sí": "オン",
+ "Mejorar prompt": "プロンプト強化",
+ "Mejorar el prompt de H3 Image": "H3 Image のプロンプトを強化"
 }

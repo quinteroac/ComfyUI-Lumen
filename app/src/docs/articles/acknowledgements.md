@@ -19,6 +19,7 @@ Lumen includes code and data from other projects so it runs on its own. Thank yo
 | The style lists of style codes | [comfyui-stylebook](https://github.com/EnragedAntelope/comfyui-stylebook) by EnragedAntelope | MIT |
 | The Anima artist list | [Anima-Style-Explorer](https://github.com/ThetaCursed/Anima-Style-Explorer) by ThetaCursed | MIT |
 | The video prompt guides of the video enhancer | MiniMax's [h3-prompt-writing](https://github.com/MiniMax-AI/MiniMax-H3) guides | MiniMax H3 Community License |
+| The text-to-image task prompt of the prompt enhancer | ComfyUI's MiniMax H3 Image template, from [MiniMax-H3-Image-PE](https://huggingface.co/MiniMaxAI/MiniMax-H3-Image-PE) | MiniMax-H3-Image Community License |
 | The task prompt of the edit enhancer | [MiniMax-H3-Image-PE](https://huggingface.co/MiniMaxAI/MiniMax-H3-Image-PE) | MiniMax-H3-Image Community License |
 
 The full notices and license texts are in `THIRD_PARTY_NOTICES.md` and `licenses/` in the ComfyUI-Lumen folder.

@@ -26,6 +26,7 @@ Changes made in Lumen:
 | `nodes/data/styles.json`, `nodes/data/anima_styles.json` | Style ids, names and categories from [comfyui-stylebook](https://github.com/EnragedAntelope/comfyui-stylebook), Copyright (c) 2026 EnragedAntelope; the descriptions were rewritten for each model in the slider packs above | MIT |
 | `nodes/data/anima_artists.txt` | The artist list of the Anima 2B artist index by ThetaCursed, [Anima-Style-Explorer](https://github.com/ThetaCursed/Anima-Style-Explorer), as bundled with Anima-Artist-Mixer | MIT |
 | `app/src/comfy/h3_video_guide.txt`, `app/src/comfy/h3_video_ref_guide.txt` | MiniMax's video prompt guides `base-en.txt` and `ref-en.txt` ([MiniMax-H3, skills/h3-prompt-writing](https://github.com/MiniMax-AI/MiniMax-H3)) | MiniMax H3 Community License Agreement |
+| `app/src/comfy/h3_t2i_task_prompt.txt` | The text-to-image task prompt of [MiniMax-H3-Image-PE](https://huggingface.co/MiniMaxAI/MiniMax-H3-Image-PE), as in ComfyUI's MiniMax H3 Image template | MiniMax-H3-Image Community License Agreement |
 | `app/src/comfy/h3_edit_task_prompt.txt` | The image-editing task prompt of [MiniMax-H3-Image-PE](https://huggingface.co/MiniMaxAI/MiniMax-H3-Image-PE) | MiniMax-H3-Image Community License Agreement |
 
 MiniMax H3 is licensed under the MiniMax H3 Community License Agreement, Copyright © 2026 MiniMax. All Rights Reserved.

@@ -500,6 +500,7 @@ export function baseInputs(action: ActionKind, p: ParsedPrompt, draftMode: boole
     width: w,
     height: h,
     batch: s.grid,
+    enhance: s.enhance,
     denoise: 1,
     aspect: s.aspect,
     chaos: s.chaos,

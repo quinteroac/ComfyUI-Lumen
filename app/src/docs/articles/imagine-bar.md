@@ -39,6 +39,7 @@ Drag images onto a zone, or press **+** to upload (10 MB at most per image). You
 | Variety | 0–100, how far [Vary](#vary) moves. Same as [--c](#variety). |
 | Image resolution | SD or HD. See [Resolution](#resolution). |
 | Images per creation | 1–4, made one after another. |
+| Enhance prompt | Off by default. On, new H3 Image pictures without reference images also go through the [prompt enhancer](#prompt-basics). |
 | Video resolution, batch and motion | SD or HD, videos per prompt, low or high motion. See [Video](#video-basics). |
 
 A parameter in the prompt always wins over the bar's setting for that job.
