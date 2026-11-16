@@ -26,7 +26,7 @@ a cozy wooden cabin in a snowy forest at dusk --ar 3:2 --draft
 
 When a job has pictures (image prompts, style or character references, moodboards) or edits an image (Zoom Out, Pan, the Editor, Retexture), Lumen first asks MiniMax's official prompt enhancer to rewrite your prompt for H3 Image. It looks at the pictures and writes a detailed description that says what each one is for. It runs once per job, so all the images of a job share the same description and differ only by seed. Videos always go through the video enhancer.
 
-New H3 Image pictures from text alone skip it by default. Turn on **Enhance prompt** in the imagine bar's settings to send them through MiniMax's text-to-image enhancer too: it turns a short prompt into a detailed description for the --ar you chose. It adds a few seconds per job and does not apply to Anima or MOSS Image.
+New H3 Image pictures from text alone skip it by default. Turn on **Enhance prompt** in the imagine bar's settings to send them through MiniMax's text-to-image enhancer too: it turns a short prompt into a detailed description for the --ar you chose. With [`--sref`](#style-codes), the styles the code picked are given to it after your prompt, so the description is written in them. It adds a few seconds per job and does not apply to Anima or MOSS Image.
 
 ## Choosing the model
 

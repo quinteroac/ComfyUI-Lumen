@@ -126,6 +126,15 @@ function peRequest(i: JobInputs, count: number): string {
   ].join('\n');
 }
 
+/** Without pictures: the text-to-image task prompt of ComfyUI's H3 Image template, which keeps the ratio it is told.
+    The styles a --sref code picked follow the prompt, so the caption is written in them instead of a look of its own. */
+function t2iRequest(add: Graph['add'], i: JobInputs, styles?: Link): string | Link {
+  const text = `${h3Prompt(i)} (aspect ratio ${i.aspect || simpleRatio(i.width, i.height)})`;
+  if (!styles) return PE_T2I_TASK.replace('{input text}', () => text);
+  const input = add('StringConcatenate', { string_a: text, string_b: styles, delimiter: '\n\nDraw it in this mix of art styles (name, category, weight):\n' });
+  return add('StringReplace', { string: PE_T2I_TASK, find: '{input text}', replace: input });
+}
+
 /** First step of the sigma schedule at or below the denoise strength, so img2img starts there. */
 function startStep(sigmas: string, denoise: number) {
   const list = sigmas.split(',').map(Number);
@@ -148,9 +157,9 @@ export const enhanced = (i: JobInputs) =>
 
 /** --sref codes ("123 456::0.5") through the engine's Style Code node, only on new images: edits keep the source's look.
     --sw 100 is the node's default strength 1.5. The styles it picked come back as the run's text. */
-function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: ComfyConfig['styleCodes']): Link {
+function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: ComfyConfig['styleCodes']): { model: Link; styles?: Link } {
   const codes = (i.sref ?? '').split(/[\s,]+/).filter((t) => /^\d+(::-?\d*\.?\d+)?$/.test(t));
-  if (!codes.length || !GENERATION.includes(i.action)) return model;
+  if (!codes.length || !GENERATION.includes(i.action)) return { model };
   const styled = add(STYLE_NODE[i.engine], {
     model,
     clip,
@@ -159,7 +168,7 @@ function styleCode(add: Graph['add'], i: JobInputs, model: Link, clip: Link, s: 
     ...(i.engine === 'anima' ? { styles_per_code: s.animaStyles, artists_per_code: s.animaArtists } : { styles_per_code: s.styles }),
   });
   add('PreviewAny', { source: out(styled, 1) }, 'styles');
-  return styled;
+  return { model: styled, styles: out(styled, 1) };
 }
 
 /** A model file as the user wrote it: a name without an extension is a .safetensors file. */
@@ -194,7 +203,8 @@ function conceptSliders(add: Graph['add'], i: JobInputs, model: Link, clip: Link
 function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['styleCodes'], mode: ComfyConfig['conceptMode']): ApiWorkflow {
   const { wf, add } = graph();
   const clip = add('CLIPLoader', { clip_name: c.clip, type: 'minimax', device: 'default' });
-  const model = conceptSliders(add, i, styleCode(add, i, userLoras(add, i, add('UNETLoader', { unet_name: unetName(i, c.unet), weight_dtype: 'default' })), clip, styles), clip, mode);
+  const styled = styleCode(add, i, userLoras(add, i, add('UNETLoader', { unet_name: unetName(i, c.unet), weight_dtype: 'default' })), clip, styles);
+  const model = conceptSliders(add, i, styled.model, clip, mode);
   const vae = add('VAELoader', { vae_name: c.vae });
   const files = ON_SOURCE.includes(i.action) ? [i.image ?? ''] : [...(i.images ?? []), ...(i.character_images ?? []), ...(i.style_images ?? [])];
   const pictures = Object.fromEntries(files.map((image, n) => [`images.image_${n + 1}`, add('LoadImage', { image })]));
@@ -203,10 +213,7 @@ function h3Workflow(i: JobInputs, c: ComfyConfig['h3'], styles: ComfyConfig['sty
     const caption = add('TextGenerateV2', {
       clip: add('CLIPLoader', { clip_name: c.peClip, type: 'minimax', device: 'default' }),
       ...Object.fromEntries(Object.values(pictures).map((link, n) => [`images.image${n + 1}`, link])),
-      // Without pictures, the text-to-image task prompt of ComfyUI's H3 Image template, which keeps the ratio it is told.
-      ...(files.length
-        ? { system_prompt: `${PE_TASK}\n${PE_SYSTEM}`, prompt: peRequest(i, files.length) }
-        : { system_prompt: PE_SYSTEM, prompt: PE_T2I_TASK.replace('{input text}', `${h3Prompt(i)} (aspect ratio ${i.aspect || simpleRatio(i.width, i.height)})`) }),
+      ...(files.length ? { system_prompt: `${PE_TASK}\n${PE_SYSTEM}`, prompt: peRequest(i, files.length) } : { system_prompt: PE_SYSTEM, prompt: t2iRequest(add, i, styled.styles) }),
       max_length: 8196,
       sampling_mode: 'on',
       'sampling_mode.temperature': 1,
@@ -475,7 +482,7 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
       fidelity: (i.character_weight ?? 100) / 100,
     });
   }
-  model = conceptSliders(add, i, styleCode(add, i, model, clip, c.styleCodes), clip, c.conceptMode);
+  model = conceptSliders(add, i, styleCode(add, i, model, clip, c.styleCodes).model, clip, c.conceptMode);
   const latent = add(engine === 'anima' ? 'EmptyLatentImage' : 'EmptyFlux2LatentImage', { width: i.width, height: i.height, batch_size: 1 });
   const sampled = add('KSampler', {
     model,
