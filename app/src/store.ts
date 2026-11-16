@@ -606,6 +606,8 @@ export function runAction(action: ActionKind, opts: ActionOptions = {}): Job[] {
   let text = opts.prompt ?? src?.rawPrompt ?? '';
   if (opts.extraParams) text = `${text} ${opts.extraParams}`;
   if (action !== 'describe' && action !== 'extend') text = resolvePersonalization(text);
+  // --repeat is for new generations; jobs made from an image don't inherit it from their source's prompt.
+  if (action !== 'imagine' && action !== 'image_prompt' && action !== 'video') text = text.replace(/\s*--(?:r|repeat)(?:\s+\d+)?(?=\s|$)/gi, '');
   const prompts = expandPermutations(text);
   if (prompts.length > 1) toast(t('{prompts} prompts por permutación.', { prompts: prompts.length }));
   const jobs: Job[] = [];
