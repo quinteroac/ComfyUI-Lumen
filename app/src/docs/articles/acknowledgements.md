@@ -11,6 +11,7 @@ Lumen includes code and data from other projects so it runs on its own. Thank yo
 | Style codes and weights on Anima | [ComfyUI-Anima-Tag-Sliders](https://github.com/quinteroac/ComfyUI-Anima-Tag-Sliders) by quinteroac | MIT |
 | Extend video | [ComfyUI-MiniMaxH3-PrefixStream](https://github.com/knoic/ComfyUI-MiniMaxH3-PrefixStream) by knoic, which credits [Herrgott's H3 Infinite Continuation Suite](https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite) for the masked continuation | MIT |
 | `--cref` on Anima | [SnapRef](https://github.com/ArcAnima/SnapRef) by ArcAnima | Apache-2.0 |
+| Upscale video ×4 | [ReCaVSR](https://github.com/kopperx/ReCaVSR) by Xijun Wang, Xin Li, Suhang Yao, Zirui Lang, Bingchen Li and Zhibo Chen (USTC) | Apache-2.0 |
 
 ## Data
 
@@ -26,4 +27,4 @@ The full notices and license texts are in `THIRD_PARTY_NOTICES.md` and `licenses
 
 ## Models
 
-Lumen runs MiniMax H3 Image and Video (MiniMax), the Pika H3 Flex LoRAs (Pika Labs), Anima (CircleStone Labs), MOSS Image, RelayVSR, Qwen 3.5 and SnapRef's adapters. They are downloaded separately, under their own licenses; see [Installation & Requirements](#installation).
+Lumen runs MiniMax H3 Image and Video (MiniMax), the Pika H3 Flex LoRAs (Pika Labs), Anima (CircleStone Labs), MOSS Image, RelayVSR, ReCaVSR, Qwen 3.5 and SnapRef's adapters. They are downloaded separately, under their own licenses; see [Installation & Requirements](#installation).

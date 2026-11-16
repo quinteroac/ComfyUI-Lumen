@@ -556,7 +556,6 @@
  "Retexturizar (misma estructura, otro estilo)": "リテクスチャ（同じ構造で別のスタイル）",
  "Vídeo (texto → vídeo)": "動画（テキスト → 動画）",
  "Animar (imagen → vídeo)": "アニメート（画像 → 動画）",
- "Ampliar vídeo ×2 (RelayVSR)": "動画の ×2 アップスケール（RelayVSR）",
  "Describir (imagen → prompts)": "説明（画像 → プロンプト）",
  "Modo conversacional (workflow propio en lugar del GGUF)": "会話モード（GGUF の代わりに独自のワークフロー）",
  "El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.": "会話モードは ComfyUI ページの GGUF か、テキストを返す LLM を使った独自のワークフローを使います。",
@@ -615,5 +614,10 @@
  "No": "オフ",
  "Sí": "オン",
  "Mejorar prompt": "プロンプト強化",
- "Mejorar el prompt de H3 Image": "H3 Image のプロンプトを強化"
+ "Mejorar el prompt de H3 Image": "H3 Image のプロンプトを強化",
+ "Ampliar vídeo ×2 (RelayVSR) o ×4 (ReCaVSR)": "動画の ×2 アップスケール（RelayVSR）または ×4（ReCaVSR）",
+ "ReCaVSR ×4 (Ampliar vídeo)": "ReCaVSR ×4（動画のアップスケール）",
+ "Prompt de ReCaVSR": "ReCaVSR のプロンプト",
+ "Decodificador de ReCaVSR": "ReCaVSR のデコーダー",
+ "Ampliar ×4": "×4 アップスケール"
 }

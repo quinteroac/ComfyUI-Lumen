@@ -312,6 +312,9 @@ export function ComfySettings() {
           <NumberField label={t('Fotogramas (24 fps; 124 ≈ 5 s)')} min={5} max={362} step={17} value={cfg.video.frames} onChange={(v) => setConfig({ video: { ...cfg.video, frames: v } })} />
           <ModelField label={t('RelayVSR ×2 (Ampliar vídeo)')} list="unet-list" value={cfg.video.vsr} onChange={(v) => setConfig({ video: { ...cfg.video, vsr: v } })} />
           <ModelField label={t('VAE de RelayVSR')} list="vae-list" value={cfg.video.vsrVae} onChange={(v) => setConfig({ video: { ...cfg.video, vsrVae: v } })} />
+          <ModelField label={t('ReCaVSR ×4 (Ampliar vídeo)')} list="unet-list" value={cfg.video.recavsr} onChange={(v) => setConfig({ video: { ...cfg.video, recavsr: v } })} />
+          <ModelField label={t('Prompt de ReCaVSR')} list="unet-list" value={cfg.video.recavsrPrompt} onChange={(v) => setConfig({ video: { ...cfg.video, recavsrPrompt: v } })} />
+          <ModelField label={t('Decodificador de ReCaVSR')} list="vae-list" value={cfg.video.recavsrDecoder} onChange={(v) => setConfig({ video: { ...cfg.video, recavsrDecoder: v } })} />
           <label className="field wide">
             {t('Sigmas (lcm)')}
             <input value={cfg.video.sigmas} onChange={(e) => setConfig({ video: { ...cfg.video, sigmas: e.target.value } })} spellCheck={false} />

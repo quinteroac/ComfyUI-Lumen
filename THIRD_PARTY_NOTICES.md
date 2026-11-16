@@ -12,11 +12,13 @@ part keeps its own license; the full texts are at the end of this file and in `l
 | `nodes/anima_styles.py`, `nodes/style_codes.py` | [ComfyUI-Anima-Tag-Sliders](https://github.com/quinteroac/ComfyUI-Anima-Tag-Sliders), Copyright (c) 2026 quinteroac | MIT |
 | `nodes/video_continuation.py` | [ComfyUI-MiniMaxH3-PrefixStream](https://github.com/knoic/ComfyUI-MiniMaxH3-PrefixStream), Copyright (c) 2026 knoic | MIT |
 | `nodes/snapref.py` | [SnapRef](https://github.com/ArcAnima/SnapRef) by ArcAnima | Apache-2.0 (`licenses/Apache-2.0.txt`) |
+| `nodes/recavsr.py`, `nodes/recavsr_model.py`, `nodes/recavsr_decoder.py`, `nodes/recavsr_triton.py` | [ReCaVSR](https://github.com/kopperx/ReCaVSR) by Xijun Wang, Xin Li, Suhang Yao, Zirui Lang, Bingchen Li and Zhibo Chen (University of Science and Technology of China) | Apache-2.0 (`licenses/Apache-2.0.txt`) |
 
 Changes made in Lumen:
 
 - The sliders: only the Style Code and single Concept/Tag Slider nodes, renamed `Lumen…`, with the inputs Lumen sends; the Anima guidance mode, curves, NAG and reference sliders are left out. The per-token keys Lumen adds are prefixed `lumen_`.
 - PrefixStream: only the Native Masked AV continuation, rewritten as three nodes (save latent, continuation, stitch) with its default settings. The AV latent file format is unchanged.
+- ReCaVSR: the inference runtime (streaming transformer, KV cache routing, rolling RoPE, LQ projection, FlashDecoder, color fixes) rewritten on ComfyUI's ops, attention and model management, keeping the checkpoint's module names; its two Triton attention kernels are copied unchanged, forward only, with a PyTorch fallback added. Video is read through ComfyUI and written block by block. `tools/recavsr_int8.py` converts its BF16 transformer to ComfyUI's INT8-ConvRot format; the converted file Lumen downloads is at [paralaif/ReCaVSR-comfy-int8-convrot](https://huggingface.co/paralaif/ReCaVSR-comfy-int8-convrot), under Apache-2.0 like the original.
 - SnapRef: only the advanced node's adapter, attention and reference encoding, as one node with the image, mode and fidelity inputs; ref_guidance, captions, stitching and batch options are left out. Attributes and keys it leaves on shared objects are prefixed `lumen_`.
 
 ## Data
@@ -39,7 +41,7 @@ The agreement is at https://huggingface.co/MiniMaxAI/MiniMax-H3-Image/blob/main/
 
 - The masked audio-video continuation follows [Herrgott's H3 Infinite Continuation Suite](https://github.com/HerrgottMargott/Herrgotts-H3-Infinite-Continuation-Suite), which PrefixStream credits for the approach.
 - The SnapRef adapter weights are a derivative of CircleStone Labs' [Anima](https://huggingface.co/circlestone-labs/Anima) and are under the CircleStone Labs Non-Commercial License; they are downloaded separately and not included in Lumen.
-- The models Lumen uses by default (MiniMax H3 Image and Video, Anima, MOSS Image, RelayVSR, Qwen 3.5) are downloaded separately under their own licenses.
+- The models Lumen uses by default (MiniMax H3 Image and Video, Anima, MOSS Image, RelayVSR, ReCaVSR, Qwen 3.5) are downloaded separately under their own licenses.
 
 ## MIT License
 

@@ -27,8 +27,8 @@ export interface ComfyConfig {
   llm: { model: string; nGpuLayers: number; nCtx: number; maxTokens: number; temperature: number };
   /** H3 video: the base fl2va (no references) and ref2va (with references) models, each with its Pika Flex LoRA,
       Pika's sigmas with lcm, and the video and audio VAEs. sd / hd in megapixels, frames at 24 fps.
-      vsr / vsrVae: RelayVSR ×2, which upscales a finished video. */
-  video: { fl2va: string; fl2vaLora: string; ref2va: string; ref2vaLora: string; vae: string; audioVae: string; sigmas: string; sd: number; hd: number; frames: number; vsr: string; vsrVae: string };
+      vsr / vsrVae: RelayVSR ×2, which upscales a finished video; recavsr*: ReCaVSR ×4. */
+  video: { fl2va: string; fl2vaLora: string; ref2va: string; ref2vaLora: string; vae: string; audioVae: string; sigmas: string; sd: number; hd: number; frames: number; vsr: string; vsrVae: string; recavsr: string; recavsrPrompt: string; recavsrDecoder: string };
   /** Megapixels of Upscale. */
   upscaleMegapixels: number;
   /** Custom workflows (ComfyUI "Export (API)" JSON) per action; empty = built-in. */
@@ -98,6 +98,9 @@ export const DEFAULT_CONFIG: ComfyConfig = {
     frames: 124,
     vsr: 'relayvsr/relayvsr_x2_lightx2v_int8_convrot.safetensors',
     vsrVae: 'relayvsr/relayvsr_flash_vae_x2_fp32.safetensors',
+    recavsr: 'recavsr/recavsr_transformer_int8_convrot.safetensors',
+    recavsrPrompt: 'recavsr/recavsr_prompt.safetensors',
+    recavsrDecoder: 'recavsr/recavsr_flashdecoder_fp32.safetensors',
   },
   llm: { model: 'gemma-4-12b-heretic-Q6_K.gguf', nGpuLayers: -1, nCtx: 8192, maxTokens: 1024, temperature: 0.7 },
   upscaleMegapixels: 16,

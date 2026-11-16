@@ -17,7 +17,7 @@ export function jobItems(job: Job): LbItem[] {
 
 export function jobMeta(job: Job) {
   const m: string[] = [];
-  if (job.action === 'upscale_video') m.push('×2 RelayVSR');
+  if (job.action === 'upscale_video') m.push(job.inputs.upscale_factor === 4 ? '×4 ReCaVSR' : '×2 RelayVSR');
   else if (isVideoAction(job.action)) {
     m.push(`--motion ${job.inputs.motion ?? 'low'}`, `${job.inputs.frames ?? ''} fotogramas`);
     if (job.inputs.loop) m.push('--loop');

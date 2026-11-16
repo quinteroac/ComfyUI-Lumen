@@ -556,7 +556,6 @@
  "Retexturizar (misma estructura, otro estilo)": "重塑质感（相同结构，换一种风格）",
  "Vídeo (texto → vídeo)": "视频（文本 → 视频）",
  "Animar (imagen → vídeo)": "动画化（图像 → 视频）",
- "Ampliar vídeo ×2 (RelayVSR)": "视频 ×2 放大（RelayVSR）",
  "Describir (imagen → prompts)": "描述（图像 → 提示词）",
  "Modo conversacional (workflow propio en lugar del GGUF)": "对话模式（用自定义工作流代替 GGUF）",
  "El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.": "对话模式使用 ComfyUI 页面中的 GGUF，或带有返回文本的 LLM 的自定义工作流。",
@@ -615,5 +614,10 @@
  "No": "关",
  "Sí": "开",
  "Mejorar prompt": "提示词增强",
- "Mejorar el prompt de H3 Image": "增强 H3 Image 提示词"
+ "Mejorar el prompt de H3 Image": "增强 H3 Image 提示词",
+ "Ampliar vídeo ×2 (RelayVSR) o ×4 (ReCaVSR)": "视频 ×2 放大（RelayVSR）或 ×4（ReCaVSR）",
+ "ReCaVSR ×4 (Ampliar vídeo)": "ReCaVSR ×4（视频放大）",
+ "Prompt de ReCaVSR": "ReCaVSR 提示词",
+ "Decodificador de ReCaVSR": "ReCaVSR 解码器",
+ "Ampliar ×4": "×4 放大"
 }

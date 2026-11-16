@@ -109,12 +109,12 @@ const tools = {
         }, ['prompt']),
         run: async ({ prompt, references: refs, grid, wait = true, timeout = 600 }) =>
             text(await finished(await page('imagine', { prompt, references: await references(refs), grid }), wait, timeout)) },
-    act: { description: 'Run an action on a job image, as its buttons do: vary_subtle, vary_strong, upscale_subtle, upscale_creative (16 MP), remix (prompt, strength), zoom_out (zoom 1.5 or 2), pan (left/right/up/down), retexture (prompt: the new look), animate (motion, loop, prompt), extend (a Lumen video, up to 4 times), upscale_video (RelayVSR x2) and describe (four prompts).',
+    act: { description: 'Run an action on a job image, as its buttons do: vary_subtle, vary_strong, upscale_subtle, upscale_creative (16 MP), remix (prompt, strength), zoom_out (zoom 1.5 or 2), pan (left/right/up/down), retexture (prompt: the new look), animate (motion, loop, prompt), extend (a Lumen video, up to 4 times), upscale_video (factor 2: RelayVSR, 4: ReCaVSR) and describe (four prompts).',
         annotations: create,
         inputSchema: input({
             job: jobInput, index: { type: 'number', default: 0 }, action: { type: 'string', enum: ACTIONS },
             prompt: { type: 'string', description: 'Prompt instead of the source\'s (remix, retexture, animate, extend)' },
-            strength: { type: 'string', enum: ['subtle', 'strong'] }, zoom: { type: 'number', enum: [1.5, 2] }, pan: { type: 'string', enum: ['left', 'right', 'up', 'down'] },
+            strength: { type: 'string', enum: ['subtle', 'strong'] }, zoom: { type: 'number', enum: [1.5, 2] }, factor: { type: 'number', enum: [2, 4], description: 'upscale_video: 2 (default) or 4' }, pan: { type: 'string', enum: ['left', 'right', 'up', 'down'] },
             motion: { type: 'string', enum: ['low', 'high'] }, loop: { type: 'boolean' },
             ...waiting,
         }, ['job', 'action']),

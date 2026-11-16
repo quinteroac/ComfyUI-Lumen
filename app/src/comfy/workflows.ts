@@ -500,6 +500,15 @@ function textToImage(i: JobInputs, engine: 'anima' | 'moss', c: ComfyConfig): Ap
   return wf;
 }
 
+/** ReCaVSR ×4: one step per block of frames on Wan2.2 5B; the node writes the video as it goes, with its audio and fps. */
+function recavsrWorkflow(i: JobInputs, v: ComfyConfig['video']): ApiWorkflow {
+  const { wf, add } = graph();
+  const recavsr = add('LumenReCaVSRLoader', { transformer: v.recavsr, prompt_embedding: v.recavsrPrompt, decoder: v.recavsrDecoder });
+  const video = add('LumenReCaVSRUpscale', { recavsr, video: add('LoadVideo', { file: i.image }), scale: 4, seed: i.seed, color_fix: 'none' });
+  add('SaveVideo', { video, filename_prefix: 'lumen/upscale_video', format: 'auto', 'format.codec': 'auto' });
+  return wf;
+}
+
 /** RelayVSR ×2: one euler step at the video's own size; VSR Decode rebuilds every frame. The audio and fps are kept. */
 function upscaleVideoWorkflow(i: JobInputs, v: ComfyConfig['video']): ApiWorkflow {
   const { wf, add } = graph();
@@ -527,12 +536,12 @@ export function builtInWorkflow(i: JobInputs): ApiWorkflow {
   const c = getConfig();
   if (i.action === 'describe') return describeWorkflow(i, c.h3.peClip);
   if (i.action === 'video' || i.action === 'animate' || i.action === 'extend') return videoWorkflow(i, c);
-  if (i.action === 'upscale_video') return upscaleVideoWorkflow(i, c.video);
+  if (i.action === 'upscale_video') return i.upscale_factor === 4 ? recavsrWorkflow(i, c.video) : upscaleVideoWorkflow(i, c.video);
   return i.engine === 'h3' ? h3Workflow(i, c.h3, c.styleCodes, c.conceptMode) : textToImage(i, i.engine, c);
 }
 
 /** Loader inputs whose files must be on the server; ComfyUI's own error lists every file it has. */
-const MODEL_INPUTS = ['unet_name', 'clip_name', 'vae_name', 'lora_name', 'ckpt_name'];
+const MODEL_INPUTS = ['unet_name', 'clip_name', 'vae_name', 'lora_name', 'ckpt_name', 'transformer', 'prompt_embedding', 'decoder'];
 
 /** Clear errors for a missing node or model before the workflow is sent. */
 export function checkWorkflow(wf: ApiWorkflow, defs: Record<string, unknown>) {

@@ -286,9 +286,14 @@ function Panel({ item, job }: { item: LbItem; job?: Job }) {
                 {t('Nuevo vídeo con este prompt')}
               </button>
               {job?.action !== 'upscale_video' && (
-                <button className="btn" data-action="upscale_video" onClick={() => act('upscale_video', { prompt: videoPrompt })}>
-                  {t('Ampliar ×2')}
-                </button>
+                <>
+                  <button className="btn" data-action="upscale_video" onClick={() => act('upscale_video', { prompt: videoPrompt })}>
+                    {t('Ampliar ×2')}
+                  </button>
+                  <button className="btn" data-action="upscale_video" onClick={() => act('upscale_video', { prompt: videoPrompt, factor: 4 })}>
+                    {t('Ampliar ×4')}
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -18,7 +18,7 @@ Lumen is a page served by the ComfyUI-Lumen node pack. Every button builds a Com
 | Prompt enhancer, Describe | Qwen 3.5 9B (through TextGenerateV2) |
 | Videos | MiniMax H3 Video fl2va / ref2va with the Pika Flex LoRAs |
 | Extend | Lumen's continuation nodes (from ComfyUI-MiniMaxH3-PrefixStream) |
-| Upscale video | RelayVSR ×2 |
+| Upscale video | RelayVSR ×2, ReCaVSR ×4 |
 | Conversational mode | A GGUF model with llama-cpp-python |
 | Style codes, weights | Lumen's Style Code and Concept Slider nodes (from the H3, MOSS and Anima slider packs) |
 

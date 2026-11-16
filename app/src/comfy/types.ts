@@ -39,7 +39,7 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
   video: t('Vídeo (texto → vídeo)'),
   animate: t('Animar (imagen → vídeo)'),
   extend: t('Alargar vídeo'),
-  upscale_video: t('Ampliar vídeo ×2 (RelayVSR)'),
+  upscale_video: t('Ampliar vídeo ×2 (RelayVSR) o ×4 (ReCaVSR)'),
   describe: t('Describir (imagen → prompts)'),
   converse: t('Modo conversacional (workflow propio en lugar del GGUF)'),
 };
@@ -91,6 +91,8 @@ export interface LoraRef {
 /** Everything a workflow can receive. Each key is also a {{placeholder}} name. */
 export interface JobInputs {
   action: ActionKind;
+  /** Upscale video: 2 (RelayVSR) or 4 (ReCaVSR). */
+  upscale_factor?: 2 | 4;
   /** The bar's prompt enhancer option, for new H3 images without pictures. */
   enhance?: boolean;
   /** Model of the built-in workflows: --anima and --moss pick Anima or MOSS Image for Imagine. */
@@ -225,7 +227,7 @@ export interface Job {
   /** References used (shown next to the prompt; small copies only). */
   refs?: { kind: 'image' | 'style' | 'character' | 'start' | 'end'; url: string }[];
   /** What "Repeat" needs to run this action again. */
-  rerun?: { image?: JobImage; zoom?: number; pan?: PanDir; motion?: Motion; motionPrompt?: string; refs?: JobRefs; strength?: 'subtle' | 'strong'; mask?: string };
+  rerun?: { image?: JobImage; zoom?: number; pan?: PanDir; factor?: 2 | 4; motion?: Motion; motionPrompt?: string; refs?: JobRefs; strength?: 'subtle' | 'strong'; mask?: string };
 }
 
 export interface Folder {

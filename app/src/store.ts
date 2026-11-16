@@ -547,6 +547,8 @@ export interface ActionOptions {
   strength?: 'subtle' | 'strong';
   zoom?: number;
   pan?: PanDir;
+  /** Upscale video: 2 (RelayVSR, the default) or 4 (ReCaVSR). */
+  factor?: 2 | 4;
   motion?: Motion;
   motionPrompt?: string;
   refs?: JobRefs;
@@ -745,8 +747,11 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       applyVideo(inputs, parsed, motion, opts.motionPrompt, w, h);
       Object.assign(inputs, { width: w, height: h, batch: 1, latent_path: srcImg?.latent });
       break;
-    case 'upscale_video':
-      Object.assign(inputs, { width: w * 2, height: h * 2, batch: 1 });
+    case 'upscale_video': {
+      const factor = opts.factor ?? 2;
+      Object.assign(inputs, { width: w * factor, height: h * factor, batch: 1, upscale_factor: factor });
+      break;
+    }
       break;
     case 'describe':
       inputs.batch = 1;
@@ -778,6 +783,7 @@ function createJob(action: ActionKind, rawPrompt: string, parsed: ParsedPrompt, 
       image: srcImg && srcImg.url.length < 200000 ? srcImg : undefined,
       zoom: opts.zoom,
       pan: opts.pan,
+      factor: opts.factor,
       motion: isVideoAction(action) ? motion : undefined,
       motionPrompt: opts.motionPrompt,
       strength: opts.strength,
@@ -1004,6 +1010,7 @@ export function rerunJob(job: Job, extraParams?: string): Job[] {
     image: job.parent ? undefined : r.image,
     zoom: r.zoom,
     pan: r.pan,
+    factor: r.factor,
     motion: r.motion,
     motionPrompt: r.motionPrompt,
     strength: r.strength,

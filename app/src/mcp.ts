@@ -74,6 +74,7 @@ const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
         prompt,
         strength: a.strength as 'subtle' | 'strong' | undefined,
         zoom: a.zoom as number | undefined,
+        factor: a.factor as 2 | 4 | undefined,
         pan: a.pan as PanDir | undefined,
         motion: a.motion as Motion | undefined,
         refs: a.loop ? { loop: true } : undefined,

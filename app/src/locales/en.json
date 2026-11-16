@@ -556,7 +556,6 @@
  "Retexturizar (misma estructura, otro estilo)": "Retexture (same structure, another style)",
  "Vídeo (texto → vídeo)": "Video (text → video)",
  "Animar (imagen → vídeo)": "Animate (image → video)",
- "Ampliar vídeo ×2 (RelayVSR)": "Upscale video ×2 (RelayVSR)",
  "Describir (imagen → prompts)": "Describe (image → prompts)",
  "Modo conversacional (workflow propio en lugar del GGUF)": "Conversational mode (own workflow instead of the GGUF)",
  "El modo conversacional usa el GGUF de la página ComfyUI, o un workflow propio con un LLM que devuelva texto.": "Conversational mode uses the GGUF from the ComfyUI page, or your own workflow with an LLM that returns text.",
@@ -615,5 +614,10 @@
  "No": "No",
  "Sí": "Yes",
  "Mejorar prompt": "Enhance prompt",
- "Mejorar el prompt de H3 Image": "Enhance the H3 Image prompt"
+ "Mejorar el prompt de H3 Image": "Enhance the H3 Image prompt",
+ "Ampliar vídeo ×2 (RelayVSR) o ×4 (ReCaVSR)": "Upscale video ×2 (RelayVSR) or ×4 (ReCaVSR)",
+ "ReCaVSR ×4 (Ampliar vídeo)": "ReCaVSR ×4 (Upscale video)",
+ "Prompt de ReCaVSR": "ReCaVSR prompt",
+ "Decodificador de ReCaVSR": "ReCaVSR decoder",
+ "Ampliar ×4": "Upscale ×4"
 }

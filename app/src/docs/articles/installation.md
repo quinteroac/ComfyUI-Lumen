@@ -6,7 +6,7 @@ Lumen is a ComfyUI node pack. It brings the extra nodes its workflows need, so b
 
 - A recent ComfyUI with the MiniMax H3 Image and Video, RelayVSR and TextGenerateV2 nodes.
 - A GPU with 16 GB of VRAM or more for video; images run with less.
-- Optional: `llama-cpp-python` in ComfyUI's Python for [conversational mode](#conversational-mode), and Node.js 22 or newer for the [MCP server](#mcp-server).
+- Optional: `triton` for the fast attention of Upscale ×4 (without it, it runs much slower), `llama-cpp-python` in ComfyUI's Python for [conversational mode](#conversational-mode), and Node.js 22 or newer for the [MCP server](#mcp-server).
 
 No other custom node packs are needed: the style codes, weights, Anima character references and video extension run on nodes included in Lumen. See [Acknowledgements](#acknowledgements).
 
@@ -36,6 +36,9 @@ These are the defaults. To install one by hand, put it in the folder shown, or p
 | Video and audio VAEs | `minimax_h3_video_vae_int8_convrot.safetensors`, `minimax_h3_audio_vae_fp32.safetensors` | `vae/minimax/` | [Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3/tree/main/vae) |
 | Upscale video | `relayvsr_x2_lightx2v_int8_convrot.safetensors` | `diffusion_models/relayvsr/` | [Comfy-Org/RelayVSR](https://huggingface.co/Comfy-Org/RelayVSR/resolve/main/diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors) |
 | Upscale video VAE | `relayvsr_flash_vae_x2_fp32.safetensors` | `vae/relayvsr/` | [Comfy-Org/RelayVSR](https://huggingface.co/Comfy-Org/RelayVSR/resolve/main/vae/relayvsr_flash_vae_x2_fp32.safetensors) |
+| Upscale video ×4 | `recavsr_transformer_int8_convrot.safetensors` | `diffusion_models/recavsr/` | [paralaif/ReCaVSR-comfy-int8-convrot](https://huggingface.co/paralaif/ReCaVSR-comfy-int8-convrot/resolve/main/recavsr_transformer_int8_convrot.safetensors) (ReCaVSR's transformer in INT8-ConvRot) |
+| Upscale video ×4 prompt | `recavsr_prompt.safetensors` | `diffusion_models/recavsr/` | [kopper/ReCaVSR](https://huggingface.co/kopper/ReCaVSR/resolve/main/prompt.safetensors) (`prompt.safetensors`, renamed) |
+| Upscale video ×4 decoder | `recavsr_flashdecoder_fp32.safetensors` | `vae/recavsr/` | [kopper/ReCaVSR](https://huggingface.co/kopper/ReCaVSR/resolve/main/flashdecoder.safetensors) (`flashdecoder.safetensors`, renamed) |
 | Anima (`--anima`) | `anima-base-v1.0.safetensors` | `diffusion_models/anima/` | [circlestone-labs/Anima](https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-base-v1.0.safetensors) |
 | Anima turbo LoRA | `anima-turbo-lora-v0.2.safetensors` | `loras/anima/` | [Anima Turbo LoRA v0.2 on Civitai](https://civitai.com/models/2560840/anima-turbo-lora) |
 | Anima text encoder | `qwen_3_06b_base.safetensors` | `text_encoders/` | [circlestone-labs/Anima](https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/text_encoders/qwen_3_06b_base.safetensors) |
